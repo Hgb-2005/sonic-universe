@@ -1,0 +1,16 @@
+# Publish a curated artwork, without local history, fixtures or debugging output.
+/work/
+/__pycache__/
+*.py[cod]
+.DS_Store
+Thumbs.db
+.env
+.env.*
+*.log
+/outputs/*
+!/outputs/index.html
+!/outputs/使用说明.md
+!/outputs/preview.png
+!/outputs/blackhole.png
+!/outputs/blackhole-demo.webm
+!/outputs/星际漫游-示例短句.lrc
