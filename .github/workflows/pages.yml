@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'outputs/**'
+      - 'tests/**'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
@@ -26,6 +27,11 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v4
+      - name: Verify flight chart and scoring
+        run: |
+          node tests/flight-core.test.cjs
+          node --check outputs/flight-core.js
+          node --check outputs/flight.js
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload artwork

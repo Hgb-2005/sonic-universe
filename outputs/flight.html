@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#080b18">
+  <meta name="description" content="声波宇宙 · 星际节奏航行。驾驶飞船，跟随原创音乐穿过星环，在 60 秒的星海里留下你的连击。">
+  <title>星际节奏航行 · 声波宇宙</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%23c7afff' d='m16 2 12 25-12-5L4 27Z'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="./flight.css?v=12">
+  <script defer src="./flight-core.js?v=12"></script>
+  <script defer src="./flight.js?v=12"></script>
+</head>
+<body data-phase="ready">
+  <main class="flight-shell">
+    <canvas id="flightCanvas" tabindex="0" role="region" aria-label="星际航道，用左右方向键或 A D 移动，空格暂停"></canvas>
+    <div class="flight-vignette" aria-hidden="true"></div>
+    <header class="flight-header">
+      <a class="flight-brand" href="./?v=12" aria-label="声波宇宙，返回音乐星空"><svg viewBox="0 0 40 40" aria-hidden="true"><ellipse cx="20" cy="20" rx="19" ry="9" transform="rotate(-35 20 20)"/><path d="M11 21v-3m5 9V13m5 17V10m5 14v-8m5 5v-3"/></svg><span>声波宇宙<small>SONIC UNIVERSE</small></span><b>FLIGHT / 01</b></a>
+      <nav aria-label="航行设置">
+        <button class="flight-icon" id="flightMotion" aria-pressed="false" title="舒缓画面">舒缓画面</button>
+        <button class="flight-icon" id="flightMute" aria-pressed="false" title="静音 · M">声音 开</button>
+        <button class="flight-icon" id="flightPause" disabled title="暂停 · 空格">暂停 <span aria-hidden="true">Ⅱ</span></button>
+        <a class="flight-back" href="./?v=12">返回星空 <span aria-hidden="true">↗</span></a>
+      </nav>
+    </header>
+
+    <section class="flight-hud" id="flightHud" aria-label="航行状态" hidden>
+      <div class="flight-score"><span>SCORE / 得分</span><output id="flightScore">000000</output><small>最高 <b id="flightBestHud">0</b></small></div>
+      <div class="flight-route"><div><span id="flightChapter">01 / 星光初醒</span><time id="flightTime">00:00 / 01:00</time></div><progress id="flightProgress" max="60" value="0" aria-label="航行进度"></progress><div class="flight-route-labels"><span>启航</span><span>流光</span><span>星潮</span></div></div>
+      <div class="flight-energy"><span>能量 <output id="flightEnergy">100</output><small>%</small></span><progress id="flightEnergyBar" value="100" max="100" aria-label="飞船能量"></progress></div>
+    </section>
+
+    <section class="flight-intro" id="flightIntro" aria-labelledby="flightTitle">
+      <div class="flight-copy"><p class="flight-eyebrow"><i></i> A JOURNEY YOU CAN PLAY</p><h1 id="flightTitle">循着节拍，<br><em>穿越星河。</em></h1><p class="flight-description">这一次，驾驶一束星光。<br>穿过星环，避开陨石，让连击照亮航路。</p><div class="flight-specs"><span>60<small>秒航程</small></span><span>96<small>BPM</small></span><span>03<small>条航道</small></span></div><button class="flight-primary" id="flightStart">开始航行 <span aria-hidden="true">↗</span></button><p class="flight-start-hint">只需左右移动 · 穿过星环自动收集</p><p id="flightLoadStatus" class="flight-status" role="status"></p></div>
+      <aside class="flight-track-card"><span class="flight-track-label">YOUR FIRST VOYAGE</span><div><i aria-hidden="true">✧</i><p>初航<small>FIRST LIGHT · 原创电子音景</small></p><span class="flight-track-number">01</span></div><footer><span>本机最高分</span><strong id="flightBest">尚未启航</strong></footer><p class="flight-record-note" id="flightRecordNote">完成航程后记录成绩</p></aside>
+    </section>
+
+    <div class="flight-countdown" id="flightCountdown" role="status" hidden><strong id="flightCount">3</strong><span id="flightCountLabel">准备启航</span></div>
+    <div class="flight-feedback" id="flightFeedback" aria-hidden="true" hidden><strong id="flightJudgment"></strong><span id="flightJudgmentDetail"></span></div>
+    <div class="flight-combo" id="flightComboBox" aria-hidden="true" hidden><strong id="flightCombo">0</strong><span>COMBO / 连击</span></div>
+
+    <section class="flight-modal" id="flightPausePanel" aria-labelledby="flightPauseTitle" hidden>
+      <div class="flight-panel"><p class="flight-eyebrow">TAKE A BREATH</p><h2 id="flightPauseTitle" tabindex="-1">星海，等你回来。</h2><p id="flightPauseReason">音乐与航路已一起暂停。</p><button class="flight-primary" id="flightResume">继续航行 <span aria-hidden="true">↗</span></button><div class="flight-panel-links"><button id="flightRestart">重新开始</button><a href="./?v=12">返回音乐星空</a></div></div>
+    </section>
+
+    <section class="flight-modal" id="flightResultPanel" aria-labelledby="flightResultTitle" hidden>
+      <div class="flight-panel flight-results"><p class="flight-eyebrow" id="flightResultEyebrow">VOYAGE COMPLETE</p><div class="flight-result-heading"><div><h2 id="flightResultTitle" tabindex="-1">你点亮了这段星河。</h2><p id="flightResultSubtitle">60 秒的旋律，留下你的轨迹。</p></div><strong class="flight-grade" id="flightGrade">S</strong></div><p class="flight-final-score"><output id="flightFinalScore">0</output><span>本次得分 <b id="flightNewBest" hidden>NEW BEST</b></span></p><div class="flight-result-grid"><div><strong id="flightAccuracy">0%</strong><span>星环命中率</span></div><div><strong id="flightMaxCombo">0</strong><span>最高连击</span></div><div><strong id="flightDistance">60s</strong><span>航行时间</span></div></div><p class="flight-result-breakdown" id="flightBreakdown"></p><p class="flight-record-note" id="flightSaveStatus" role="status"></p><button class="flight-primary" id="flightAgain">再飞一次 <span aria-hidden="true">↗</span></button><div class="flight-panel-links"><a href="./?v=12">回到音乐星空，自由漫游 ↗</a></div></div>
+    </section>
+
+    <footer class="flight-footer" id="flightFooter"><span>方向键 / A D <i>左右移动</i></span><span>手机滑动 <i>或点击航道</i></span><span>SPACE <i>暂停</i></span><small>戴上耳机 · 让每一束星光都有回响</small></footer>
+    <div class="flight-lane-controls" id="flightLaneControls" role="group" aria-label="选择航道" hidden><button data-flight-lane="0" aria-pressed="false" aria-label="左航道，方向左键或 A"><span>←</span>左航道</button><button data-flight-lane="1" aria-pressed="true" aria-label="中间航道"><span>◇</span>中航道</button><button data-flight-lane="2" aria-pressed="false" aria-label="右航道，方向右键或 D"><span>→</span>右航道</button></div>
+    <p class="flight-play-hint" id="flightPlayHint" hidden>左右移动穿过星环 · 避开橙色陨石 · 空格暂停</p>
+    <span class="flight-sr" id="flightAnnouncement" role="status" aria-live="polite"></span>
+    <noscript><p class="flight-nojs">请启用 JavaScript 开始航行，或<a href="./">返回音乐星空</a>。</p></noscript>
+  </main>
+</body>
+</html>

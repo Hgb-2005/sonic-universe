@@ -4,6 +4,18 @@
 
 **[进入在线体验](https://hgb-2005.github.io/sonic-universe/)** · **[完整使用说明](outputs/使用说明.md)** · **[有声黑洞示例](https://hgb-2005.github.io/sonic-universe/blackhole-demo.webm)**
 
+**[开始星际航行 · 60 秒节奏挑战](https://hgb-2005.github.io/sonic-universe/flight.html?v=12)**
+
+## 第十二版 · 星际节奏航行
+
+新增可独立游玩的首关「初航 / First Light」：跟随 96 BPM 原创电子音景，在三条航道之间驾驶飞船，穿过 69 个音乐星环、避开橙色陨石，挑战连击与 S 评级。点击首页「开始星际航行」即可进入。
+
+![星际节奏航行](outputs/flight-preview.png)
+
+电脑使用方向键或 A／D，手机支持左右滑动、点击航道和底部三个按钮。进入星环所在航道会自动收集；提前移动更容易精准命中。空格或右上角按钮暂停，切到后台也会自动暂停音乐与航路，继续时有三拍准备。得分、能量、连击、结算和本浏览器最高分构成完整的一局；舒缓画面和静音可独立切换。
+
+首版使用固定原创关卡与现场生成的音景，暂不支持把任意上传歌曲自动转成关卡。原来的音乐欣赏、创作和导出仍从首页进入，返回时恢复原歌曲与暂停位置。
+
 ![声波宇宙第十一版作品预览](outputs/preview.png)
 
 ## 从一首歌开始
@@ -46,6 +58,10 @@ python -m http.server 8765 --bind 127.0.0.1 --directory outputs
 
 `outputs/index.html` 是完整单页源码，样式、Web Audio、Canvas 和 WebGL 实现均在其中。`outputs/` 中还包含使用说明和精选原创示例。`serve-universe.py` 与启动器用于本机预览。
 
+航行模式由 `flight.html`、`flight.css`、`flight.js` 和 `flight-core.js` 组成，不加载外部依赖。关卡与计分核心独立于帧率，使用 Web Audio 时钟对齐音乐与事件。它与原音乐星空共享网站地址，各自保存音乐资料和航行成绩。
+
+安装 Node.js 后运行 `node tests/flight-core.test.cjs`，可以检查整局关卡、精准判定、连击计分、障碍配置和不同帧率的一致性；GitHub Pages 部署前也会执行这项检查。
+
 GitHub Actions 将 `outputs/` 发布到 GitHub Pages；推送到 `main` 的作品更新会自动部署。仓库不包含本机音乐库、调试日志、历史截图或测试音轨。
 
 第十一版已在本机 Edge 验证 GPU 与 Canvas 回退、四种形态切换、预设导入导出、数据迁移、实际有声短片录制、320–1440 像素布局及减少动态效果。发布检查另外覆盖项目子路径、连接提示和公网 HTTPS 页面。
@@ -61,8 +77,12 @@ GitHub Actions 将 `outputs/` 发布到 GitHub Pages；推送到 `main` 的作�
 | [phase-viz](https://github.com/7g3n/phase-viz) | 可序列化、版本化的视觉预设 |
 | [Butterchurn](https://github.com/jberg/butterchurn) | 平顺、可中断的预设过渡 |
 | [Astrofox](https://github.com/astrofox-io/astrofox) | 音频视觉与视频创作流程 |
+| [vibez.surf](https://github.com/donth77/vibez.surf) | 音乐航道、左右移动与目标收集的玩法方向 |
+| [Moon Rider](https://github.com/supermedium/moonrider) | 星空航路和沉浸音乐旅程的氛围 |
 
 本作品按上述思路独立实现，没有打包这些项目的源码或运行时。仓库中的示例画面和黑洞视频使用内置原创音景生成。
+
+航行模式的代码、固定关卡、音景与 Canvas 飞船／场景均在本仓库独立实现；参考项目没有作为依赖引入。
 
 ## 权利说明
 

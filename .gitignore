@@ -9,6 +9,11 @@ Thumbs.db
 *.log
 /outputs/*
 !/outputs/index.html
+!/outputs/flight.html
+!/outputs/flight.css
+!/outputs/flight-core.js
+!/outputs/flight.js
+!/outputs/flight-preview.png
 !/outputs/使用说明.md
 !/outputs/preview.png
 !/outputs/blackhole.png
