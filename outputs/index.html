@@ -585,7 +585,7 @@
   function updateJourneyUI(){
     if(!$('roamTrack'))return;
     $('storyChapter').textContent=story.number+' / '+story.label;
-    $('roamChapter').textContent=story.label.split(' · ')[0];
+    $('roamChapter').textContent=busy&&mode==='demo'?'正在准备音景…':story.label.split(' · ')[0];
     $('roamTrack').textContent=externalStream?'外部声音 · 实时联动':currentTrack()?.name||'静候一首音乐';
     $('roamZoom').textContent=(camera.zoom*cinema.zoom).toFixed(2)+'× 视距';
     updateCameraButton();updateJourneyToggle();
@@ -593,7 +593,7 @@
     canvas.setAttribute('aria-label',info.name+'：'+info.description);
     document.querySelectorAll('[data-mode]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.mode===(automaticJourney()?renderedMode:visualMode))));
     Array.from($('chapterRail').children).forEach((el,i)=>el.classList.toggle('active',story.number===String(i+1).padStart(2,'0')));
-    const button=$('roamPlayBtn');button.setAttribute('aria-label',playing?'暂停音乐':'播放音乐');
+    const button=$('roamPlayBtn');button.setAttribute('aria-label',busy&&mode==='demo'?'正在准备音景，请稍候':playing?'暂停音乐':'播放音乐');
     button.innerHTML=playing?'<svg viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></svg>':'<svg viewBox="0 0 24 24"><path d="m8 5 11 7-11 7Z"/></svg>';
     button.disabled=!currentTrack()||busy||Boolean(pendingFile)||Boolean(externalStream);if(externalStream)button.setAttribute('aria-label','外部声音联动中，请在原播放器控制');
     app.dataset.storyPhase=story.phase;app.dataset.storyLight=story.light.toFixed(3);app.dataset.storySurge=story.surge.toFixed(3);
@@ -1812,6 +1812,16 @@
   async function buildDemo(){
     if(demoBuffer)return demoBuffer;if(demoBuild)return demoBuild;
     demoBuild=(async()=>{
+      // Serve the same original composition without rebuilding its full audio graph on each visit.
+      const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),8000);
+      try{
+        app.dataset.demoAudio='loading';
+        const response=await fetch(new URL('./interstellar-drift.mp3',location.href),{signal:controller.signal});
+        if(!response.ok)throw new Error('Soundscape unavailable');
+        const result=await audioContext.decodeAudioData(await response.arrayBuffer());
+        if(Math.abs(result.duration-96)>.25||result.numberOfChannels!==2)throw new Error('Incomplete soundscape');
+        demoBuffer=result;app.dataset.demoAudio='asset';return result;
+      }catch{app.dataset.demoAudio='synthesizing'}finally{clearTimeout(timer)}
       const sampleRate=22050, length=96, Offline=window.OfflineAudioContext||window.webkitOfflineAudioContext;
       const off=new Offline(2,sampleRate*length,sampleRate);
       const dry=off.createGain();dry.gain.value=.64;
@@ -1848,7 +1858,7 @@
       const result=await off.startRendering();
       const fade=sampleRate*2;
       for(let ch=0;ch<result.numberOfChannels;ch++){const data=result.getChannelData(ch);for(let i=0;i<fade;i++){data[i]*=i/fade;data[data.length-1-i]*=i/fade}}
-      demoBuffer=result;return result;
+      demoBuffer=result;app.dataset.demoAudio='synthesized';return result;
     })();
     try{return await demoBuild}catch(e){demoBuild=null;throw e}
   }
@@ -1876,7 +1886,7 @@
       initAudio();await audioContext.resume();if(token!==generation)return;fadeLocalIn();
       if(mode==='demo'){
         if(!demoBuffer){
-          busy=true;playBtn.disabled=true;$('liveTitle').textContent='正在编织第一片星云';$('orbitHint').textContent='首次播放，正在生成原创音景…';
+          busy=true;playBtn.disabled=true;$('liveTitle').textContent='正在唤醒第一片星云';$('orbitHint').textContent='正在准备原创音景…';
           try{await buildDemo()}finally{busy=false;renderActiveTrack()}
         }
         if(token!==generation)return;
