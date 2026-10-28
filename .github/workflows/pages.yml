@@ -27,8 +27,10 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v4
-      - name: Verify flight chart and scoring
+      - name: Verify music response and optional flight
         run: |
+          node tests/music-motion.test.cjs
+          node --check outputs/music-motion.js
           node tests/flight-core.test.cjs
           node --check outputs/flight-core.js
           node --check outputs/flight.js

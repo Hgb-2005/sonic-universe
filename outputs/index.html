@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#080811">
-<title>声波宇宙 13 · 从第一束星光启航</title>
+<title>声波宇宙 14 · 听见星光的层次</title>
 <meta name="description" content="让音乐成为星空。在星环、银河、山峰与引力黑洞之间旅行，收藏自己的视觉预设，演奏旋律并导出有声短片。">
 <meta property="og:type" content="website">
 <meta property="og:title" content="声波宇宙 · 让旋律坠入星海">
@@ -97,23 +97,22 @@
 @media(max-width:380px){.preset-grid{grid-template-columns:1fr}.preset-apply{min-height:90px}.preset-entry small{display:none}.mode-button span{font-size:9px}}
 
 
-/* First Light: a separate, playable voyage. */
-.flight-entry{margin:17px 0 0;max-width:330px}.flight-launch{width:100%;display:flex;align-items:center;gap:12px;text-align:left;border:1px solid #a6bff64a;background:linear-gradient(105deg,#9b9ced12,#7cc8dd0a);border-radius:8px;padding:12px 14px;color:#d5d9f3;transition:border-color .2s,background .2s}.flight-launch:hover{border-color:#abbcf49c;background:#a6bff61a}.flight-launch svg{width:24px;height:24px;stroke:#b7c9fb;fill:none;flex:none}.flight-launch strong{font-size:12px;letter-spacing:1px;font-weight:500;display:block}.flight-launch small{display:block;font-size:9px;color:#8f9fba;margin-top:5px;letter-spacing:.3px}.flight-launch b{margin-left:auto;color:#b5b8db;font-size:15px;font-weight:400}.quiet .flight-entry{opacity:0;pointer-events:none}@media(max-width:760px){.flight-entry{max-width:100%;width:310px}.flight-launch{padding:11px 13px}.flight-launch strong{font-size:11px}.flight-launch small{font-size:8px}}
-
-.flight-entry{pointer-events:auto}
+/* Edition 14: listening comes first. */
+.footer-links{display:flex;align-items:center;justify-content:center;gap:12px}.footer-links>span{color:#766a88}.footer-links .help-btn{padding:8px 0}.response-guide{gap:14px}.listening-note{margin:18px 0 0;color:#9d91ae;font-size:10px;line-height:1.9;letter-spacing:.35px}.listening-note span{color:#c5b1df}.quiet .listening-note{opacity:0}.quiet .roam-instructions{color:#b5a7c8}
+@media(max-width:760px){.listening-note{font-size:9px;margin-top:14px}.response-guide{gap:10px;font-size:8px;letter-spacing:0}.footer{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:6px 12px}.footer-brand{white-space:nowrap}.footer>span:last-child{text-align:right}.footer-links{grid-column:1/-1;grid-row:2;gap:10px}.footer-links .help-btn{font-size:9px}}
 </style>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%278%27 fill=%27%23100d1a%27/%3E%3Cellipse cx=%2716%27 cy=%2716%27 rx=%2713%27 ry=%277%27 transform=%27rotate(-30 16 16)%27 fill=%27none%27 stroke=%27%23c7afff%27/%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%272%27 fill=%27%23c7afff%27/%3E%3C/svg%3E">
 </head>
 <body>
 <div class="app" id="app">
-  <canvas id="universe" role="img" aria-label="一片随音乐频率起伏的星云，低音驱动星环，中高音点亮星光">你的浏览器暂不支持星空画布。</canvas>
+  <canvas id="universe" role="img" aria-label="一片随音乐频率起伏的星空，低音推开星云，中频留下星轨，高音点亮星闪">你的浏览器暂不支持星空画布。</canvas>
   <div class="grain" aria-hidden="true"></div>
   <header class="header">
-    <div class="brand"><div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M7 17v-2m4 8V9m5 17V6m5 16V10m4 8v-4"/></svg></div><div><div class="brand-name">声波宇宙<span class="version">VOL.13</span></div><div class="brand-en">SONIC UNIVERSE</div></div></div>
+    <div class="brand"><div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M7 17v-2m4 8V9m5 17V6m5 16V10m4 8v-4"/></svg></div><div><div class="brand-name">声波宇宙<span class="version">VOL.14</span></div><div class="brand-en">SONIC UNIVERSE</div></div></div>
     <div class="header-right"><button class="header-action external-action" id="externalBtn" aria-label="外部音乐联动" title="外部音乐联动"><svg viewBox="0 0 24 24"><path d="M3 10v4m4-7v10m5-14v18m5-14v10m4-7v4"/></svg><span class="action-label">外部联动</span></button><button class="header-action studio-action" id="studioBtn" aria-label="布置我的音乐空间" title="布置空间"><svg viewBox="0 0 24 24"><path d="m12 3 2.3 6.7L21 12l-6.7 2.3L12 21l-2.3-6.7L3 12l6.7-2.3Z"/></svg><span class="action-label">布置空间</span></button><button class="header-action" id="queueBtn" aria-label="打开播放列表" title="播放列表"><svg viewBox="0 0 24 24"><path d="M4 5h16M4 10h16M4 15h9m4-1v7m-3-3h6"/></svg><span class="action-label">音乐库</span><span class="queue-count" id="queueCount">01</span></button><button class="upload-btn" id="uploadBtn" aria-label="导入多首音乐" title="可同时选择多首音乐"><svg viewBox="0 0 24 24"><path d="M12 16V3m-5 5 5-5 5 5M4 15v5h16v-5"/></svg><span>导入音乐</span></button><button class="icon-btn" id="fullscreenBtn" aria-label="进入全屏" title="全屏 · F"><svg viewBox="0 0 24 24"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg></button></div>
   </header>
   <main class="stage" id="stage">
-    <section class="intro"><div class="eyebrow">MUSIC, IN ANOTHER DIMENSION</div><h1 id="spaceTitle">让音乐<br><span>成为星空。</span></h1><p class="description" id="spaceDescription">旋律有了形状，情绪有了引力。<br>在声音的宇宙里，遇见属于你的那片星海。</p><div class="sound-note"><svg viewBox="0 0 20 20"><path d="M3 11V9a7 7 0 0 1 14 0v2M3 10H1v6h4v-6H3m14 0h2v6h-4v-6h2"/></svg>戴上耳机，让想象漫游</div><div class="experience-actions"><button class="journey-launch" id="enterUniverseBtn"><svg viewBox="0 0 24 24"><path d="m12 3 2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2Z"/></svg>进入宇宙 <span aria-hidden="true">↗</span></button><button class="postcard-launch" id="postcardBtn"><svg viewBox="0 0 24 24"><path d="M4 7h4l2-3h4l2 3h4v13H4Z"/><circle cx="12" cy="13" r="4"/></svg>定格星空</button><button class="clip-launch" id="clipBtn"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="13" rx="2"/><path d="m16 10 5-3v11l-5-3M7 3h1m3 0h1"/></svg>导出短片</button></div><div class="flight-entry"><button class="flight-launch" id="flightBtn"><svg viewBox="0 0 28 28" aria-hidden="true"><path d="m14 3 10 21-10-4-10 4Z"/><path d="M14 9v10M10 25l-1 2m9-2 1 2"/></svg><span><strong>开始星际航行</strong><small>15 秒安全练习 · 休闲与挑战双模式</small></span><b aria-hidden="true">↗</b></button></div><div class="atelier-entry"><button class="atelier-launch" id="atelierBtn"><i aria-hidden="true">✧</i> 打开创作台 <span aria-hidden="true">↗</span></button><span id="atelierMoodLabel">让星空有你的心情</span></div><div class="instrument-entry"><button class="instrument-launch" id="instrumentBtn"><svg viewBox="0 0 24 24"><path d="M3 5h18v14H3ZM7 5v8m5-8v8m5-8v8M9 13v6m6-6v6"/></svg> 星际乐器台 <small>PLAY YOUR OWN UNIVERSE ↗</small></button></div></section>
+    <section class="intro"><div class="eyebrow">MUSIC, IN ANOTHER DIMENSION</div><h1 id="spaceTitle">让音乐<br><span>成为星空。</span></h1><p class="description" id="spaceDescription">旋律有了形状，情绪有了引力。<br>在声音的宇宙里，遇见属于你的那片星海。</p><div class="sound-note"><svg viewBox="0 0 20 20"><path d="M3 11V9a7 7 0 0 1 14 0v2M3 10H1v6h4v-6H3m14 0h2v6h-4v-6h2"/></svg>戴上耳机，让想象漫游</div><div class="experience-actions"><button class="journey-launch" id="enterUniverseBtn"><svg viewBox="0 0 24 24"><path d="m12 3 2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2Z"/></svg>进入宇宙 <span aria-hidden="true">↗</span></button><button class="postcard-launch" id="postcardBtn"><svg viewBox="0 0 24 24"><path d="M4 7h4l2-3h4l2 3h4v13H4Z"/><circle cx="12" cy="13" r="4"/></svg>定格星空</button><button class="clip-launch" id="clipBtn"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="13" rx="2"/><path d="m16 10 5-3v11l-5-3M7 3h1m3 0h1"/></svg>导出短片</button></div><p class="listening-note"><span>低音推开星云，旋律留下星轨。</span><br>一首歌的起伏，都有光的回应。</p><div class="atelier-entry"><button class="atelier-launch" id="atelierBtn"><i aria-hidden="true">✧</i> 打开创作台 <span aria-hidden="true">↗</span></button><span id="atelierMoodLabel">让星空有你的心情</span></div><div class="instrument-entry"><button class="instrument-launch" id="instrumentBtn"><svg viewBox="0 0 24 24"><path d="M3 5h18v14H3ZM7 5v8m5-8v8m5-8v8M9 13v6m6-6v6"/></svg> 星际乐器台 <small>PLAY YOUR OWN UNIVERSE ↗</small></button></div></section>
     <section class="themes" aria-label="星空外观"><div class="story-console"><div>音乐剧情 <small>FOUR CHAPTERS</small></div><button class="story-toggle" id="storyToggle" aria-pressed="true" aria-label="关闭音乐剧情" title="根据歌曲进度编排开场、推进、爆发与消散"><i aria-hidden="true"></i><span id="storyToggleText">已开启</span></button></div>
       <div class="section-label"><span>宇宙形态</span><small>1 / 2 / 3 / 4</small></div>
       <div class="journey-route"><button class="story-toggle" id="journeyToggle" aria-pressed="true"><i aria-hidden="true"></i><span id="journeyToggleText">随曲切换</span></button><span>星环 → 银河 → 山峰</span></div><div class="mode-list" role="group" aria-label="可视化模式">
@@ -132,7 +131,7 @@
       </div>
     </section>
     <div class="scene-heading"><span class="scene-number" id="sceneNumber">01</span><span id="sceneName">STAR RING</span></div>
-    <div class="response-guide"><span class="response-cue"><i id="beatLight" aria-hidden="true"></i>鼓点共振</span><span class="response-cue"><i id="trebleLight" aria-hidden="true"></i>高音星闪</span></div>
+    <div class="response-guide"><span class="response-cue"><i id="beatLight" aria-hidden="true"></i>低音星云</span><span class="response-cue"><i id="melodyLight" aria-hidden="true"></i>中频星轨</span><span class="response-cue"><i id="trebleLight" aria-hidden="true"></i>高音星闪</span></div>
     <span class="sr-only" id="modeAnnouncement" role="status" aria-live="polite"></span>
     <div class="live-label"><div class="live-title"><span class="status-dot"></span><span id="liveTitle">静候第一束声音</span></div><div class="live-sub" id="liveSub">READY TO EXPLORE</div></div>
     <div class="edge-label" aria-hidden="true">EXPLORE YOUR INNER SPACE</div>
@@ -141,9 +140,9 @@
     <div class="spectrum-panel" aria-label="实时音频频段"><div class="band"><div class="band-label">低频<output id="bassValue">0%</output></div><div class="band-track"><span class="band-fill" id="bassFill"></span></div></div><div class="band"><div class="band-label">中频<output id="midValue">0%</output></div><div class="band-track"><span class="band-fill" id="midFill"></span></div></div><div class="band"><div class="band-label">高频<output id="highValue">0%</output></div><div class="band-track"><span class="band-fill" id="highFill"></span></div></div></div>
   </main>
   <div class="source-ribbon" id="sourceRibbon"><span><i aria-hidden="true"></i>外部声音已接入<small>选歌、暂停与音量在原播放器操作</small></span><button id="sourceManageBtn">管理联动 ↗</button></div><div class="player-wrap"><section class="player" aria-label="音乐播放器"><div class="track"><button class="album album-button" id="albumButton" aria-label="更换歌曲封面" title="布置空间与歌曲封面"><img id="albumImage" alt="" hidden></button><div class="track-text"><div class="track-title" id="trackTitle" title="星际漫游 · Interstellar Drift">星际漫游<span class="track-tag" id="trackTag">DEMO</span></div><div class="track-sub" id="trackSub">Interstellar Drift · 原创合成音景</div></div></div><div class="transport"><div class="transport-buttons"><button class="icon-btn" id="restartBtn" aria-label="上一首" title="上一首"><svg viewBox="0 0 24 24"><path d="M5 5v14m14-14L8 12l11 7Z"/></svg></button><button class="play-btn" id="playBtn" aria-label="播放音乐" title="播放 / 暂停 · 空格"><svg class="play-icon" viewBox="0 0 24 24"><path d="m7 3 15 9-15 9Z"/></svg></button><button class="icon-btn" id="forwardBtn" aria-label="下一首" title="下一首"><svg viewBox="0 0 24 24"><path d="m5 5 11 7-11 7Zm14 0v14"/></svg></button></div><div class="progress-row"><span id="currentTime">00:00</span><input class="range" id="seek" type="range" min="0" max="96" step="0.1" value="0" aria-label="播放进度" aria-valuetext="00:00 / 01:36"><span id="duration">01:36</span></div></div><div class="player-right"><button class="icon-btn active" id="repeatBtn" aria-label="关闭单曲循环" aria-pressed="true" title="单曲循环：开"><svg viewBox="0 0 24 24"><path d="m17 2 4 4-4 4M3 11V8a2 2 0 0 1 2-2h16M7 22l-4-4 4-4m14-1v3a2 2 0 0 1-2 2H3"/></svg></button><div class="volume"><button class="icon-btn" id="muteBtn" aria-label="静音" aria-pressed="false" title="静音 · M"><svg viewBox="0 0 24 24"><path d="m11 4-6 5H2v6h3l6 5Zm4 4a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg></button><input class="range" id="volume" type="range" min="0" max="100" value="65" aria-label="音量" aria-valuetext="65%"></div><span class="player-divider"></span><button class="icon-btn" id="quietBtn" aria-label="进入宇宙" title="沉浸漫游 · H"><svg viewBox="0 0 24 24"><path d="m12 3 2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2Z"/></svg></button></div></section><span class="keyboard-hint">SPACE 播放 / 暂停</span></div>
-  <footer class="footer"><span class="footer-brand"><b>EDITION 13</b> SOUND & STARDUST</span><button class="help-btn footer-center" id="helpBtn">使用指南 ↗</button><span>你的音乐 · 只在本机流转</span></footer>
+  <footer class="footer"><span class="footer-brand"><b>EDITION 14</b> SOUND & STARDUST</span><div class="footer-links footer-center"><button class="help-btn" id="helpBtn">使用指南 ↗</button><span aria-hidden="true">·</span><button class="help-btn" id="flightBtn" title="可选的独立节奏小游戏">星际航行小实验 ↗</button></div><span>你的音乐 · 只在本机流转</span></footer>
   <div class="roam-surface" id="roamSurface" tabindex="0" role="region" aria-label="星空漫游：拖动旋转视角，滚轮或双指缩放，加减键调整距离，0 重置，C 定格，H 或 Escape 返回"></div>
-  <div class="roam-ui roam-top"><div class="roam-identity"><div class="roam-kicker">SONIC JOURNEY · VOL.13</div><p id="roamTrack">星际漫游</p><button class="roam-export" id="roamClipBtn">录一段星空 ↗</button><button class="roam-export roam-atelier" id="roamAtelierBtn">心情 · 歌词 · 收藏 ↗</button><button class="roam-export roam-atelier" id="roamInstrumentBtn">弹出星空 ↗</button></div><button class="quiet-exit" id="quietExit"><svg viewBox="0 0 24 24"><path d="m14 5-7 7 7 7M7 12h13"/></svg>返回空间 · Esc</button></div>
+  <div class="roam-ui roam-top"><div class="roam-identity"><div class="roam-kicker">SONIC JOURNEY · VOL.14</div><p id="roamTrack">星际漫游</p><button class="roam-export" id="roamClipBtn">录一段星空 ↗</button><button class="roam-export roam-atelier" id="roamAtelierBtn">心情 · 歌词 · 收藏 ↗</button><button class="roam-export roam-atelier" id="roamInstrumentBtn">弹出星空 ↗</button></div><button class="quiet-exit" id="quietExit"><svg viewBox="0 0 24 24"><path d="m14 5-7 7 7 7M7 12h13"/></svg>返回空间 · Esc</button></div>
   <div class="roam-ui roam-bottom"><div class="roam-instructions">拖动视角 <span>·</span> 滚轮 / 双指缩放 <span>·</span> 双击复位</div><div class="roam-dock">
     <div class="roam-controls"><div class="roam-chapter"><strong id="roamChapter">序曲</strong><small id="roamZoom">1.00× 视距</small><button class="camera-toggle" id="roamCameraBtn" aria-pressed="true">自动运镜 · 暂停</button></div><div class="roam-buttons">
       <button class="icon-btn" id="roamPrevBtn" aria-label="上一首" title="上一首"><svg viewBox="0 0 24 24"><path d="M5 5v14m14-14L8 12l11 7Z"/></svg></button>
@@ -158,7 +157,7 @@
 <audio id="audio" preload="metadata"></audio>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="drop-overlay" id="dropOverlay"><div class="drop-content"><svg viewBox="0 0 48 48"><path d="M24 32V6M14 16 24 6l10 10M8 30v12h32V30"/></svg><p>把音乐，放进宇宙</p><small>可一次拖入多首音乐 · 仅在本机播放与保存</small></div></div>
-<dialog class="help-dialog" id="helpDialog"><h2>欢迎来到声波宇宙</h2><p>播放内置音景，导入多首音乐或整个音乐文件夹，也能点击「外部联动」，让星空响应其他播放器共享的声音。在星环、银河粒子和山峰声波之间切换，音乐会继续流动。</p><p class="help-detail">鼓点带动星环震动，高音点亮星光。打开音乐库搜索、收藏、建立歌单或随机播放。歌单中的歌曲按该歌单播放，搜索只筛选显示；在「布置空间」里选择背景、每首歌的封面和空间文字。音乐、图片与设置会自动保存在当前浏览器，重新打开后从暂停的位置继续。</p><dl><dt><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></dt><dd>切换三种宇宙形态</dd><dt><kbd>Space</kbd></dt><dd>播放 / 暂停</dd><dt><kbd>←</kbd> <kbd>→</kbd></dt><dd>后退 / 前进 5 秒</dd><dt><kbd>M</kbd></dt><dd>静音 / 恢复音量</dd><dt><kbd>H</kbd></dt><dd>进入 / 退出沉浸</dd><dt><kbd>F</kbd></dt><dd>进入 / 退出全屏</dd><dt><kbd>C</kbd> / <kbd>0</kbd></dt><dd>漫游中定格 / 重置视角</dd><dt><kbd>+</kbd> / <kbd>−</kbd></dt><dd>漫游中拉近 / 拉远</dd></dl><p>点击「进入宇宙」拖动视角、滚轮或双指缩放，停止操作后按钮会淡出。音乐剧情按歌曲进度和音频能量编排四个篇章；「定格星空」可以加上歌名、署名和心情，保存 PNG 明信片。推荐 MP3、WAV、M4A；其他格式取决于浏览器支持。内置音景由本作品合成，支持循环播放。</p><div class="dialog-actions"><button class="secondary-btn" id="demoBtn">返回内置音景</button><button class="primary-btn" id="closeHelpBtn">开始探索</button></div></dialog>
+<dialog class="help-dialog" id="helpDialog"><h2>欢迎来到声波宇宙</h2><p>播放内置音景，导入多首音乐或整个音乐文件夹，也能点击「外部联动」，让星空响应其他播放器共享的声音。在星环、银河、山峰和黑洞之间切换，音乐会继续流动。</p><p class="help-detail">低音推开星云，中频留下短暂星轨，高音点亮细碎星闪；安静与暂停后自然收静。打开音乐库搜索、收藏、建立歌单或随机播放。歌单中的歌曲按该歌单播放，搜索只筛选显示；在「布置空间」里选择背景、每首歌的封面和空间文字。音乐、图片与设置会自动保存在当前浏览器，重新打开后从暂停的位置继续。</p><dl><dt><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd></dt><dd>切换四种宇宙形态</dd><dt><kbd>Space</kbd></dt><dd>播放 / 暂停</dd><dt><kbd>←</kbd> <kbd>→</kbd></dt><dd>后退 / 前进 5 秒</dd><dt><kbd>M</kbd></dt><dd>静音 / 恢复音量</dd><dt><kbd>H</kbd></dt><dd>进入 / 退出沉浸</dd><dt><kbd>F</kbd></dt><dd>进入 / 退出全屏</dd><dt><kbd>C</kbd> / <kbd>0</kbd></dt><dd>漫游中定格 / 重置视角</dd><dt><kbd>+</kbd> / <kbd>−</kbd></dt><dd>漫游中拉近 / 拉远</dd></dl><p>点击「进入宇宙」拖动视角、滚轮或双指缩放，停止操作后按钮会淡出。音乐剧情按歌曲进度和音频能量编排四个篇章；「定格星空」可以加上歌名、署名和心情，保存 PNG 明信片。推荐 MP3、WAV、M4A；其他格式取决于浏览器支持。内置音景由本作品合成，支持循环播放。</p><div class="dialog-actions"><button class="secondary-btn" id="demoBtn">返回内置音景</button><button class="primary-btn" id="closeHelpBtn">开始探索</button></div></dialog>
 <input type="file" id="backgroundInput" accept="image/jpeg,image/png,image/webp" hidden>
 <input type="file" id="coverInput" accept="image/jpeg,image/png,image/webp" hidden>
 <dialog class="space-dialog queue-dialog" id="queueDialog" aria-labelledby="queueHeading">
@@ -305,6 +304,7 @@
   <div class="instrument-footer"><div><span class="storage-status" role="status">旋律与设置仅保存在本机</span><small>录制一层前数 4 拍，循环播放时可继续录下一层。最多 6 层；关闭乐器台会停止演奏。</small></div><button class="primary-btn" id="instrumentFilmBtn">把演奏录成短片 ↗</button></div>
 </dialog>
 
+<script src="./music-motion.js"></script>
 <script>
 (() => {
   'use strict';
@@ -325,6 +325,7 @@
   let w=0,h=0,dpr=1,centerX=0,centerY=0,baseR=190,stars=[],dust=[],ring=[],shooting=[];
   let frame=0,lastFrame=0,sceneTime=0,drawTime=0,mouse={x:0,y:0,tx:0,ty:0};
   let bass=0,mid=0,high=0,power=0,intensity=.7,pausedVisualTime=0;
+  const musicResponse=SonicMusicMotion.create(),music=musicResponse.state;
   const motionQuery=matchMedia('(prefers-reduced-motion: reduce)');
   let reduced=motionQuery.matches;
   app.classList.toggle('reduced',reduced);
@@ -664,7 +665,7 @@
     }finally{ctx=saved.ctx;w=saved.w;h=saved.h;dpr=saved.dpr;centerX=saved.centerX;centerY=saved.centerY;baseR=saved.baseR;backgroundLayer=saved.backgroundLayer;exportRendering=false}
     const portrait=shape==='portrait',margin=portrait?58:78,font='"Microsoft YaHei UI","Microsoft YaHei",sans-serif',meta=clipSession||{song:$('clipSong').value,author:$('clipAuthor').value,mood:$('clipMood').value};
     const shade=g.createLinearGradient(0,height*.63,0,height);shade.addColorStop(0,'rgba(8,9,17,0)');shade.addColorStop(1,'rgba(8,9,17,.89)');g.fillStyle=shade;g.fillRect(0,height*.63,width,height*.37);
-    g.textAlign='left';g.textBaseline='top';g.font='13px '+font;g.fillStyle=rgba(palette.core,.72);g.fillText('SONIC UNIVERSE  /  11',margin,portrait?58:42);
+    g.textAlign='left';g.textBaseline='top';g.font='13px '+font;g.fillStyle=rgba(palette.core,.72);g.fillText('SONIC UNIVERSE  /  14',margin,portrait?58:42);
     let y=height-(portrait?294:225);g.fillStyle='#f0e8fc';g.font='500 '+(portrait?36:30)+'px '+font;
     for(const line of clipTextLines(g,meta.song,width-margin*2,2)){g.fillText(line,margin,y);y+=portrait?46:38}
     y+=12;g.font=(portrait?'20':'18')+'px '+font;g.fillStyle='#c0aecf';for(const line of clipTextLines(g,meta.mood,width-margin*2,portrait?3:2)){g.fillText(line,margin,y);y+=portrait?29:25}
@@ -736,7 +737,8 @@
       if(session.instrument)initInstrumentAudio();else if(mode==='demo'&&!demoBuffer){busy=true;try{await buildDemo()}finally{busy=false;renderActiveTrack()}}
       if(clipSession!==session)return;if(activeId!==session.trackId||externalStream)throw new Error('音乐来源已变化，请重新开始。');
       if(!session.instrument&&getLocalPosition()>=duration-.05){if(mode==='demo')offset=0;else audio.currentTime=0}
-      const types=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/webm','video/mp4'];const mime=types.find(t=>MediaRecorder.isTypeSupported(t));if(!mime)throw new Error('浏览器没有可用的视频编码，请在新版 Edge 或 Chrome 重试。');
+      // Prefer VP8 for reliable startup across consecutive landscape/portrait recordings.
+      const types=['video/webm;codecs=vp8,opus','video/webm;codecs=vp9,opus','video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/webm','video/mp4'];const mime=types.find(t=>MediaRecorder.isTypeSupported(t));if(!mime)throw new Error('浏览器没有可用的视频编码，请在新版 Edge 或 Chrome 重试。');
       session.destination=audioContext.createMediaStreamDestination();session.gain=audioContext.createGain();session.gain.gain.value=.9;analyser.connect(session.gain);session.gain.connect(session.destination);
       renderClipFrame(true);session.capture=$('clipCanvas').captureStream(reduced?15:30);session.stream=new MediaStream([...session.capture.getVideoTracks(),...session.destination.stream.getAudioTracks()]);
       session.recorder=new MediaRecorder(session.stream,{mimeType:mime,videoBitsPerSecond:4000000,audioBitsPerSecond:192000});
@@ -853,7 +855,7 @@
     await new Promise(resolve=>setTimeout(resolve,185));return token===loadGeneration&&g===generation&&!clipLocked();
   }
   function beginSeekVisual(position){
-    seekVisualTarget=position*.8*motionSpeed;seekVisualLeft=reduced?0:.85;cuePosition=-1;lyricPosition=-1;lyricDust=[];
+    seekVisualTarget=position*.8*motionSpeed;seekVisualLeft=reduced?0:.85;cuePosition=-1;lyricPosition=-1;lyricDust=[];musicResponse.reset();
     if(reduced){sceneTime=seekVisualTarget;seekVisualTarget=null}
   }
   function parseLRC(raw){
@@ -1153,7 +1155,7 @@
   let rawRms=0,calibrationGain=1,calibrationLevel=.12,calibrationAge=0,calibrationSource='',calibrationReadout=0,externalHealth='waiting',externalHelpDismissed=false;
   let cloudOrigin=null,spiralOrigin=null,layoutTransition=null,immersiveMix=0;
   function persistRefinement(){try{localStorage.setItem(polishKey,JSON.stringify(refinement));storageIssues.delete('refinement')}catch{storageIssues.add('refinement')}updateStorageStatus();syncResponseControls()}
-  function resetCalibration(){calibrationLevel=.12;calibrationAge=0;calibrationGain=1;bassFloor=.12;previousBass=0;previousHigh=0;beatPulse=0;treblePulse=0;syncResponseControls()}
+  function resetCalibration(){calibrationLevel=.12;calibrationAge=0;calibrationGain=1;bassFloor=.12;previousBass=0;previousHigh=0;beatPulse=0;treblePulse=0;musicResponse.reset();syncResponseControls()}
   function calibrateVisual(rms,dt){
     rawRms=rms;const source=externalStream?'external-'+externalGeneration:instrumentOpen?'instrument':activeId;
     if(source!==calibrationSource){calibrationSource=source;resetCalibration()}
@@ -1194,7 +1196,7 @@
     return[(u-.5)*r*2.9*(.33+z*.76)+mouse.x*(z-.5)*16,r*.45-r*1.12*(1-z)-height+mouse.y*z*8];
   }
   function drawReformingStars(cx,cy,r,t){
-    if(reduced)return;if(drawGpuStars(cx,cy,r,t))return;ctx.save();ctx.globalCompositeOperation='lighter';const weights=Object.entries(sceneWeights);for(let i=0;i<ring.length;i++){let x=0,y=0;for(const [key,weight] of weights){if(weight<.0001)continue;const point=reformPoint(i,key,r,t);x+=point[0]*weight;y+=point[1]*weight}const p=ring[i],g=galaxyParticles[i],alpha=(sceneWeights.ring*p.alpha*.7+sceneWeights.galaxy*(.3+g.depth*.3)+sceneWeights.peaks*(.2+p.layer*.45)+sceneWeights.blackhole*(.25+g.depth*.50))*intensity,size=(.5+p.r*.7+treblePulse*.3)*(1+visualEffects.glow*.65)*(1+(g.depth-.5)*visualEffects.depth*.5),depth=1+(g.depth-.5)*visualEffects.depth*.13;x*=depth;y*=depth;ctx.fillStyle=rgba(p.layer>.85?palette.hot:palette.core,clamp(alpha,0,.9));ctx.fillRect(cx+x,cy+y,size,size)}ctx.restore();
+    if(reduced)return;if(drawGpuStars(cx,cy,r,t))return;ctx.save();ctx.globalCompositeOperation='lighter';const weights=Object.entries(sceneWeights);for(let i=0;i<ring.length;i++){let x=0,y=0;for(const [key,weight] of weights){if(weight<.0001)continue;const point=reformPoint(i,key,r,t);x+=point[0]*weight;y+=point[1]*weight}const p=ring[i],g=galaxyParticles[i],spark=music.shimmer*Math.pow(Math.max(0,Math.sin(p.phase*7.13)),14),alpha=(sceneWeights.ring*p.alpha*.7+sceneWeights.galaxy*(.3+g.depth*.3)+sceneWeights.peaks*(.2+p.layer*.45)+sceneWeights.blackhole*(.25+g.depth*.50))*intensity,size=(.5+p.r*.7+spark*1.3)*(1+visualEffects.glow*.65)*(1+(g.depth-.5)*visualEffects.depth*.5),depth=1+(g.depth-.5)*visualEffects.depth*.13;x*=depth;y*=depth;ctx.fillStyle=rgba(p.layer>.85?palette.hot:palette.core,clamp(alpha+spark*.5,0,.9));ctx.fillRect(cx+x,cy+y,size,size)}ctx.restore();
   }
   const songDraftFields=['lyricSource','lyricOffset','lyricSize','lyricOnly','lyricEnabled','memoryNote','segmentA','segmentB','segmentLoop','cuesEnabled','cueTime','cueText','cueBurst'];
   const filmDraftFields=['clipSong','clipAuthor','clipMood'];
@@ -1277,11 +1279,11 @@
     const surface=existing||document.createElement('canvas');
     const gl=surface.getContext('webgl',{alpha:true,premultipliedAlpha:true,antialias:false,depth:false,stencil:false,preserveDrawingBuffer:false});
     if(!gl)throw new Error('WebGL unavailable');
-    const vs='precision highp float; attribute vec4 seed; attribute vec4 galaxy; attribute vec3 misc; uniform vec4 weights; uniform vec4 sound; uniform vec3 control; uniform float clock; uniform float pixels; uniform sampler2D terrain; varying float opacity; varying float warmth; void main(){ float a=seed.x+clock*.018*(seed.z>.5?1.:-.45); float rr=1.+seed.y*.14+sin(a*5.+clock*.7+misc.x)*.008+sound.y*.04; vec2 ring=vec2(cos(a)*rr*1.23,sin(a)*rr*.78); float tilt=-.31; ring=mat2(cos(tilt),sin(tilt),-sin(tilt),cos(tilt))*ring; float ga=galaxy.y*1.5707963+galaxy.x*5.7+clock*.012+galaxy.z*.31; vec2 spiral=vec2(cos(ga)*galaxy.x*1.52,sin(ga)*galaxy.x*.82+galaxy.w*.45); spiral=mat2(cos(tilt),sin(tilt),-sin(tilt),cos(tilt))*spiral; float u=seed.x/6.2831853; float z=seed.z; float band=(abs(u-.5)*124.+3.)/96.; float signal=texture2D(terrain,vec2(clamp(band,0.,1.),z)).r; float ridge=(.17+.11*sin(u*17.+z*9.+clock*.24)+.055*cos(u*33.-z*5.))*pow(max(0.,sin(u*3.141593)),.8); vec2 peaks=vec2((u-.5)*2.9*(.33+z*.76),.45-1.12*(1.-z)-(ridge+pow(signal,1.6)*(.45+sound.y*.35)*control.z)*(.45+z*.65)); float ba=seed.x+clock*(.09+.08*(1.-galaxy.x)); float br=(.40+galaxy.x*.97)*(1.+sound.w*.035*control.z); vec2 hole=vec2(cos(ba)*br*1.44*(1.+sin(ba)*.042),sin(ba)*br*.30+galaxy.w*.16-cos(ba)*br*.20); vec2 pos=ring*weights.x+spiral*weights.y+peaks*weights.z+hole*weights.w; float depth=(misc.z-.5)*control.x; pos*=1.+depth*.13; gl_Position=vec4(pos.x*.5,-pos.y*.5,0.,1.); gl_PointSize=clamp((.65+seed.w*.9+sound.z*.6)*(1.+depth*.5)*(1.+control.y*.8)*pixels,1.,12.); opacity=(weights.x*misc.y*.7+weights.y*(.3+misc.z*.3)+weights.z*(.2+z*.45)+weights.w*(.25+misc.z*.5))*control.z; warmth=step(.85,z); }';
+    const vs='precision highp float; attribute vec4 seed; attribute vec4 galaxy; attribute vec3 misc; uniform vec4 weights; uniform vec4 sound; uniform vec4 music; uniform vec3 control; uniform float clock; uniform float pixels; uniform sampler2D terrain; varying float opacity; varying float warmth; void main(){ float a=seed.x+clock*.018*(seed.z>.5?1.:-.45); float signalRing=texture2D(terrain,vec2(fract(seed.x/6.2831853),0.)).r; float rr=1.+seed.y*.14+sin(a*5.+clock*.7+misc.x)*.008+signalRing*.065*control.z+music.x*.025; vec2 ring=vec2(cos(a)*rr*1.23,sin(a)*rr*.78); float tilt=-.31; ring=mat2(cos(tilt),sin(tilt),-sin(tilt),cos(tilt))*ring; float ga=galaxy.y*1.5707963+galaxy.x*5.7+clock*.012+galaxy.z*.31+music.y*sin(galaxy.x*11.+misc.x)*.06; vec2 spiral=vec2(cos(ga)*galaxy.x*1.52,sin(ga)*galaxy.x*.82+galaxy.w*.45); spiral=mat2(cos(tilt),sin(tilt),-sin(tilt),cos(tilt))*spiral; float u=seed.x/6.2831853; float z=seed.z; float band=(abs(u-.5)*124.+3.)/96.; float signal=texture2D(terrain,vec2(clamp(band,0.,1.),z)).r; float ridge=(.17+.11*sin(u*17.+z*9.+clock*.24)+.055*cos(u*33.-z*5.))*pow(max(0.,sin(u*3.141593)),.8); vec2 peaks=vec2((u-.5)*2.9*(.33+z*.76),.45-1.12*(1.-z)-(ridge+pow(signal,1.6)*(.45+sound.y*.35)*control.z)*(.45+z*.65)); float ba=seed.x+clock*(.09+.08*(1.-galaxy.x)); float br=(.40+galaxy.x*.97)*(1.+sound.w*.035*control.z); vec2 hole=vec2(cos(ba)*br*1.44*(1.+sin(ba)*.042),sin(ba)*br*.30+galaxy.w*.16-cos(ba)*br*.20); vec2 pos=ring*weights.x+spiral*weights.y+peaks*weights.z+hole*weights.w; float depth=(misc.z-.5)*control.x; pos*=1.+depth*(.13+music.x*.055); gl_Position=vec4(pos.x*.5,-pos.y*.5,0.,1.); gl_PointSize=clamp((.65+seed.w*.9+music.z*pow(max(0.,sin(misc.x*7.13)),14.)*2.4)*(1.+depth*.5)*(1.+control.y*.8)*pixels,1.,12.); opacity=(weights.x*misc.y*.7+weights.y*(.3+misc.z*.3)+weights.z*(.2+z*.45)+weights.w*(.25+misc.z*.5))*control.z*(.8+music.w*.2)+music.z*pow(max(0.,sin(misc.x*7.13)),14.)*.6; warmth=step(.85,z); }';
     const fs='precision mediump float; uniform vec3 core; uniform vec3 hot; uniform float glow; varying float opacity; varying float warmth; void main(){ float d=length(gl_PointCoord-vec2(.5))*2.; if(d>1.)discard; float a=(exp(-d*d*5.)*.75+pow(max(0.,1.-d),3.)*.5)*opacity; vec3 color=mix(core,hot,warmth); gl_FragColor=vec4(color*a*(1.+glow*.35),a); }';
     function shader(type,source){const s=gl.createShader(type);gl.shaderSource(s,source);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(s));return s}
     const program=gl.createProgram(),vertex=shader(gl.VERTEX_SHADER,vs),fragment=shader(gl.FRAGMENT_SHADER,fs);gl.attachShader(program,vertex);gl.attachShader(program,fragment);gl.linkProgram(program);gl.deleteShader(vertex);gl.deleteShader(fragment);if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(program));gl.useProgram(program);
-    const buffer=gl.createBuffer(),texture=gl.createTexture(),uniforms={};for(const name of ['weights','sound','control','clock','pixels','terrain','core','hot','glow'])uniforms[name]=gl.getUniformLocation(program,name);gl.bindBuffer(gl.ARRAY_BUFFER,buffer);for(const [name,size,offset] of [['seed',4,0],['galaxy',4,16],['misc',3,32]]){const id=gl.getAttribLocation(program,name);gl.enableVertexAttribArray(id);gl.vertexAttribPointer(id,size,gl.FLOAT,false,44,offset)}
+    const buffer=gl.createBuffer(),texture=gl.createTexture(),uniforms={};for(const name of ['weights','sound','music','control','clock','pixels','terrain','core','hot','glow'])uniforms[name]=gl.getUniformLocation(program,name);gl.bindBuffer(gl.ARRAY_BUFFER,buffer);for(const [name,size,offset] of [['seed',4,0],['galaxy',4,16],['misc',3,32]]){const id=gl.getAttribLocation(program,name);gl.enableVertexAttribArray(id);gl.vertexAttribPointer(id,size,gl.FLOAT,false,44,offset)}
     gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,texture);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);gl.uniform1i(uniforms.terrain,0);gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE);
     if(!existing){surface.addEventListener('webglcontextlost',e=>{e.preventDefault();gpuUnavailable=true;rendererStatus('canvas')});surface.addEventListener('webglcontextrestored',()=>{try{gpuLayer=makeGpuLayer(surface);gpuDirty=true;gpuUnavailable=false}catch{gpuUnavailable=true}})}
     return{surface,gl,program,buffer,texture,uniforms,terrain:new Uint8Array(96*36)};
@@ -1294,7 +1296,7 @@
       const size=1024;if(surface.width!==size||surface.height!==size){surface.width=surface.height=size;gl.viewport(0,0,size,size)}
       if(gpuDirty){const data=new Float32Array(ring.length*11);for(let i=0;i<ring.length;i++){const p=ring[i],g=galaxyParticles[i];data.set([p.a,p.band,p.layer,p.r,g.radial,g.arm,g.scatter,g.height,p.phase,p.alpha,g.depth],i*11)}gl.bindBuffer(gl.ARRAY_BUFFER,gpuLayer.buffer);gl.bufferData(gl.ARRAY_BUFFER,data,gl.STATIC_DRAW);gpuDirty=false}
       for(let row=0;row<36;row++){const history=terrainHistory[Math.min(terrainHistory.length-1,Math.floor(row/35*35))]||terrainBands;for(let i=0;i<96;i++)terrain[row*96+i]=Math.round(clamp(history[i]||0,0,1)*255)}gl.bindTexture(gl.TEXTURE_2D,gpuLayer.texture);gl.texImage2D(gl.TEXTURE_2D,0,gl.LUMINANCE,96,36,0,gl.LUMINANCE,gl.UNSIGNED_BYTE,terrain);
-      gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);gl.uniform4f(uniforms.weights,sceneWeights.ring,sceneWeights.galaxy,sceneWeights.peaks,sceneWeights.blackhole);gl.uniform4f(uniforms.sound,bass,mid,treblePulse,beatPulse);gl.uniform3f(uniforms.control,visualEffects.depth,visualEffects.glow,intensity);gl.uniform1f(uniforms.clock,t);gl.uniform1f(uniforms.pixels,size/(4*r));gl.uniform1f(uniforms.glow,visualEffects.glow);gl.uniform3fv(uniforms.core,palette.core.map(v=>v/255));gl.uniform3fv(uniforms.hot,palette.hot.map(v=>v/255));gl.drawArrays(gl.POINTS,0,ring.length);
+      gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);gl.uniform4f(uniforms.weights,sceneWeights.ring,sceneWeights.galaxy,sceneWeights.peaks,sceneWeights.blackhole);gl.uniform4f(uniforms.sound,bass,mid,treblePulse,beatPulse);gl.uniform4f(uniforms.music,music.cloud,music.flow,music.shimmer,music.presence);gl.uniform3f(uniforms.control,visualEffects.depth,visualEffects.glow,intensity);gl.uniform1f(uniforms.clock,t);gl.uniform1f(uniforms.pixels,size/(4*r));gl.uniform1f(uniforms.glow,visualEffects.glow);gl.uniform3fv(uniforms.core,palette.core.map(v=>v/255));gl.uniform3fv(uniforms.hot,palette.hot.map(v=>v/255));gl.drawArrays(gl.POINTS,0,ring.length);
       ctx.save();ctx.globalCompositeOperation='lighter';ctx.drawImage(surface,cx-r*2,cy-r*2,r*4,r*4);ctx.restore();rendererStatus('webgl');return true;
     }catch(error){gpuUnavailable=true;rendererStatus('canvas');return false}
   }
@@ -1434,7 +1436,7 @@
     g.strokeStyle=line;g.lineWidth=1;g.strokeRect(29.5,29.5,1741,1291);
     g.fillStyle=muted;g.font='16px ui-monospace,Consolas,monospace';
     g.fillText('SONIC UNIVERSE  /  A POSTCARD FROM THE STARS',69,78);
-    g.textAlign='right';g.fillText('VOL.13',1731,78);g.textAlign='left';
+    g.textAlign='right';g.fillText('VOL.14',1731,78);g.textAlign='left';
     const art={x:69,y:109,w:1662,h:842},source=capturedScene,aspect=art.w/art.h;
     let sw,sh;
     if(capturedMoment.quiet){sw=source.width;sh=sw/aspect;if(sh>source.height){sh=source.height;sw=sh*aspect}}
@@ -2227,9 +2229,10 @@
         for(let j=first;j<last;j++)value=Math.max(value,freqData[j]/255);
         value=visualSignal(value);terrainBands[i]+=(value-terrainBands[i])*(1-Math.exp(-dt*13));
       }
-    }else{calibrateVisual(0,dt);for(let i=0;i<terrainBands.length;i++)terrainBands[i]*=Math.exp(-dt*4)}
+    }else{calibrateVisual(0,dt);if(freqData)freqData.fill(0);for(let i=0;i<terrainBands.length;i++)terrainBands[i]*=Math.exp(-dt*4)}
+    musicResponse.update({active:Boolean(playing||externalStream||instrumentSoundActive()),rms:rawRms,bass:b,mid:m,high:hi,spectrum:terrainBands},dt);
     bassFloor+=(b-bassFloor)*(1-Math.exp(-dt*1.5));previousBass=b;previousHigh=hi;
-    bass+=(b-bass)*(1-Math.exp(-dt*10));mid+=(m-mid)*(1-Math.exp(-dt*9));high+=(hi-high)*(1-Math.exp(-dt*13));power+=(p-power)*(1-Math.exp(-dt*11));
+    bass+=(b-bass)*(1-Math.exp(-dt*(b>bass?14:3.8)));mid+=(m-mid)*(1-Math.exp(-dt*(m>mid?12:4.8)));high+=(hi-high)*(1-Math.exp(-dt*(hi>high?18:6)));power+=(p-power)*(1-Math.exp(-dt*(p>power?12:4)));
     beatPulse*=Math.exp(-dt*5.5);treblePulse*=Math.exp(-dt*5);beatAge+=dt;
     for(const wave of beatWaves)wave.age+=dt;beatWaves=beatWaves.filter(wave=>wave.age<1.35);
     terrainClock+=dt*motionSpeed*(atelier.settings.breathing?lifeMotion:1);
@@ -2258,8 +2261,8 @@
       ctx.beginPath();const rr=r*(.97+k*.022);ctx.ellipse(0,0,rr*1.36,rr*.89,0,0,Math.PI*2);ctx.strokeStyle=rgba(k%2?palette.core:palette.second,(.022+k*.005)*intensity);ctx.lineWidth=r*(.13-k*.019);ctx.stroke();
     }
     ctx.restore();
-    ctx.save();ctx.translate(cx,cy);ctx.rotate(-.31+mouse.x*.13);ctx.globalCompositeOperation='lighter';
-    const scale=r/217,size=768*scale,brightness=.65+intensity*.6+power*.17;
+    ctx.save();ctx.translate(cx,cy);ctx.rotate(-.31+mouse.x*.13+(reduced?0:music.cloud*.018));ctx.scale(1+music.cloud*.055,1+music.cloud*.025);ctx.globalCompositeOperation='lighter';
+    const scale=r/217,size=768*scale,brightness=.58+intensity*.6+music.cloud*.30;
     if(cloudBlend<1){ctx.globalAlpha=layerAlpha*Math.min(1,brightness*(1-cloudBlend));ctx.drawImage(cloudOrigin||cloudTexture(previousTheme),-size/2,-size/2,size,size)}
     ctx.globalAlpha=layerAlpha*Math.min(1,brightness*cloudBlend);ctx.drawImage(cloudTexture(themeKey),-size/2,-size/2,size,size);ctx.restore();
     const black=ctx.createRadialGradient(cx-r*.08,cy-r*.12,0,cx,cy,r*.91);black.addColorStop(0,'rgba(7,7,17,.96)');black.addColorStop(.78,'rgba(8,8,20,.76)');black.addColorStop(1,'rgba(8,8,20,0)');ctx.fillStyle=black;ctx.beginPath();ctx.arc(cx,cy,r*.91,0,6.283);ctx.fill();
@@ -2394,6 +2397,31 @@
     if(key==='ring'){drawNebula(cx,cy,r,t,opacity);drawRing(cx,cy,r,t)}else if(key==='galaxy')drawGalaxy(cx,cy,r,t,opacity);else if(key==='blackhole')drawBlackhole(cx,cy,r,t);else drawPeaks(cx,cy,r,t);
     ctx.restore();
   }
+  // These trails retain the recent midrange spectrum, not note or pitch guesses.
+  // They are drawn in the shared scene so recordings and postcards retain the same layers.
+  function drawMusicFilaments(cx,cy,r,t){
+    if(music.presence<.002&&music.flow<.002){if(!exportRendering)app.dataset.musicTrails='0';return}
+    const peakWeight=sceneWeights.peaks,tilt=-.31+mouse.x*.13;
+    ctx.save();ctx.translate(cx,cy);ctx.rotate(tilt);ctx.globalCompositeOperation='lighter';
+    let visible=0;
+    for(let lane=0;lane<music.history.length;lane++){
+      const row=music.history[lane],strength=Math.max(...row);
+      if(strength<.015)continue;visible++;
+      const start=lane*.79+(reduced?0:t*.018+music.phase),radius=r*(.72+lane*.038);
+      ctx.beginPath();
+      const samples=reduced?12:row.length;
+      for(let j=0;j<samples;j++){
+        const u=j/(samples-1),index=u*(row.length-1),at=Math.floor(index),amplitude=reduced?music.lanes[lane]:at===0?music.lanes[lane]:row[at]*(1-music.historyMix)+row[at-1]*music.historyMix;
+        const a=start-u*.74,rr=radius+r*amplitude*.11*Math.sin(u*Math.PI);
+        let x=Math.cos(a)*rr*1.23,y=Math.sin(a)*rr*.78;
+        const landX=(lane/(music.history.length-1)-.5)*r*2.6,landY=r*(.32-u*.9)-amplitude*r*.23;
+        x=x*(1-peakWeight)+landX*peakWeight;y=y*(1-peakWeight)+landY*peakWeight;
+        j?ctx.lineTo(x,y):ctx.moveTo(x,y);
+      }
+      ctx.strokeStyle=rgba(lane%4?palette.core:palette.hot,strength*(reduced?.12:.27)*intensity*music.presence);ctx.lineWidth=.6+strength*.7;ctx.stroke();
+    }
+    ctx.restore();if(!exportRendering)app.dataset.musicTrails=String(visible);
+  }
   function drawStoryBloom(cx,cy,r,t){
     if(!storyEnabled)return;
     ctx.save();ctx.globalCompositeOperation='lighter';
@@ -2429,7 +2457,7 @@
       let y=(s.y*h-h/2)*scale+h/2+mouse.y*s.speed*6-pitch*h*depth*.2;
       x=((x%(w+12))+(w+12))%(w+12)-6;y=((y%(h+12))+(h+12))%(h+12)-6;
       const dist=Math.hypot((x-cx)/1.2,y-cy),near=dist<baseR*.7?.35:1,twinkle=.72+.28*Math.sin(t*s.speed*.55+s.phase);
-      const spark=treblePulse*Math.pow((Math.sin(s.phase*8+t*.3)+1)/2,16)*(reduced?.25:1);
+      const spark=music.shimmer*Math.pow((Math.sin(s.phase*8+t*.3)+1)/2,16)*(reduced?.15:1);
       const reveal=storyEnabled&&story.phase==='intro'?smooth((story.reveal-s.phase/6.283)*6):1;
       const a=clamp(s.alpha*twinkle*near*(.7+intensity*.4)+spark*.65,0,1)*reveal;
       if(a<.003)continue;
@@ -2447,7 +2475,7 @@
     ctx.strokeStyle=rgba(palette.core,.09);ctx.lineWidth=.6;
     for(const points of constellations){ctx.beginPath();for(let i=0;i<points.length;i+=2){const x=points[i]*w,y=points[i+1]*h;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.stroke();for(let i=0;i<points.length;i+=2){ctx.fillStyle=rgba(palette.hot,.35);ctx.fillRect(points[i]*w-1,points[i+1]*h-1,2,2)}}
     for(const key of Object.keys(sceneWeights))drawScene(key,cx,cy,r,t,sceneWeights[key]);
-    drawReformingStars(cx,cy,r,t);drawBlackholeCore(cx,cy,r,t,sceneWeights.blackhole);drawStoryBloom(cx,cy,r,t);
+    drawMusicFilaments(cx,cy,r,t);drawReformingStars(cx,cy,r,t);drawBlackholeCore(cx,cy,r,t,sceneWeights.blackhole);drawStoryBloom(cx,cy,r,t);
     for(let i=shooting.length-1;i>=0;i--){const p=shooting[i];p.life-=dt/p.ttl;if(p.life<=0){shooting.splice(i,1);continue}p.x+=p.vx*dt;p.y+=p.vy*dt;ctx.fillStyle=rgba(palette.hot,p.life*.7);ctx.fillRect(p.x,p.y,1.6,1.6)}
     ctx.restore();
     drawAtelierEffects(t);drawInstrumentStars(t);
@@ -2458,14 +2486,14 @@
     requestAnimationFrame(animate);if(document.hidden)return;
     const dt=Math.min((now-(lastFrame||now))/1000,.05);lastFrame=now;
     const interval=reduced?1000/15:1000/60;if(now-drawTime<interval-1)return;const elapsed=Math.min((now-(drawTime||now))/1000,.1);drawTime=now;
-    updateInstrument(elapsed,now);updateAtelier(elapsed,now);readAudio(elapsed,now);updateStory(elapsed);if(!reduced&&seekVisualTarget===null)sceneTime+=elapsed*(.65+power*.65)*motionSpeed*(atelier.settings.breathing?lifeMotion:1);
+    updateInstrument(elapsed,now);updateAtelier(elapsed,now);readAudio(elapsed,now);updateStory(elapsed);if(!reduced&&seekVisualTarget===null)sceneTime+=elapsed*(.07+music.presence*.38+music.flow*.28)*motionSpeed*(atelier.settings.breathing?lifeMotion:1);
     mouse.x+=(mouse.tx-mouse.x)*(reduced?0:.04);mouse.y+=(mouse.ty-mouse.y)*(reduced?0:.04);
     cloudBlend=Math.min(1,cloudBlend+elapsed*1.5);
     modeOpacity=Math.min(1,modeOpacity+elapsed*2.2);
     ['core','second','hot'].forEach(k=>{for(let i=0;i<3;i++)palette[k][i]+=(targetPalette[k][i]-palette[k][i])*(1-Math.exp(-elapsed*3))});
     document.documentElement.style.setProperty('--accent',rgba(palette.core,1));document.documentElement.style.setProperty('--accent-rgb',palette.core.map(Math.round).join(','));
     updatePolish(elapsed,now);draw(sceneTime,elapsed);renderClipFrame();frame++;
-    if(now-lastUIUpdate>95){lastUIUpdate=now;updateTimeline();updateJourneyUI();updateExternalSignal(now);if($('clipDialog').open)clipUpdateControls();const values=[bass,mid,high];['bass','mid','high'].forEach((name,i)=>{const value=Math.round(values[i]*100);$(name+'Value').textContent=value+'%';$(name+'Fill').style.width=value+'%'});$('beatLight').style.opacity=.25+beatPulse*.75;$('trebleLight').style.opacity=.25+treblePulse*.75;app.dataset.beatPulse=beatPulse.toFixed(3);app.dataset.treblePulse=treblePulse.toFixed(3)}
+    if(now-lastUIUpdate>95){lastUIUpdate=now;updateTimeline();updateJourneyUI();updateExternalSignal(now);if($('clipDialog').open)clipUpdateControls();const values=[bass,mid,high];['bass','mid','high'].forEach((name,i)=>{const value=Math.round(values[i]*100);$(name+'Value').textContent=value+'%';$(name+'Fill').style.width=value+'%'});$('beatLight').style.opacity=.2+music.cloud*.8;$('melodyLight').style.opacity=.2+music.flow*.8;$('trebleLight').style.opacity=.2+music.shimmer*.8;app.dataset.musicLayers=JSON.stringify({cloud:+music.cloud.toFixed(3),flow:+music.flow.toFixed(3),shimmer:+music.shimmer.toFixed(3),presence:+music.presence.toFixed(3)});app.dataset.musicState=music.presence>.12?'listening':'resting';app.dataset.beatPulse=beatPulse.toFixed(3);app.dataset.treblePulse=treblePulse.toFixed(3)}
   }
   window.addEventListener('pagehide',()=>{saveSession();stopExternal('',true);generation++;loadGeneration++;stopDemo();audio.pause();if(objectUrl)URL.revokeObjectURL(objectUrl);if(audioContext)audioContext.close()});
   window.addEventListener('pageshow',e=>{if(e.persisted)location.reload()});
