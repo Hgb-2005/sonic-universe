@@ -3,7 +3,7 @@ $ErrorActionPreference = 'Stop'
 $taskRoot = $PSScriptRoot
 $siteRoot = Join-Path $taskRoot 'outputs'
 $logRoot = Join-Path $taskRoot 'work'
-$siteUrl = 'http://127.0.0.1:8765/?v=15'
+$siteUrl = 'http://127.0.0.1:8765/?v=16'
 try {
     if (-not (Test-Path -LiteralPath (Join-Path $siteRoot 'index.html'))) { throw 'Missing outputs/index.html.' }
     function Test-UniverseServer {

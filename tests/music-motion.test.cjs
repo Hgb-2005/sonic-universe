@@ -51,3 +51,31 @@ for(let band = 28; band < 77; band++) {
   assert.ok(motion.state.lanes.some(v => v > .9), 'missing midrange band '+band);
 }
 console.log('PASS silence, separated sound layers, attack/release, spectral history, treble transients, frame-rate independence and reset');
+
+// A sustained low note starts once, then settles; repeated attacks keep a pulse.
+const held = create(), drums = create();
+run(held, bass, 4);
+let peak = 0, pulseTotal = 0;
+for(let i = 0; i < 240; i++) {
+  const on = (i % 30) < 7;
+  drums.update({...bass,rms:on?.1:0,bass:on?1:0}, 1/60);
+  if(i > 60) {peak = Math.max(peak, drums.state.percussion);pulseTotal += drums.state.percussion;}
+}
+assert.ok(held.state.percussion < .0001);
+assert.ok(peak > .8 && pulseTotal / 179 > .2);
+assert.ok(held.state.sustain > drums.state.sustain * 2);
+const wash = create();run(wash, voice, 4);
+assert.ok(wash.state.sustain > .6 && wash.state.drift > .6);
+const sparkle = create();sparkle.update(treble, 1/60);const firstSpark = sparkle.state.shimmer;
+run(sparkle, treble, 3);assert.ok(sparkle.state.air > .9 && sparkle.state.shimmer < firstSpark);
+for(const fps of [30,60,120]) {
+  const m = create();run(m,bass,2,fps);run(m,{...silent,active:false},1,fps);
+  assert.ok(m.state.sustain > .04 && m.state.sustain < .13);
+  run(m,{...silent,active:false},7,fps);
+  for(const key of ['cloud','flow','shimmer','presence','sustain','percussion','air','drift']) assert.ok(m.state[key]<.002,key);
+  m.reset();assert.ok(Object.values(m.state).filter(v=>typeof v==='number').every(v=>v===0));
+}
+const invalid = create();invalid.update({active:true,rms:NaN,bass:Infinity,mid:-1,high:NaN},1/60);
+assert.ok(['cloud','flow','shimmer','presence','sustain','percussion','air','drift','phase'].every(key=>invalid.state[key]===0));
+assert.equal(invalid.update(bass,0).cloud,0);
+console.log('PASS sustained tones, repeated low attacks, air, silence decay, invalid input and motion reset at 30/60/120 fps');
