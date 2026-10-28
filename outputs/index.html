@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#080811">
-<title>声波宇宙 14 · 听见星光的层次</title>
+<title>声波宇宙 15 · 在星空里听见此刻</title>
 <meta name="description" content="让音乐成为星空。在星环、银河、山峰与引力黑洞之间旅行，收藏自己的视觉预设，演奏旋律并导出有声短片。">
 <meta property="og:type" content="website">
 <meta property="og:title" content="声波宇宙 · 让旋律坠入星海">
@@ -100,6 +100,41 @@
 /* Edition 14: listening comes first. */
 .footer-links{display:flex;align-items:center;justify-content:center;gap:12px}.footer-links>span{color:#766a88}.footer-links .help-btn{padding:8px 0}.response-guide{gap:14px}.listening-note{margin:18px 0 0;color:#9d91ae;font-size:10px;line-height:1.9;letter-spacing:.35px}.listening-note span{color:#c5b1df}.quiet .listening-note{opacity:0}.quiet .roam-instructions{color:#b5a7c8}
 @media(max-width:760px){.listening-note{font-size:9px;margin-top:14px}.response-guide{gap:10px;font-size:8px;letter-spacing:0}.footer{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:6px 12px}.footer-brand{white-space:nowrap}.footer>span:last-child{text-align:right}.footer-links{grid-column:1/-1;grid-row:2;gap:10px}.footer-links .help-btn{font-size:9px}}
+
+/* Listening controls stay within the sky, with room for touch and keyboard use. */
+.roam-top-actions{display:flex;align-items:center;gap:9px;flex:none;pointer-events:none}
+.roam-look-toggle{display:flex;align-items:center;gap:7px;padding:10px 13px;border:1px solid #b494db45;border-radius:22px;background:#15101fd9;color:#d6c4ee;font-size:10px;white-space:nowrap}
+.roam-look-toggle svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.2}
+.roam-look-toggle[aria-expanded=true]{border-color:var(--accent);background:#2d213ee6}
+.roam-look-panel{position:absolute;top:56px;right:0;width:354px;max-width:100%;max-height:calc(100dvh - 130px);overflow:auto;overscroll-behavior:contain;pointer-events:auto;padding:18px;border:1px solid #b9a1db42;border-radius:16px;background:linear-gradient(145deg,#1b1729f5,#0d0e19f5);backdrop-filter:blur(24px);box-shadow:0 18px 70px #0008;color:#e3d8ef;scrollbar-width:thin}
+.roam-look-panel[hidden]{display:none}
+.roam-look-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.roam-look-heading h2{font-size:15px;font-weight:400;letter-spacing:1px;margin:0 0 7px}
+.roam-look-current{display:block;color:#a798b8;font-size:9px;line-height:1.6}
+.roam-look-heading .icon-btn{width:32px;height:32px;flex:none;font-size:20px}
+.roam-look-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.roam-look-card{position:relative;min-width:0;text-align:left;overflow:hidden;border:1px solid #baa0e22b;border-radius:10px;background:#ffffff03;color:#e1d7ed;padding:0 0 11px;transition:border-color .25s,background .25s}
+.roam-look-card:hover{border-color:#bda3df80}
+.roam-look-card[aria-pressed=true]{border-color:var(--accent);background:rgba(var(--accent-rgb),.08)}
+.roam-look-card[aria-pressed=true]:after{content:'✓';position:absolute;top:7px;right:8px;font-size:10px;color:#ece0ff}
+.roam-look-art{display:flex;height:65px;align-items:center;justify-content:center;overflow:hidden;background:radial-gradient(ellipse at 50% 80%,rgba(var(--look-rgb),.17),transparent 72%),radial-gradient(circle at 20% 25%,#d6c5ed6b 0 1px,transparent 1.5px),radial-gradient(circle at 81% 39%,#d6c5ed4a 0 1px,transparent 1.5px),#0c0c16}
+.roam-look-art svg{width:112px;height:65px;fill:none;stroke:rgb(var(--look-rgb));stroke-width:.8;filter:drop-shadow(0 0 5px rgba(var(--look-rgb),.45))}
+.roam-look-card strong,.roam-look-card small{display:block;margin:9px 11px 0}
+.roam-look-card strong{font-size:11px;font-weight:400;letter-spacing:.5px}
+.roam-look-card small{color:#9c8eac;font-size:8px;line-height:1.7;margin-top:5px}
+.roam-look-response{border-top:1px solid #baa0e21c;margin-top:15px;padding-top:13px}
+.roam-look-response>span{display:block;font-size:10px;color:#b7a7c9;margin-bottom:9px}
+.roam-look-response .response-profiles{gap:6px}
+.roam-look-response .response-profiles button{min-height:36px;font-size:10px}
+.roam-look-note{font-size:9px;line-height:1.9;color:#9c8dac;margin:13px 0 0;min-height:17px}
+.quiet .roam-identity{flex:1;min-width:0;max-width:none}
+.quiet .roam-kicker{white-space:nowrap}
+.quiet.look-open .roam-ui{opacity:1;pointer-events:none}
+.quiet.look-open .roam-look-panel{pointer-events:auto}
+@media(max-height:560px){.roam-look-panel{max-height:calc(100dvh - 230px)}.quiet.look-open .roam-instructions{visibility:hidden}}
+@media(max-width:760px){.roam-top{left:16px;right:16px;gap:10px}.roam-top-actions{gap:6px}.roam-look-toggle{font-size:9px;padding:9px 10px;gap:5px}.quiet .quiet-exit{font-size:9px;padding:9px 10px;white-space:nowrap}.quiet .roam-kicker{font-size:6px;letter-spacing:.6px}.roam-look-panel{top:50px;padding:15px;width:334px;max-height:calc(100dvh - 104px)}.roam-look-heading h2{font-size:14px}.roam-look-art{height:56px}.roam-look-art svg{height:56px}.roam-look-card strong,.roam-look-card small{margin-inline:9px}}
+@media(max-width:760px) and (max-height:560px){.roam-look-panel{max-height:calc(100dvh - 215px)}}
+@media(prefers-reduced-motion:reduce){.roam-look-card{transition:none}.roam-look-panel{backdrop-filter:none}}
 </style>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%278%27 fill=%27%23100d1a%27/%3E%3Cellipse cx=%2716%27 cy=%2716%27 rx=%2713%27 ry=%277%27 transform=%27rotate(-30 16 16)%27 fill=%27none%27 stroke=%27%23c7afff%27/%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%272%27 fill=%27%23c7afff%27/%3E%3C/svg%3E">
 </head>
@@ -108,7 +143,7 @@
   <canvas id="universe" role="img" aria-label="一片随音乐频率起伏的星空，低音推开星云，中频留下星轨，高音点亮星闪">你的浏览器暂不支持星空画布。</canvas>
   <div class="grain" aria-hidden="true"></div>
   <header class="header">
-    <div class="brand"><div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M7 17v-2m4 8V9m5 17V6m5 16V10m4 8v-4"/></svg></div><div><div class="brand-name">声波宇宙<span class="version">VOL.14</span></div><div class="brand-en">SONIC UNIVERSE</div></div></div>
+    <div class="brand"><div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M7 17v-2m4 8V9m5 17V6m5 16V10m4 8v-4"/></svg></div><div><div class="brand-name">声波宇宙<span class="version">VOL.15</span></div><div class="brand-en">SONIC UNIVERSE</div></div></div>
     <div class="header-right"><button class="header-action external-action" id="externalBtn" aria-label="外部音乐联动" title="外部音乐联动"><svg viewBox="0 0 24 24"><path d="M3 10v4m4-7v10m5-14v18m5-14v10m4-7v4"/></svg><span class="action-label">外部联动</span></button><button class="header-action studio-action" id="studioBtn" aria-label="布置我的音乐空间" title="布置空间"><svg viewBox="0 0 24 24"><path d="m12 3 2.3 6.7L21 12l-6.7 2.3L12 21l-2.3-6.7L3 12l6.7-2.3Z"/></svg><span class="action-label">布置空间</span></button><button class="header-action" id="queueBtn" aria-label="打开播放列表" title="播放列表"><svg viewBox="0 0 24 24"><path d="M4 5h16M4 10h16M4 15h9m4-1v7m-3-3h6"/></svg><span class="action-label">音乐库</span><span class="queue-count" id="queueCount">01</span></button><button class="upload-btn" id="uploadBtn" aria-label="导入多首音乐" title="可同时选择多首音乐"><svg viewBox="0 0 24 24"><path d="M12 16V3m-5 5 5-5 5 5M4 15v5h16v-5"/></svg><span>导入音乐</span></button><button class="icon-btn" id="fullscreenBtn" aria-label="进入全屏" title="全屏 · F"><svg viewBox="0 0 24 24"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg></button></div>
   </header>
   <main class="stage" id="stage">
@@ -140,9 +175,16 @@
     <div class="spectrum-panel" aria-label="实时音频频段"><div class="band"><div class="band-label">低频<output id="bassValue">0%</output></div><div class="band-track"><span class="band-fill" id="bassFill"></span></div></div><div class="band"><div class="band-label">中频<output id="midValue">0%</output></div><div class="band-track"><span class="band-fill" id="midFill"></span></div></div><div class="band"><div class="band-label">高频<output id="highValue">0%</output></div><div class="band-track"><span class="band-fill" id="highFill"></span></div></div></div>
   </main>
   <div class="source-ribbon" id="sourceRibbon"><span><i aria-hidden="true"></i>外部声音已接入<small>选歌、暂停与音量在原播放器操作</small></span><button id="sourceManageBtn">管理联动 ↗</button></div><div class="player-wrap"><section class="player" aria-label="音乐播放器"><div class="track"><button class="album album-button" id="albumButton" aria-label="更换歌曲封面" title="布置空间与歌曲封面"><img id="albumImage" alt="" hidden></button><div class="track-text"><div class="track-title" id="trackTitle" title="星际漫游 · Interstellar Drift">星际漫游<span class="track-tag" id="trackTag">DEMO</span></div><div class="track-sub" id="trackSub">Interstellar Drift · 原创合成音景</div></div></div><div class="transport"><div class="transport-buttons"><button class="icon-btn" id="restartBtn" aria-label="上一首" title="上一首"><svg viewBox="0 0 24 24"><path d="M5 5v14m14-14L8 12l11 7Z"/></svg></button><button class="play-btn" id="playBtn" aria-label="播放音乐" title="播放 / 暂停 · 空格"><svg class="play-icon" viewBox="0 0 24 24"><path d="m7 3 15 9-15 9Z"/></svg></button><button class="icon-btn" id="forwardBtn" aria-label="下一首" title="下一首"><svg viewBox="0 0 24 24"><path d="m5 5 11 7-11 7Zm14 0v14"/></svg></button></div><div class="progress-row"><span id="currentTime">00:00</span><input class="range" id="seek" type="range" min="0" max="96" step="0.1" value="0" aria-label="播放进度" aria-valuetext="00:00 / 01:36"><span id="duration">01:36</span></div></div><div class="player-right"><button class="icon-btn active" id="repeatBtn" aria-label="关闭单曲循环" aria-pressed="true" title="单曲循环：开"><svg viewBox="0 0 24 24"><path d="m17 2 4 4-4 4M3 11V8a2 2 0 0 1 2-2h16M7 22l-4-4 4-4m14-1v3a2 2 0 0 1-2 2H3"/></svg></button><div class="volume"><button class="icon-btn" id="muteBtn" aria-label="静音" aria-pressed="false" title="静音 · M"><svg viewBox="0 0 24 24"><path d="m11 4-6 5H2v6h3l6 5Zm4 4a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg></button><input class="range" id="volume" type="range" min="0" max="100" value="65" aria-label="音量" aria-valuetext="65%"></div><span class="player-divider"></span><button class="icon-btn" id="quietBtn" aria-label="进入宇宙" title="沉浸漫游 · H"><svg viewBox="0 0 24 24"><path d="m12 3 2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2Z"/></svg></button></div></section><span class="keyboard-hint">SPACE 播放 / 暂停</span></div>
-  <footer class="footer"><span class="footer-brand"><b>EDITION 14</b> SOUND & STARDUST</span><div class="footer-links footer-center"><button class="help-btn" id="helpBtn">使用指南 ↗</button><span aria-hidden="true">·</span><button class="help-btn" id="flightBtn" title="可选的独立节奏小游戏">星际航行小实验 ↗</button></div><span>你的音乐 · 只在本机流转</span></footer>
-  <div class="roam-surface" id="roamSurface" tabindex="0" role="region" aria-label="星空漫游：拖动旋转视角，滚轮或双指缩放，加减键调整距离，0 重置，C 定格，H 或 Escape 返回"></div>
-  <div class="roam-ui roam-top"><div class="roam-identity"><div class="roam-kicker">SONIC JOURNEY · VOL.14</div><p id="roamTrack">星际漫游</p><button class="roam-export" id="roamClipBtn">录一段星空 ↗</button><button class="roam-export roam-atelier" id="roamAtelierBtn">心情 · 歌词 · 收藏 ↗</button><button class="roam-export roam-atelier" id="roamInstrumentBtn">弹出星空 ↗</button></div><button class="quiet-exit" id="quietExit"><svg viewBox="0 0 24 24"><path d="m14 5-7 7 7 7M7 12h13"/></svg>返回空间 · Esc</button></div>
+  <footer class="footer"><span class="footer-brand"><b>EDITION 15</b> SOUND & STARDUST</span><div class="footer-links footer-center"><button class="help-btn" id="helpBtn">使用指南 ↗</button><span aria-hidden="true">·</span><button class="help-btn" id="flightBtn" title="可选的独立节奏小游戏">星际航行小实验 ↗</button></div><span>你的音乐 · 只在本机流转</span></footer>
+  <div class="roam-surface" id="roamSurface" tabindex="0" role="region" aria-label="星空漫游：轻触唤醒按钮，拖动旋转视角，滚轮或双指缩放，加减键调整距离，0 重置，C 定格，右上角选星空，H 或 Escape 返回"></div>
+  <div class="roam-ui roam-top"><div class="roam-identity"><div class="roam-kicker">SONIC JOURNEY · VOL.15</div><p id="roamTrack">星际漫游</p><button class="roam-export" id="roamClipBtn">录一段星空 ↗</button><button class="roam-export roam-atelier" id="roamAtelierBtn">心情 · 歌词 · 收藏 ↗</button><button class="roam-export roam-atelier" id="roamInstrumentBtn">弹出星空 ↗</button></div><div class="roam-top-actions"><button class="roam-look-toggle" id="roamLookBtn" aria-expanded="false" aria-controls="roamLookPanel" aria-label="选择星空氛围"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.3 6.7L21 12l-6.7 2.3L12 21l-2.3-6.7L3 12l6.7-2.3Z"/></svg>选星空</button><button class="quiet-exit" id="quietExit"><svg viewBox="0 0 24 24"><path d="m14 5-7 7 7 7M7 12h13"/></svg>返回空间 · Esc</button></div>
+    <section class="roam-look-panel" id="roamLookPanel" hidden aria-labelledby="roamLookTitle">
+      <div class="roam-look-heading"><div><h2 id="roamLookTitle">此刻，想听见哪片星空</h2><span class="roam-look-current" id="roamLookCurrent"></span></div><button class="icon-btn" id="roamLookClose" aria-label="关闭星空氛围">×</button></div>
+      <div class="roam-look-grid" id="roamLookGrid" role="group" aria-label="沉浸星空氛围"></div>
+      <div class="roam-look-response"><span>光的回应</span><div class="response-profiles" role="group" aria-label="沉浸画面响应"><button type="button" data-response="soft">柔和</button><button type="button" data-response="balanced">均衡</button><button type="button" data-response="strong">强烈</button></div></div>
+      <p class="roam-look-note" id="roamLookStatus" role="status">切换星空，音乐继续流动。</p>
+    </section>
+  </div>
   <div class="roam-ui roam-bottom"><div class="roam-instructions">拖动视角 <span>·</span> 滚轮 / 双指缩放 <span>·</span> 双击复位</div><div class="roam-dock">
     <div class="roam-controls"><div class="roam-chapter"><strong id="roamChapter">序曲</strong><small id="roamZoom">1.00× 视距</small><button class="camera-toggle" id="roamCameraBtn" aria-pressed="true">自动运镜 · 暂停</button></div><div class="roam-buttons">
       <button class="icon-btn" id="roamPrevBtn" aria-label="上一首" title="上一首"><svg viewBox="0 0 24 24"><path d="M5 5v14m14-14L8 12l11 7Z"/></svg></button>
@@ -157,7 +199,7 @@
 <audio id="audio" preload="metadata"></audio>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="drop-overlay" id="dropOverlay"><div class="drop-content"><svg viewBox="0 0 48 48"><path d="M24 32V6M14 16 24 6l10 10M8 30v12h32V30"/></svg><p>把音乐，放进宇宙</p><small>可一次拖入多首音乐 · 仅在本机播放与保存</small></div></div>
-<dialog class="help-dialog" id="helpDialog"><h2>欢迎来到声波宇宙</h2><p>播放内置音景，导入多首音乐或整个音乐文件夹，也能点击「外部联动」，让星空响应其他播放器共享的声音。在星环、银河、山峰和黑洞之间切换，音乐会继续流动。</p><p class="help-detail">低音推开星云，中频留下短暂星轨，高音点亮细碎星闪；安静与暂停后自然收静。打开音乐库搜索、收藏、建立歌单或随机播放。歌单中的歌曲按该歌单播放，搜索只筛选显示；在「布置空间」里选择背景、每首歌的封面和空间文字。音乐、图片与设置会自动保存在当前浏览器，重新打开后从暂停的位置继续。</p><dl><dt><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd></dt><dd>切换四种宇宙形态</dd><dt><kbd>Space</kbd></dt><dd>播放 / 暂停</dd><dt><kbd>←</kbd> <kbd>→</kbd></dt><dd>后退 / 前进 5 秒</dd><dt><kbd>M</kbd></dt><dd>静音 / 恢复音量</dd><dt><kbd>H</kbd></dt><dd>进入 / 退出沉浸</dd><dt><kbd>F</kbd></dt><dd>进入 / 退出全屏</dd><dt><kbd>C</kbd> / <kbd>0</kbd></dt><dd>漫游中定格 / 重置视角</dd><dt><kbd>+</kbd> / <kbd>−</kbd></dt><dd>漫游中拉近 / 拉远</dd></dl><p>点击「进入宇宙」拖动视角、滚轮或双指缩放，停止操作后按钮会淡出。音乐剧情按歌曲进度和音频能量编排四个篇章；「定格星空」可以加上歌名、署名和心情，保存 PNG 明信片。推荐 MP3、WAV、M4A；其他格式取决于浏览器支持。内置音景由本作品合成，支持循环播放。</p><div class="dialog-actions"><button class="secondary-btn" id="demoBtn">返回内置音景</button><button class="primary-btn" id="closeHelpBtn">开始探索</button></div></dialog>
+<dialog class="help-dialog" id="helpDialog"><h2>欢迎来到声波宇宙</h2><p>播放内置音景，导入多首音乐或整个音乐文件夹，也能点击「外部联动」，让星空响应其他播放器共享的声音。在星环、银河、山峰和黑洞之间切换，音乐会继续流动。</p><p class="help-detail">低音推开星云，中频留下短暂星轨，高音点亮细碎星闪；安静与暂停后自然收静。打开音乐库搜索、收藏、建立歌单或随机播放。歌单中的歌曲按该歌单播放，搜索只筛选显示；在「布置空间」里选择背景、每首歌的封面和空间文字。音乐、图片与设置会自动保存在当前浏览器，重新打开后从暂停的位置继续。</p><dl><dt><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd></dt><dd>切换四种宇宙形态</dd><dt><kbd>Space</kbd></dt><dd>播放 / 暂停</dd><dt><kbd>←</kbd> <kbd>→</kbd></dt><dd>后退 / 前进 5 秒</dd><dt><kbd>M</kbd></dt><dd>静音 / 恢复音量</dd><dt><kbd>H</kbd></dt><dd>进入 / 退出沉浸</dd><dt><kbd>F</kbd></dt><dd>进入 / 退出全屏</dd><dt><kbd>C</kbd> / <kbd>0</kbd></dt><dd>漫游中定格 / 重置视角</dd><dt><kbd>+</kbd> / <kbd>−</kbd></dt><dd>漫游中拉近 / 拉远</dd></dl><p>点击「进入宇宙」，在右上角「选星空」边听边换景、调整光的回应。轻触唤醒按钮，拖动视角、滚轮或双指缩放；停止操作后按钮会淡出，选景面板打开时保持可见。音乐剧情按歌曲进度和音频能量编排四个篇章；「定格星空」可以加上歌名、署名和心情，保存 PNG 明信片。推荐 MP3、WAV、M4A；其他格式取决于浏览器支持。内置音景由本作品合成，支持循环播放。</p><div class="dialog-actions"><button class="secondary-btn" id="demoBtn">返回内置音景</button><button class="primary-btn" id="closeHelpBtn">开始探索</button></div></dialog>
 <input type="file" id="backgroundInput" accept="image/jpeg,image/png,image/webp" hidden>
 <input type="file" id="coverInput" accept="image/jpeg,image/png,image/webp" hidden>
 <dialog class="space-dialog queue-dialog" id="queueDialog" aria-labelledby="queueHeading">
@@ -558,6 +600,7 @@
     app.dataset.journeyAuto=String(automaticJourney());app.dataset.renderedMode=renderedMode;app.dataset.sceneWeights=JSON.stringify(sceneWeights);
     app.dataset.cinemaYaw=cinema.yaw.toFixed(4);app.dataset.cinemaPitch=cinema.pitch.toFixed(4);app.dataset.cinemaZoom=cinema.zoom.toFixed(4);app.dataset.cameraHeld=String(cameraHeld);app.dataset.nebula=story.nebula.toFixed(3);app.dataset.starReveal=story.reveal.toFixed(3);app.dataset.burstCount=String(burstParticles.length);app.dataset.burstSerial=String(burstSerial);
     app.dataset.cameraYaw=camera.yaw.toFixed(3);app.dataset.cameraPitch=camera.pitch.toFixed(3);app.dataset.cameraZoom=camera.zoom.toFixed(3);
+    syncRoamLooks();
   }
   function updateJourneyTimeline(){
     if(!$('roamSeek'))return;
@@ -572,7 +615,7 @@
     clearTimeout(roamTimer);app.classList.remove('roam-idle');
     roamTimer=setTimeout(()=>{
       if(!app.classList.contains('quiet')||document.querySelector('dialog[open]'))return;
-      if(document.activeElement?.closest('.roam-ui')||document.querySelector('.roam-dock:hover')){wakeRoam();return}
+      if(app.classList.contains('look-open')||roamPointers.size||document.activeElement?.closest('.roam-ui')||document.querySelector('.roam-dock:hover')){wakeRoam();return}
       app.classList.add('roam-idle');
     },2800);
   }
@@ -584,6 +627,7 @@
   }
   function setQuiet(value){
     const wasQuiet=app.classList.contains('quiet');if(value===wasQuiet)return;
+    if(!value)setRoamLookOpen(false,false);
     if(value){quietScroll=scrollY;quietFocus=document.activeElement}
     beginLayoutTransition();app.classList.toggle('quiet',value);document.body.classList.toggle('roaming',value);
     document.querySelectorAll('.header,.stage,.player-wrap,.footer').forEach(el=>el.inert=value);
@@ -665,7 +709,7 @@
     }finally{ctx=saved.ctx;w=saved.w;h=saved.h;dpr=saved.dpr;centerX=saved.centerX;centerY=saved.centerY;baseR=saved.baseR;backgroundLayer=saved.backgroundLayer;exportRendering=false}
     const portrait=shape==='portrait',margin=portrait?58:78,font='"Microsoft YaHei UI","Microsoft YaHei",sans-serif',meta=clipSession||{song:$('clipSong').value,author:$('clipAuthor').value,mood:$('clipMood').value};
     const shade=g.createLinearGradient(0,height*.63,0,height);shade.addColorStop(0,'rgba(8,9,17,0)');shade.addColorStop(1,'rgba(8,9,17,.89)');g.fillStyle=shade;g.fillRect(0,height*.63,width,height*.37);
-    g.textAlign='left';g.textBaseline='top';g.font='13px '+font;g.fillStyle=rgba(palette.core,.72);g.fillText('SONIC UNIVERSE  /  14',margin,portrait?58:42);
+    g.textAlign='left';g.textBaseline='top';g.font='13px '+font;g.fillStyle=rgba(palette.core,.72);g.fillText('SONIC UNIVERSE  /  15',margin,portrait?58:42);
     let y=height-(portrait?294:225);g.fillStyle='#f0e8fc';g.font='500 '+(portrait?36:30)+'px '+font;
     for(const line of clipTextLines(g,meta.song,width-margin*2,2)){g.fillText(line,margin,y);y+=portrait?46:38}
     y+=12;g.font=(portrait?'20':'18')+'px '+font;g.fillStyle='#c0aecf';for(const line of clipTextLines(g,meta.mood,width-margin*2,portrait?3:2)){g.fillText(line,margin,y);y+=portrait?29:25}
@@ -1212,7 +1256,7 @@
   function scheduleDraftSave(){app.dataset.draftState='saving';clearTimeout(draftTimer);draftTimer=setTimeout(saveDrafts,240)}
   function restoreSongDraft(keep=true){if(!polishReady)return;const changed=draftOwner!==activeId;if(changed){$('memoryNote').value='';$('cueTime').value='0';$('cueText').value='';$('cueBurst').checked=false}draftOwner=activeId;if(keep)writeFields(drafts.songs[activeId],songDraftFields);else drafts.songs[activeId]=readFields(songDraftFields);const note=$('draftRestored');if(note)note.textContent=drafts.songs[activeId]?'已恢复这首歌的草稿 · 应用歌词后才会显示到星空':'未应用的文字也会自动保存，下次继续。';if(changed||!histories.has(historyKey('atelier')))primeHistory('atelier')}
   function restoreFilmDraft(){if(!polishReady)return;filmOwner=filmDraftId();const v=drafts.films[filmOwner];if(v){writeFields(v.fields,filmDraftFields);if(['landscape','portrait'].includes(v.shape))clipShape=v.shape;if([0,15,30].includes(v.length))clipLength=v.length}primeHistory('clip');clipUpdateControls()}
-  function recoveryScope(el){const d=el.closest('dialog');return d?.id==='atelierDialog'?'atelier':d?.id==='studioDialog'?'studio':d?.id==='instrumentDialog'?'instrument':d?.id==='clipDialog'?'clip':el.closest('.themes')?'visual':null}
+  function recoveryScope(el){const d=el.closest('dialog');return d?.id==='atelierDialog'?'atelier':d?.id==='studioDialog'?'studio':d?.id==='instrumentDialog'?'instrument':d?.id==='clipDialog'?'clip':el.closest('.themes,#roamLookPanel')?'visual':null}
   function historyKey(scope){return scope+(scope==='atelier'?':'+activeId:scope==='clip'?':'+filmDraftId():'')}
   function recoverySnapshot(scope){
     if(scope==='visual')return{look:captureLook(),profile:clone(refinement)};
@@ -1323,6 +1367,56 @@
     {id:'gold-horizon',name:'日冕引力',note:'金色吸积盘，低音让引力边界呼吸',look:{theme:'solar',visualMode:'blackhole',motionSpeed:.85,particleCount:4000,intensity:.85,depth:.8,glow:.85}},
     {id:'lunar-peaks',name:'月下声脊',note:'频谱化作山峦，听见旋律的层次',look:{theme:'galaxy',visualMode:'peaks',motionSpeed:.65,particleCount:3000,intensity:.7,depth:.45,glow:.4}}
   ];
+  let roamLookSignature='';
+  function setRoamLookOpen(open,restoreFocus=true){
+    const panel=$('roamLookPanel');
+    if(open&&(!app.classList.contains('quiet')||clipLocked()))return;
+    if(!open&&panel.hidden)return;
+    panel.hidden=!open;app.classList.toggle('look-open',open);
+    $('roamLookBtn').setAttribute('aria-expanded',String(open));
+    if(open){
+      roamLookSignature='';syncRoamLooks();
+      $('roamLookStatus').textContent='切换星空，音乐继续流动。';
+      (panel.querySelector('[data-roam-preset][aria-pressed=true]')||panel.querySelector('[data-roam-preset]')).focus({preventScroll:true});
+    }else if(restoreFocus&&app.classList.contains('quiet'))$('roamLookBtn').focus({preventScroll:true});
+    wakeRoam();
+  }
+  function syncRoamLooks(){
+    if($('roamLookPanel').hidden)return;
+    const signature=presetSignature(captureLook()),key=signature+'|'+renderedMode;
+    if(key===roamLookSignature)return;roamLookSignature=key;
+    const selected=builtinVisualPresets.find(p=>presetSignature(p.look)===signature);
+    document.querySelectorAll('[data-roam-preset]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.roamPreset===selected?.id)));
+    $('roamLookCurrent').textContent=selected?'此刻 · '+selected.name:themes[themeKey].name+' · '+visualModes[automaticJourney()?renderedMode:visualMode].name;
+  }
+  function setupRoamLooks(){
+    const artworks={
+      ring:'<ellipse cx="56" cy="32" rx="38" ry="16" transform="rotate(-22 56 32)"/><ellipse cx="56" cy="32" rx="35" ry="13" transform="rotate(-22 56 32)" opacity=".45"/><path d="m22 46 5-3m51-25 6-2" stroke-width="2"/>',
+      galaxy:'<path d="M54 33c-18-10-31 5-21 14 15 14 57-4 47-26C68-4 17 9 13 32m45-1c18 10 31-5 21-14C64 3 22 21 32 43c12 25 63 12 67-11"/><circle cx="56" cy="32" r="2" fill="currentColor"/>',
+      blackhole:'<ellipse cx="56" cy="34" rx="43" ry="10" transform="rotate(-10 56 34)"/><path d="M31 30c0-29 50-29 50 0M31 37c6 14 44 14 50-8"/><circle cx="56" cy="30" r="15" fill="#0b0c15"/><path d="M42 34a15 15 0 1 1 28-7" stroke-width="1.3"/>',
+      peaks:'<path d="m10 49 16-20 9 10 18-24 17 26 9-11 23 19M10 55l16-17 9 8 18-22 17 24 9-9 23 16M10 60l16-13 9 5 18-17 17 20 9-7 23 12"/>'
+    };
+    for(const preset of builtinVisualPresets){
+      const button=document.createElement('button');button.type='button';button.className='roam-look-card';button.dataset.roamPreset=preset.id;
+      button.setAttribute('aria-pressed','false');button.style.setProperty('--look-rgb',themes[preset.look.theme].core.join(','));
+      const art=document.createElement('span');art.className='roam-look-art';art.setAttribute('aria-hidden','true');art.innerHTML='<svg viewBox="0 0 112 65">'+artworks[preset.look.visualMode]+'</svg>';
+      const title=document.createElement('strong'),note=document.createElement('small');title.textContent=preset.name;note.textContent={ring:'让声音温柔铺开',galaxy:'让旋律流进银河',blackhole:'听低音推开光环',peaks:'让频谱留下山峦'}[preset.look.visualMode];button.append(art,title,note);
+      button.addEventListener('click',()=>{
+        if(clipLocked())return;historyFor('visual');applyLook(preset.look,true);commitRecovery('visual');syncSongControls();syncRoamLooks();
+        $('roamLookStatus').textContent=storageIssues.has('preferences')||storageIssues.has('atelier')?'已切换「'+preset.name+'」；本机保存未完成。':'已进入「'+preset.name+'」 · 画面会缓缓相融。';
+        wakeRoam();
+      });
+      $('roamLookGrid').append(button);
+    }
+    $('roamLookBtn').addEventListener('click',()=>setRoamLookOpen($('roamLookPanel').hidden));
+    $('roamLookClose').addEventListener('click',()=>setRoamLookOpen(false));
+    document.addEventListener('pointerdown',e=>{if(!$('roamLookPanel').hidden&&!e.target.closest('#roamLookPanel,#roamLookBtn'))setRoamLookOpen(false,false)});
+    document.addEventListener('keydown',e=>{
+      if(e.key==='Escape'&&!$('roamLookPanel').hidden&&!document.querySelector('dialog[open]')){
+        e.preventDefault();e.stopImmediatePropagation();setRoamLookOpen(false);
+      }
+    },true);
+  }
   function syncEffects(){for(const key of ['depth','glow']){const el=$('effect'+key);if(el){el.value=Math.round(visualEffects[key]*100);$('effect'+key+'Value').value=el.value+'%';setFill(el)}}}
   function presetStatus(text,error=false){const el=$('presetStatus');if(el){el.textContent=text;el.dataset.error=String(error)}}
   function strictPresetLook(v){
@@ -1345,7 +1439,7 @@
     $('saveVisualPreset').addEventListener('click',()=>{if(clipLocked())return;const name=$('presetName').value.trim();if(!name){presetStatus('先给预设起个名字。',true);$('presetName').focus();return}if(customVisualPresets.length>=24){presetStatus('已收藏 24 个预设，请先导出或删除一些。',true);return}customVisualPresets.push({name,look:captureLook()});const saved=persistVisualPresets();$('presetName').value='';renderVisualPresets();presetStatus(saved?'「'+name+'」已保存在本机。':'预设暂存于当前页面；本机保存失败，请导出备份。',!saved)});
     $('exportVisualPresets').addEventListener('click',()=>{if(!customVisualPresets.length){presetStatus('先保存至少一个自己的预设，再导出。',true);return}const blob=new Blob([JSON.stringify({format:'sonic-universe-presets',version:1,presets:customVisualPresets},null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='声波宇宙-视觉预设.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);presetStatus('已请求下载预设文件，可在浏览器下载列表查看。')});
     $('importVisualPresets').addEventListener('click',()=>{if(!clipLocked())$('presetFile').click()});$('presetFile').addEventListener('change',async()=>{const file=$('presetFile').files[0];$('presetFile').value='';if(!file||clipLocked())return;try{if(file.size>128*1024)throw new Error('预设文件应小于 128 KB。');const presets=readPresetFile(JSON.parse(await file.text()));if(clipLocked())return;const existing=new Set(customVisualPresets.map(p=>p.name+'|'+presetSignature(p.look))),added=presets.filter(p=>{const key=p.name+'|'+presetSignature(p.look);if(existing.has(key))return false;existing.add(key);return true});if(customVisualPresets.length+added.length>24)throw new Error('导入后超过 24 个收藏，请先整理本机预设。');customVisualPresets.push(...added);const saved=persistVisualPresets();renderVisualPresets();presetStatus(saved?'已导入 '+added.length+' 个预设，自动跳过重复项。':'已读入当前页面；本机保存失败，请导出备份。',!saved)}catch(error){presetStatus(error instanceof SyntaxError?'文件不是有效的 JSON，原有收藏已保留。':error.message,true)}});
-    $('particleEngine').value=particleEngine;$('particleEngine').addEventListener('change',()=>{if(clipLocked())return;particleEngine=$('particleEngine').value;try{localStorage.setItem('sonic-universe-particle-engine',particleEngine);storageIssues.delete('particle-engine')}catch{storageIssues.add('particle-engine');presetStatus('绘制方式已切换，本机保存未完成。',true)}updateStorageStatus()});syncEffects();renderVisualPresets();if(reduced)rendererStatus('reduced');
+    $('particleEngine').value=particleEngine;$('particleEngine').addEventListener('change',()=>{if(clipLocked())return;particleEngine=$('particleEngine').value;try{localStorage.setItem('sonic-universe-particle-engine',particleEngine);storageIssues.delete('particle-engine')}catch{storageIssues.add('particle-engine');presetStatus('绘制方式已切换，本机保存未完成。',true)}updateStorageStatus()});syncEffects();renderVisualPresets();setupRoamLooks();if(reduced)rendererStatus('reduced');
   }
 
   function setupJourney(){
@@ -1361,25 +1455,29 @@
     $('roamSeek').addEventListener('change',()=>{roamSeeking=false;seekTo(Number($('roamSeek').value));wakeRoam()});
     const surface=$('roamSurface');
     document.querySelectorAll('.roam-ui button').forEach(button=>button.addEventListener('pointerup',()=>{
+      if(button.closest('#roamLookPanel')||button.id==='roamLookBtn')return;
       setTimeout(()=>{if(app.classList.contains('quiet')&&!document.querySelector('dialog[open]'))surface.focus({preventScroll:true})},0);
     }));
     surface.addEventListener('pointerdown',e=>{
       if(e.pointerType==='mouse'&&e.button!==0)return;
-      holdCamera();e.preventDefault();surface.focus({preventScroll:true});surface.setPointerCapture(e.pointerId);
-      roamPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});app.classList.add('dragging');wakeRoam();
-      if(roamPointers.size===2){const points=Array.from(roamPointers.values());pinchDistance=Math.hypot(points[0].x-points[1].x,points[0].y-points[1].y)}
+      e.preventDefault();surface.focus({preventScroll:true});surface.setPointerCapture(e.pointerId);
+      roamPointers.set(e.pointerId,{x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY,dragged:false});wakeRoam();
+      if(roamPointers.size===2){holdCamera();app.classList.add('dragging');const points=Array.from(roamPointers.values());points.forEach(p=>p.dragged=true);pinchDistance=Math.hypot(points[0].x-points[1].x,points[0].y-points[1].y)}
     });
     surface.addEventListener('pointermove',e=>{
       if(!app.classList.contains('quiet'))return;
       wakeRoam();const old=roamPointers.get(e.pointerId);if(!old)return;
-      roamPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      const point={...old,x:e.clientX,y:e.clientY};roamPointers.set(e.pointerId,point);
       if(roamPointers.size===2){
         const points=Array.from(roamPointers.values()),distance=Math.hypot(points[0].x-points[1].x,points[0].y-points[1].y);
         if(pinchDistance>4)camera.targetZoom=clamp(camera.targetZoom*distance/pinchDistance,.55,2.8);
         pinchDistance=distance;
       }else{
-        camera.targetYaw+=(e.clientX-old.x)/Math.max(w,320)*3.4;
-        camera.targetPitch=clamp(camera.targetPitch+(e.clientY-old.y)/Math.max(h,320)*2.6,-.85,.85);
+        // A tap wakes the interface. Only a deliberate drag takes over the camera.
+        if(!old.dragged&&Math.hypot(e.clientX-old.startX,e.clientY-old.startY)<6)return;
+        if(!old.dragged){holdCamera();app.classList.add('dragging');point.dragged=true}
+        camera.targetYaw+=(e.clientX-(old.dragged?old.x:old.startX))/Math.max(w,320)*3.4;
+        camera.targetPitch=clamp(camera.targetPitch+(e.clientY-(old.dragged?old.y:old.startY))/Math.max(h,320)*2.6,-.85,.85);
       }
       updateJourneyUI();
     });
@@ -1436,7 +1534,7 @@
     g.strokeStyle=line;g.lineWidth=1;g.strokeRect(29.5,29.5,1741,1291);
     g.fillStyle=muted;g.font='16px ui-monospace,Consolas,monospace';
     g.fillText('SONIC UNIVERSE  /  A POSTCARD FROM THE STARS',69,78);
-    g.textAlign='right';g.fillText('VOL.14',1731,78);g.textAlign='left';
+    g.textAlign='right';g.fillText('VOL.15',1731,78);g.textAlign='left';
     const art={x:69,y:109,w:1662,h:842},source=capturedScene,aspect=art.w/art.h;
     let sw,sh;
     if(capturedMoment.quiet){sw=source.width;sh=sw/aspect;if(sh>source.height){sh=source.height;sw=sh*aspect}}
