@@ -4,34 +4,73 @@
   const C = SonicFlightCore, $ = id => document.getElementById(id);
   const canvas = $('flightCanvas'), g = canvas.getContext('2d');
   const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
-  const COUNT_IN = C.BEAT * 3, LOOK_AHEAD = 3.6, BEST_KEY = 'sonic-universe-flight-first-light-v1';
+  const COUNT_IN = C.BEAT * 3, PREFS_KEY = 'sonic-universe-flight-settings-v1';
+  const BEST_KEYS = { challenge: 'sonic-universe-flight-first-light-v1', casual: 'sonic-universe-flight-first-light-casual-v1' };
+  const buffers = new Map(), buildings = new Map(), records = { casual: null, challenge: null };
+  const laneNames = ['左航道', '中航道', '右航道'];
+  const lessons = ['留在中航道收集', '移动到左航道', '移动到右航道', '回到中间避开陨石'];
   const query = matchMedia('(prefers-reduced-motion: reduce)');
-  let calm = query.matches, mute = false, phase = 'ready', run = C.createRun(), buffer = null, building = null;
+  let calm = query.matches, mute = false, phase = 'ready', selectedMode = 'casual', playedMode = 'casual', run = C.createRun('casual'), buffer = null;
   let ac = null, bus = null, analyser = null, samples = null, source = null, token = 0, ticks = [];
   let anchorTime = 0, anchorPosition = -COUNT_IN, frozenPosition = -COUNT_IN, resumeAt = 0;
-  let best = null, storageFailed = false, pointer = null, lastAnnounced = -1, w = 0, h = 0, dpr = 1, lastFrame = 0, level = 0;
+  let storageFailed = false, pointer = null, lastAnnounced = 0, w = 0, h = 0, dpr = 1, lastFrame = 0, level = 0;
   let currentLane = 1, lastVisualTime = 0, paintedFeedback = null;
+  let tutorialSeen = false, offset = 0, particles = [], milestone = null, effects = new Set();
+  let calibrationStart = null, calibrationNodes = new Set(), calibrationCaller = null, calibrationDraft = 0, calibrationRequest = 0;
   const stars = Array.from({ length: 170 }, (_, i) => ({ x: ((i * 7919 + 2341) % 10000) / 10000, y: ((i * 6577 + 4983) % 10000) / 10000, size: .45 + (i % 7) * .19, speed: .2 + (i % 5) * .15 }));
 
+  const rules = () => C.modes[playedMode];
   function readBest() {
     try {
-      const v = JSON.parse(localStorage.getItem(BEST_KEY) || 'null');
-      if (v?.version === 1 && v.chart === 'first-light-v1' && Number.isInteger(v.score) && v.score >= 0 && v.score <= 25000 && Number.isInteger(v.maxCombo) && v.maxCombo >= 0 && v.maxCombo <= C.totalRings && ['S','A','B','C','D'].includes(v.grade)) best = v;
+      const settings = JSON.parse(localStorage.getItem(PREFS_KEY) || 'null');
+      if (settings?.version === 1) {
+        if (['casual', 'challenge'].includes(settings.difficulty)) selectedMode = settings.difficulty;
+        if (Number.isInteger(settings.offset) && Math.abs(settings.offset) <= 200) offset = Math.round(settings.offset / 10) * 10;
+        tutorialSeen = settings.tutorialSeen === true;
+      }
     } catch { storageFailed = true; }
+    for (const mode of ['casual', 'challenge']) {
+      try {
+        const v = JSON.parse(localStorage.getItem(BEST_KEYS[mode]) || 'null');
+        if (v?.version === 1 && v.chart === 'first-light-v1' && Number.isInteger(v.score) && v.score >= 0 && v.score <= 25000 && Number.isInteger(v.maxCombo) && v.maxCombo >= 0 && v.maxCombo <= C.modes[mode].totalRings && ['S','A','B','C','D'].includes(v.grade)) records[mode] = v;
+      } catch { storageFailed = true; }
+    }
+    syncIntro();
+  }
+  function savePreferences() {
+    try { localStorage.setItem(PREFS_KEY, JSON.stringify({ version: 1, difficulty: selectedMode, offset, tutorialSeen })); }
+    catch { storageFailed = true; }
+    renderBest();
+  }
+  function syncIntro() {
+    for (const b of document.querySelectorAll('[data-flight-mode]')) b.setAttribute('aria-pressed', String(b.dataset.flightMode === selectedMode));
+    $('flightStart').innerHTML = (tutorialSeen ? '开始' + C.modes[selectedMode].label + '航行' : '先练习，再启航') + ' <span aria-hidden="true">↗</span>';
+    $('flightPractice').textContent = tutorialSeen ? '重温 15 秒练习' : '直接开始' + C.modes[selectedMode].label + '航行';
+    $('flightLaunch').innerHTML = '开始' + C.modes[selectedMode].label + '航行 <span aria-hidden="true">↗</span>';
+    $('flightStartHint').textContent = tutorialSeen ? '只需左右移动 · 穿过星环自动收集' : '15 秒安全练习 · 左右移动就能自动收集';
+    $('flightOffsetLabel').textContent = (offset > 0 ? '+' : '') + offset + ' ms';
     renderBest();
   }
   function renderBest() {
+    const best = records[selectedMode];
     $('flightBest').textContent = best ? best.score.toLocaleString('zh-CN') + ' / ' + best.grade : '尚未启航';
-    $('flightBestHud').textContent = best ? best.score.toLocaleString('zh-CN') : '0';
-    $('flightRecordNote').textContent = storageFailed ? '浏览器未能保存纪录 · 本页成绩仍可继续挑战' : best ? '纪录保存在当前浏览器' : '完成航程后记录成绩';
+    $('flightBestLabel').textContent = C.modes[selectedMode].label + ' · 本机最高分';
+    $('flightBestHud').textContent = records[playedMode]?.score.toLocaleString('zh-CN') || '0';
+    $('flightRecordNote').textContent = storageFailed ? '浏览器存储不可用 · 本页仍保留成绩与设置' : '两种难度分别保存纪录 · 当前浏览器';
   }
   function setPhase(value) {
     phase = value; document.body.dataset.phase = value;
     const active = ['countdown', 'playing', 'paused', 'resuming'].includes(value);
     $('flightIntro').hidden = !['ready', 'loading'].includes(value);
-    $('flightHud').hidden = !active; $('flightFooter').hidden = active || value === 'result';
+    $('flightHud').hidden = !active; $('flightFooter').hidden = !['ready', 'loading'].includes(value);
     $('flightCountdown').hidden = !['countdown', 'resuming'].includes(value);
     $('flightPausePanel').hidden = value !== 'paused'; $('flightResultPanel').hidden = value !== 'result';
+    $('flightPracticePanel').hidden = value !== 'practice-result';
+    $('flightGuide').hidden = playedMode !== 'tutorial' || !['playing', 'countdown', 'resuming'].includes(value);
+    $('flightDirection').hidden = value !== 'playing' || playedMode === 'tutorial';
+    if (value !== 'playing') $('flightMilestone').hidden = true;
+    document.body.dataset.mode = playedMode;
+    for (const b of document.querySelectorAll('[data-flight-mode], [data-flight-calibrate], #flightPractice')) b.disabled = value === 'loading';
     $('flightLaneControls').hidden = !['playing', 'countdown', 'resuming'].includes(value);
     $('flightPlayHint').hidden = !['playing', 'countdown', 'resuming'].includes(value);
     $('flightPause').disabled = !active; $('flightPause').innerHTML = value === 'paused' ? '继续 <span aria-hidden="true">▷</span>' : '暂停 <span aria-hidden="true">Ⅱ</span>';
@@ -46,12 +85,13 @@
     analyser = ac.createAnalyser(); analyser.fftSize = 256; samples = new Uint8Array(analyser.fftSize); bus.connect(analyser); analyser.connect(ac.destination);
     ac.addEventListener('statechange', () => { if (['playing', 'countdown', 'resuming'].includes(phase) && ac.state !== 'running') pause('浏览器暂停了声音。音乐与航路已一起停下。'); });
   }
-  async function buildSoundtrack() {
-    if (buffer) return buffer; if (building) return building;
-    building = (async () => {
+  async function buildSoundtrack(mode) {
+    if (buffers.has(mode)) return buffers.get(mode); if (buildings.has(mode)) return buildings.get(mode);
+    const modeRules = C.modes[mode];
+    const building = (async () => {
       const Offline = window.OfflineAudioContext || window.webkitOfflineAudioContext;
       if (!Offline) throw new Error('此浏览器暂不支持生成航行音景，请尝试新版浏览器。');
-      const rate = 22050, length = COUNT_IN + C.DURATION + .1, off = new Offline(2, Math.ceil(rate * length), rate);
+      const rate = 22050, length = COUNT_IN + modeRules.duration + 1, off = new Offline(2, Math.ceil(rate * length), rate);
       const mix = off.createGain(), comp = off.createDynamicsCompressor(); mix.gain.value = .68; comp.threshold.value = -18; comp.ratio.value = 4; mix.connect(comp); comp.connect(off.destination);
       const wet = off.createDelay(1), feedback = off.createGain(); wet.delayTime.value = C.BEAT * .75; feedback.gain.value = .2; wet.connect(feedback); feedback.connect(wet); feedback.connect(mix);
       let seed = 18427; const noise = () => { seed = seed * 16807 % 2147483647; return seed / 2147483647 * 2 - 1; };
@@ -64,7 +104,7 @@
       }
       for (let i = 0; i < 3; i++) tone(81, i * C.BEAT, .12, .1);
       const chords = [[45,52,57,60],[41,48,53,57],[48,55,60,64],[43,50,55,59]];
-      for (let beat = 0; beat < 96; beat++) {
+      for (let beat = 0; beat * C.BEAT < modeRules.duration; beat++) {
         const time = COUNT_IN + beat * C.BEAT, chord = chords[Math.floor(beat / 16) % 4];
         if (beat % 4 === 0) for (let j = 0; j < 4; j++) tone(chord[j], time, 3.1, .045, 'triangle', (j - 1.5) * .34);
         tone(chord[0] - 12, time, .42, .17, 'sine');
@@ -72,33 +112,39 @@
         const hat = off.createBufferSource(), hp = off.createBiquadFilter(), hg = off.createGain(); hat.buffer = noiseBuffer; hp.type = 'highpass'; hp.frequency.value = beat % 2 ? 4500 : 6500; hg.gain.value = beat % 2 ? .14 : .08; hat.connect(hp); hp.connect(hg); hg.connect(mix); hat.start(time + C.BEAT / 2);
         if (beat >= 20 && beat < 68) tone(chord[(beat + 1) % 4] + 24, time + C.BEAT / 2, .25, .035, 'sine', Math.sin(beat) * .6);
       }
-      for (const event of C.chart) if (event.type === 'ring') { const chord = chords[Math.floor(event.time / C.BEAT / 16) % 4]; tone(chord[event.lane + 1] + 12, COUNT_IN + event.time, .7, .14, 'sine', (event.lane - 1) * .6); }
+      for (const event of modeRules.chart) if (event.type === 'ring') { const chord = chords[Math.floor(event.time / C.BEAT / 16) % 4]; tone(chord[event.lane + 1] + 12, COUNT_IN + event.time, .7, .14, 'sine', (event.lane - 1) * .6); }
       const output = await off.startRendering();
       for (let ch = 0; ch < output.numberOfChannels; ch++) { const data = output.getChannelData(ch); for (let i = 0; i < rate; i++) data[data.length - 1 - i] *= i / rate; }
-      buffer = output; return output;
+      buffers.set(mode, output); return output;
     })();
-    try { return await building; } catch (error) { building = null; throw error; }
+    buildings.set(mode, building);
+    try { return await building; } finally { buildings.delete(mode); }
   }
   function stopSource() {
     if (source) { source.onended = null; try { source.stop(); } catch {} source.disconnect(); source = null; }
     for (const oscillator of ticks) { try { oscillator.stop(); } catch {} } ticks = [];
+    for (const node of effects) { try { node.stop(); } catch {} } effects.clear();
   }
   function clock() { return ['playing', 'countdown', 'resuming'].includes(phase) && ac ? anchorPosition + ac.currentTime - anchorTime : frozenPosition; }
   function schedule(position, lead) {
     stopSource(); anchorPosition = position; anchorTime = ac.currentTime + lead;
-    source = ac.createBufferSource(); source.buffer = buffer; source.connect(bus); source.start(anchorTime, COUNT_IN + position);
+    source = ac.createBufferSource(); source.buffer = buffer; source.connect(bus);
+    const bufferPosition = COUNT_IN + position + offset / 1000;
+    source.start(anchorTime + Math.max(0, -bufferPosition), Math.max(0, bufferPosition));
     if (lead) for (let i = 0; i < 3; i++) { const osc = ac.createOscillator(), env = ac.createGain(), time = ac.currentTime + i * C.BEAT; osc.frequency.value = 880; env.gain.setValueAtTime(.0001, time); env.gain.exponentialRampToValueAtTime(.07, time + .008); env.gain.exponentialRampToValueAtTime(.0001, time + .1); osc.connect(env); env.connect(bus); osc.start(time); osc.stop(time + .12); ticks.push(osc); }
-    source.onended = () => { if (phase === 'playing' && !run.ended) { C.advance(run, C.DURATION); finish(); } };
+    source.onended = () => { if (phase === 'playing' && !run.ended) { C.advance(run, rules().duration); finish(); } };
   }
-  async function start() {
+  async function start(mode = selectedMode) {
     if (phase === 'loading') return;
-    const request = ++token; stopSource(); run = C.createRun(); currentLane = 1; paintedFeedback = null; lastAnnounced = -1; frozenPosition = -COUNT_IN;
-    setPhase('loading'); $('flightStart').disabled = true; $('flightLoadStatus').textContent = buffer ? '正在准备航路…' : '首次启航，正在生成原创音景…';
+    const request = ++token; stopSource(); playedMode = mode; run = C.createRun(mode); currentLane = 1; paintedFeedback = null; lastAnnounced = 0; particles = []; milestone = null; frozenPosition = -COUNT_IN;
+    $('flightProgress').max = rules().duration;
+    setPhase('loading'); $('flightStart').disabled = true; $('flightLoadStatus').textContent = buffers.has(mode) ? '正在准备航路…' : '正在生成原创音景…';
+    renderBest();
     try {
-      audioSetup(); await ac.resume(); await buildSoundtrack(); if (request !== token) return;
+      audioSetup(); await ac.resume(); const prepared = await buildSoundtrack(mode); if (request !== token) return; buffer = prepared;
       if (document.hidden || ac.state !== 'running') { setPhase('ready'); $('flightLoadStatus').textContent = '准备好了。回到此页面后，再点开始航行。'; return; }
       $('flightLoadStatus').textContent = ''; schedule(-COUNT_IN, 0); resumeAt = 0; setPhase('countdown'); syncControls(); canvas.focus({ preventScroll: true });
-      $('flightAnnouncement').textContent = '三拍后启航。用左右方向键、A D，或点击下方航道按钮移动。';
+      $('flightAnnouncement').textContent = (mode === 'tutorial' ? '安全练习，不计入纪录。' : C.modes[mode].label + '模式。') + '三拍后启航。用方向键、A D 或下方按钮移动。';
     } catch (error) { setPhase('ready'); $('flightLoadStatus').textContent = error.message || '音景未能准备好，请重试。'; } finally { $('flightStart').disabled = false; }
   }
   function pause(reason = '音乐与航路已一起暂停。') {
@@ -106,29 +152,90 @@
     if (!['playing', 'countdown', 'resuming'].includes(phase)) return;
     token++; const time = phase === 'resuming' ? frozenPosition : clock();
     if (phase === 'playing') { C.advance(run, time); if (run.ended) { finish(); return; } }
-    frozenPosition = clamp(time, -COUNT_IN, C.DURATION); stopSource(); setPhase('paused');
+    frozenPosition = clamp(time, -COUNT_IN, rules().duration); paintedFeedback = run.last; stopSource(); setPhase('paused');
     $('flightPauseReason').textContent = reason; $('flightPauseTitle').focus({ preventScroll: true }); $('flightAnnouncement').textContent = '航行已暂停';
   }
   async function resume() {
-    if (phase !== 'paused') return; if (frozenPosition < 0) { start(); return; }
+    if (phase !== 'paused' || $('flightCalibration').open) return; if (frozenPosition < 0) { start(playedMode); return; }
     const request = ++token; $('flightResume').disabled = true;
     try { await ac.resume(); if (request !== token || phase !== 'paused') return; if (document.hidden || ac.state !== 'running') throw new Error('请回到此页面后，再点继续航行。'); resumeAt = frozenPosition; schedule(frozenPosition, COUNT_IN); setPhase('resuming'); $('flightAnnouncement').textContent = '三拍后继续，当前分数与航路保留。'; }
     catch (error) { $('flightPauseReason').textContent = error.message || '暂时无法恢复声音，请重试。'; } finally { $('flightResume').disabled = false; }
   }
   function finish() {
-    if (phase === 'result') return; token++; frozenPosition = run.time; stopSource();
-    const result = C.result(run), previous = best?.score || 0, newBest = !best || result.score > previous;
+    if (['result', 'practice-result'].includes(phase)) return; token++; frozenPosition = run.time; stopSource();
+    if (playedMode === 'tutorial') { finishPractice(); return; }
+    const result = C.result(run), previous = records[playedMode]?.score || 0, newBest = !records[playedMode] || result.score > previous;
+    let best = records[playedMode];
     if (newBest) best = { version: 1, chart: 'first-light-v1', score: result.score, grade: result.grade, maxCombo: result.maxCombo };
-    try { if (best) localStorage.setItem(BEST_KEY, JSON.stringify(best)); storageFailed = false; } catch { storageFailed = true; }
+    records[playedMode] = best;
+    let saved = false;
+    try { localStorage.setItem(BEST_KEYS[playedMode], JSON.stringify(best)); saved = true; } catch { storageFailed = true; }
     renderBest(); $('flightGrade').textContent = result.grade; $('flightFinalScore').textContent = result.score.toLocaleString('zh-CN');
     $('flightAccuracy').textContent = result.accuracy + '%'; $('flightMaxCombo').textContent = result.maxCombo; $('flightDistance').textContent = Math.floor(result.time) + 's';
     $('flightResultEyebrow').textContent = result.complete ? 'VOYAGE COMPLETE' : 'A NEW VOYAGE AWAITS';
     $('flightResultTitle').textContent = result.complete ? '你点亮了这段星河。' : '调整航向，再出发。';
-    $('flightResultSubtitle').textContent = result.complete ? '60 秒的旋律，留下你的轨迹。' : '能量耗尽。提前看清星环所在的航道。';
+    $('flightResultSubtitle').textContent = C.modes[playedMode].label + '模式 · ' + (result.complete ? '60 秒的旋律，留下你的轨迹。' : '能量耗尽，可以试试更宽容的休闲模式。');
     $('flightBreakdown').textContent = '精准 ' + result.perfect + ' · 命中 ' + result.good + ' · 错过 ' + result.misses + ' · 碰撞 ' + result.collisions;
-    $('flightSaveStatus').textContent = storageFailed ? '纪录未能保存到浏览器，本页仍保留。请检查网站存储权限。' : '最高分保存在当前浏览器 · 当前关卡：初航';
+    $('flightAdvice').textContent = result.collisions > 2 ? '下次试试：橙色陨石靠近时提前换道，先保住连击。' : result.misses > rules().totalRings * .2 ? '下次试试：看向航道远处，跟着「下个星环」提前换道。' : result.good > result.perfect * .2 ? '下次试试：星环到来前站稳航道，精准命中的分数更高。' : result.grade === 'S' ? '漂亮的航行！可以换个难度，或继续追逐自己的最高分。' : '节奏越来越稳了。试着连续收集 10 个星环，点亮加分倍率。';
+    $('flightAgain').innerHTML = '再飞一次 · ' + C.modes[playedMode].label + ' <span aria-hidden="true">↗</span>';
+    $('flightSaveStatus').textContent = saved ? C.modes[playedMode].label + '纪录已保存 · 两种难度分别计分' : '纪录未能保存到浏览器，本页仍保留。请检查网站存储权限。';
     $('flightNewBest').hidden = !newBest; setPhase('result'); $('flightResultTitle').focus({ preventScroll: true });
     $('flightAnnouncement').textContent = (result.complete ? '航行完成' : '能量耗尽') + '。得分 ' + result.score + '，评级 ' + result.grade + '，最高连击 ' + result.maxCombo;
+  }
+  function finishPractice() {
+    tutorialSeen = true; savePreferences(); syncIntro();
+    const count = run.collected.length;
+    $('flightPracticeTitle').textContent = count === 4 ? '准备好，去看更远的星海。' : '再熟悉一点，就能轻松启航。';
+    $('flightPracticeSummary').textContent = '练习完成了 ' + count + ' / 4 个动作。练习不计入最高分，随时可以再来一次。';
+    $('flightLessons').replaceChildren(...lessons.map((text, i) => { const li = document.createElement('li'); const done = run.collected.includes((i + 1) * 3.125); li.textContent = (done ? '✓ ' : '○ ') + text + (done ? '' : ' · 可以再试试'); li.dataset.done = String(done); return li; }));
+    setPhase('practice-result'); $('flightPracticeTitle').focus({ preventScroll: true });
+    $('flightAnnouncement').textContent = '练习完成，成功 ' + count + ' 个动作。可以启航，或重新练习。';
+  }
+  function ready() {
+    token++; stopSource(); particles = []; milestone = null; paintedFeedback = null; playedMode = selectedMode; run = C.createRun(selectedMode); currentLane = 1; frozenPosition = -COUNT_IN;
+    $('flightLoadStatus').textContent = ''; setPhase('ready'); syncIntro(); $('flightStart').focus({ preventScroll: true });
+  }
+  function stopCalibration() {
+    calibrationRequest++; calibrationStart = null;
+    for (const node of calibrationNodes) { try { node.stop(); } catch {} } calibrationNodes.clear();
+    $('flightCalibrationPulse').dataset.lit = 'false'; $('flightCalibrationListen').textContent = '试听 8 拍';
+  }
+  function calibrationValue() {
+    $('flightOffset').value = calibrationDraft;
+    $('flightOffsetValue').textContent = (calibrationDraft > 0 ? '+' : '') + calibrationDraft + ' ms';
+  }
+  function openCalibration(event) {
+    if (!['ready', 'paused'].includes(phase)) return;
+    calibrationCaller = event.currentTarget; calibrationDraft = offset; calibrationValue(); stopCalibration();
+    $('flightCalibrationStatus').textContent = '设置只影响航行模式，音乐星空保留原有设置。';
+    $('flightCalibration').showModal();
+  }
+  function closeCalibration(save) {
+    stopCalibration();
+    if (save) { offset = calibrationDraft; savePreferences(); syncIntro(); }
+    $('flightCalibration').close(); calibrationCaller?.focus({ preventScroll: true });
+  }
+  async function audition() {
+    stopCalibration(); const request = calibrationRequest;
+    try {
+      audioSetup(); await ac.resume();
+      if (request !== calibrationRequest || !$('flightCalibration').open || document.hidden || ac.state !== 'running') return;
+      calibrationStart = ac.currentTime + .4;
+      for (let i = 0; i < 8; i++) {
+        const osc = ac.createOscillator(), env = ac.createGain(), time = calibrationStart + i * C.BEAT;
+        osc.frequency.value = i % 4 === 0 ? 1046 : 784; env.gain.setValueAtTime(.0001, time); env.gain.exponentialRampToValueAtTime(.14, time + .006); env.gain.exponentialRampToValueAtTime(.0001, time + .09);
+        osc.connect(env); env.connect(bus); calibrationNodes.add(osc); osc.onended = () => { calibrationNodes.delete(osc); osc.disconnect(); env.disconnect(); }; osc.start(time); osc.stop(time + .12);
+      }
+      $('flightCalibrationStatus').textContent = mute ? '当前声音已关闭。关闭面板并打开声音后，可重新试听。' : '每拍圆环亮起时应听到一声节拍；调节后可再次试听。';
+      $('flightCalibrationListen').textContent = '重新试听';
+    } catch (error) { $('flightCalibrationStatus').textContent = error.message || '无法试听，请重试。'; }
+  }
+  function updateCalibration() {
+    if (calibrationStart === null || !ac) return;
+    const position = (ac.currentTime - calibrationStart - calibrationDraft / 1000) / C.BEAT, beat = Math.floor(position), fraction = position - beat;
+    $('flightCalibrationPulse').dataset.lit = String(beat >= 0 && beat < 8 && fraction < .2);
+    $('flightCalibrationBeat').textContent = beat < 0 ? '准备…' : beat < 8 ? (beat + 1) + ' / 8' : '试听结束 · 可调整后重听';
+    if (position >= 8.5) stopCalibration();
   }
   function selectLane(lane) {
     if (!['playing', 'countdown', 'resuming'].includes(phase)) return;
@@ -136,19 +243,59 @@
   }
   function syncControls() { for (const b of document.querySelectorAll('[data-flight-lane]')) b.setAttribute('aria-pressed', String(Number(b.dataset.flightLane) === currentLane)); }
   function format(time) { const n = Math.max(0, Math.floor(time)); return String(Math.floor(n / 60)).padStart(2, '0') + ':' + String(n % 60).padStart(2, '0'); }
+  function playEffect(kind, combo) {
+    if (!ac || ac.state !== 'running' || mute) return;
+    const bright = kind === 'perfect' || kind === 'good', osc = ac.createOscillator(), env = ac.createGain(), time = ac.currentTime;
+    osc.type = bright ? 'sine' : 'triangle';
+    osc.frequency.setValueAtTime(bright ? 660 + Math.min(combo, 30) * 9 : kind === 'rock' ? 130 : 210, time);
+    osc.frequency.exponentialRampToValueAtTime(bright ? 1320 : 65, time + .12);
+    env.gain.setValueAtTime(.0001, time); env.gain.exponentialRampToValueAtTime(bright ? .055 : .045, time + .008); env.gain.exponentialRampToValueAtTime(.0001, time + .2);
+    osc.connect(env); env.connect(bus); effects.add(osc); osc.onended = () => { effects.delete(osc); osc.disconnect(); env.disconnect(); }; osc.start(time); osc.stop(time + .22);
+  }
+  function updateGuide(time) {
+    const step = time < 4.1 ? 0 : time < 7.3 ? 1 : time < 10.4 ? 2 : 3;
+    const titles = ['留在中航道，等待星环', '向左移动，接住下一束星光', '向右移动，跟随下一枚星环', '回到中间，让右侧陨石擦肩而过'];
+    $('flightGuideStep').textContent = '0' + (step + 1) + ' / ' + ['自动收集', '向左换道', '向右换道', '避开陨石'][step];
+    $('flightGuideTitle').textContent = titles[step];
+    $('flightGuideText').textContent = ['星环到达飞船时自动收集，无需按键打击。', '按 ← / A，手机可左滑或点左航道。', '从左侧按两次 → / D，也可直接点击右航道。', '按 ← / A 回到中间，橙色陨石所在的航道要避开。'][step];
+    const checks = $('flightGuideChecks').children;
+    for (let i = 0; i < 4; i++) {
+      const done = run.collected.includes((i + 1) * 3.125), passed = run.time >= (i + 1) * 3.125;
+      checks[i].textContent = done ? '✓' : String(i + 1); checks[i].dataset.state = done ? 'done' : passed ? 'miss' : step === i ? 'current' : 'next';
+      checks[i].setAttribute('aria-label', lessons[i] + (done ? '，已完成' : passed ? '，尚未完成' : '，等待练习'));
+    }
+    for (const b of document.querySelectorAll('[data-flight-lane]')) b.dataset.guide = String(Number(b.dataset.flightLane) === [1, 0, 2, 1][step]);
+  }
   function updateHud(time) {
-    $('flightScore').textContent = String(run.score).padStart(6, '0'); $('flightTime').textContent = format(time) + ' / 01:00';
+    $('flightScore').textContent = String(run.score).padStart(6, '0'); $('flightTime').textContent = format(time) + ' / ' + format(rules().duration);
     $('flightProgress').value = Math.max(0, time); $('flightEnergy').textContent = run.energy; $('flightEnergyBar').value = run.energy; $('flightEnergyBar').parentElement.dataset.low = String(run.energy <= 32);
-    $('flightChapter').textContent = time < 15 ? '01 / 星光初醒' : time < 42.5 ? '02 / 逐光而行' : '03 / 星潮归航';
+    $('flightChapter').textContent = playedMode === 'tutorial' ? '安全练习 / 不计纪录' : C.modes[playedMode].label + ' / ' + (time < 15 ? '星光初醒' : time < 42.5 ? '逐光而行' : '星潮归航');
     $('flightCombo').textContent = run.combo; $('flightComboBox').hidden = phase !== 'playing' || run.combo < 2;
+    $('flightMultiplier').textContent = '×' + (1 + Math.min(3, Math.floor(run.combo / 10)) * .25).toFixed(2);
     const event = run.last; $('flightFeedback').hidden = phase !== 'playing' || !event || time - event.time > .7;
-    if (event && event !== paintedFeedback) { paintedFeedback = event; const names = { perfect: 'PERFECT', good: 'GOOD', miss: '错过星环', rock: '注意陨石' }; $('flightJudgment').textContent = names[event.kind]; $('flightJudgmentDetail').textContent = event.points ? '+' + event.points + ' · 星光入舱' : event.kind === 'miss' ? '提前移动到发光航道' : '换一条航道，继续飞行'; $('flightFeedback').dataset.kind = event.kind; }
-    if (run.maxCombo >= lastAnnounced + 10) { lastAnnounced = Math.floor(run.maxCombo / 10) * 10; if (lastAnnounced) $('flightAnnouncement').textContent = lastAnnounced + ' 连击'; }
+    if (event && event !== paintedFeedback) {
+      paintedFeedback = event; const names = { perfect: 'PERFECT', good: 'GOOD', miss: '错过星环', rock: '注意陨石' }; $('flightJudgment').textContent = names[event.kind]; $('flightJudgmentDetail').textContent = event.points ? '+' + event.points + ' · 星光入舱' : event.kind === 'miss' ? '提前移动到发光航道' : '换一条航道，继续飞行'; $('flightFeedback').dataset.kind = event.kind;
+      if (phase === 'playing' && time - event.time < .25) {
+        playEffect(event.kind, run.combo);
+        if (!calm) for (let i = 0; i < (event.points ? 14 : 8); i++) particles.push({ lane: event.lane, time: event.time, angle: i * 2.399, speed: 28 + i * 5, color: event.points ? '#b2edf5' : '#f0b280' });
+        if (run.combo && run.combo % 10 === 0 && run.combo !== lastAnnounced) { lastAnnounced = run.combo; milestone = { time, combo: run.combo }; $('flightMilestone').textContent = run.combo + ' 连击 · 星光加成 ×' + (1 + Math.min(3, run.combo / 10) * .25).toFixed(2); $('flightAnnouncement').textContent = run.combo + ' 连击'; }
+      }
+    }
+    $('flightMilestone').hidden = phase !== 'playing' || !milestone || time - milestone.time > 1.6;
+    if (playedMode === 'tutorial') updateGuide(time);
+    else for (const b of document.querySelectorAll('[data-flight-lane]')) b.dataset.guide = 'false';
+    if (phase === 'playing' && playedMode !== 'tutorial') {
+      const next = rules().chart.slice(run.next).find(e => e.type === 'ring');
+      const danger = rules().chart.slice(run.next).find(e => e.type === 'rock' && e.lane === currentLane && e.time - time < 1.5);
+      $('flightDirection').textContent = danger ? '避开当前航道的陨石 ↔' : next ? '下个星环 · ' + ['← ', '◇ ', '→ '][next.lane] + laneNames[next.lane] : '航程即将完成 · 继续向前';
+      $('flightDirection').dataset.danger = String(!!danger);
+    }
     document.body.dataset.time = Math.max(0, time).toFixed(3); document.body.dataset.lane = currentLane; document.body.dataset.score = run.score; document.body.dataset.combo = run.combo; document.body.dataset.energy = run.energy; document.body.dataset.next = run.next;
   }
 
   function resize() { w = canvas.clientWidth; h = canvas.clientHeight; dpr = Math.min(devicePixelRatio || 1, 1.75); canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr); g.setTransform(dpr, 0, 0, dpr, 0, 0); }
   function project(lane, distance, time) {
+    const LOOK_AHEAD = rules().lookAhead;
     const p = Math.max(0, 1 - distance / LOOK_AHEAD), depth = p * p, play = !['ready', 'loading'].includes(phase);
     const cx = w * (play ? .5 : w < 600 ? .55 : .68), horizon = h * (w < 600 ? .43 : .32), bottom = h * (w < 600 ? play ? .78 : .69 : .79);
     const spread = w * (w < 600 ? .285 : .205);
@@ -157,6 +304,7 @@
   }
   function ellipse(x, y, rx, ry, color, width = 1) { g.beginPath(); g.ellipse(x, y, Math.max(.1, rx), Math.max(.1, ry), 0, 0, Math.PI * 2); g.strokeStyle = color; g.lineWidth = width; g.stroke(); }
   function draw(time, dt, now) {
+    const LOOK_AHEAD = rules().lookAhead, power = Math.min(3, Math.floor(run.combo / 10));
     const backdrop = g.createLinearGradient(0, 0, w, h); backdrop.addColorStop(0, '#070b19'); backdrop.addColorStop(.5, '#11142a'); backdrop.addColorStop(1, '#050c18'); g.fillStyle = backdrop; g.fillRect(0, 0, w, h);
     const active = !['ready', 'loading'].includes(phase), p0 = project(1, LOOK_AHEAD, time);
     const nebula = g.createRadialGradient(w * .68, h * .36, 0, w * .68, h * .36, w * .55); nebula.addColorStop(0, '#6a4b9b24'); nebula.addColorStop(.4, '#253d6d18'); nebula.addColorStop(1, '#080b1800'); g.fillStyle = nebula; g.fillRect(0, 0, w, h);
@@ -168,13 +316,13 @@
     const glow = g.createRadialGradient(p0.cx, p0.horizon, 0, p0.cx, p0.horizon, w * .28); glow.addColorStop(0, '#d6bcff20'); glow.addColorStop(.35, '#5966bf14'); glow.addColorStop(1, '#8ea8ff00'); g.fillStyle = glow; g.fillRect(0, 0, w, h);
     for (let lane = -.5; lane <= 2.5; lane++) {
       g.beginPath(); for (let i = 0; i <= 48; i++) { const p = project(lane, LOOK_AHEAD * (1 - i / 48), time); i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y); }
-      g.strokeStyle = lane === -.5 || lane === 2.5 ? '#a7c4f74a' : '#959fe32a'; g.lineWidth = lane === -.5 || lane === 2.5 ? 1.2 : .7; g.stroke();
+      g.strokeStyle = lane === -.5 || lane === 2.5 ? 'rgba(167,196,247,' + (.29 + power * .12) + ')' : '#959fe32a'; g.lineWidth = lane === -.5 || lane === 2.5 ? 1.2 + power * .35 : .7; g.stroke();
     }
     const gridTime = calm ? 0 : -time;
     for (let i = 0; i < 18; i++) { const span = 18 * C.BEAT, d = ((i * C.BEAT + gridTime) % span + span) % span / span * LOOK_AHEAD, left = project(-.5, d, time), right = project(2.5, d, time); g.beginPath(); g.moveTo(left.x, left.y); g.lineTo(right.x, right.y); g.strokeStyle = 'rgba(136,166,230,' + (.02 + left.scale * .12) + ')'; g.lineWidth = .6; g.stroke(); }
     const pad = project(currentLane, 0, time);
     if (active) { const beam = g.createLinearGradient(pad.x, p0.horizon, pad.x, pad.bottom + 30); beam.addColorStop(0, '#9ce9ee00'); beam.addColorStop(1, '#9ce9ee12'); g.fillStyle = beam; const l = project(currentLane - .42, 0, time), r = project(currentLane + .42, 0, time); g.beginPath(); g.moveTo(p0.cx, p0.horizon); g.lineTo(r.x, r.y + 18); g.lineTo(l.x, l.y + 18); g.closePath(); g.fill(); }
-    const drawEvents = active ? C.chart : [{ time: time + .85, lane: 1, type: 'ring' }, { time: time + 1.7, lane: 0, type: 'ring' }, { time: time + 2.35, lane: 2, type: 'ring' }, { time: time + 2.7, lane: 1, type: 'ring' }];
+    const drawEvents = active ? rules().chart : [{ time: time + .85, lane: 1, type: 'ring' }, { time: time + 1.7, lane: 0, type: 'ring' }, { time: time + 2.35, lane: 2, type: 'ring' }, { time: time + 2.7, lane: 1, type: 'ring' }];
     const ringBase = Math.min(w * .075, 47);
     for (let i = drawEvents.length - 1; i >= 0; i--) {
       const event = drawEvents[i], distance = event.time - time; if (distance > LOOK_AHEAD || distance < -.28 || active && event.time <= run.time && i < run.next) continue;
@@ -194,10 +342,12 @@
     const shipY = ship.y - 10 + (calm || phase === 'paused' ? 0 : Math.sin(now * .002) * 1.7);
     g.save(); g.translate(ship.x, shipY);
     const flare = g.createLinearGradient(0, 8, 0, 63); flare.addColorStop(0, '#bddfffcc'); flare.addColorStop(.35, '#afa3ff66'); flare.addColorStop(1, '#a4c7ff00'); g.fillStyle = flare; g.beginPath(); g.moveTo(-5, 8); g.lineTo(0, calm ? 46 : 48 + level * 16); g.lineTo(5, 8); g.fill();
-    g.shadowColor = '#aeccff'; g.shadowBlur = calm ? 0 : 18; g.beginPath(); g.moveTo(0, -shipSize); g.lineTo(-shipSize * .82, shipSize * .55); g.lineTo(-shipSize * .2, shipSize * .35); g.lineTo(0, shipSize * .62); g.lineTo(shipSize * .2, shipSize * .35); g.lineTo(shipSize * .82, shipSize * .55); g.closePath();
+    g.shadowColor = '#aeccff'; g.shadowBlur = calm ? 0 : 18 + power * 7; g.beginPath(); g.moveTo(0, -shipSize); g.lineTo(-shipSize * .82, shipSize * .55); g.lineTo(-shipSize * .2, shipSize * .35); g.lineTo(0, shipSize * .62); g.lineTo(shipSize * .2, shipSize * .35); g.lineTo(shipSize * .82, shipSize * .55); g.closePath();
     const body = g.createLinearGradient(0, -shipSize, 0, shipSize); body.addColorStop(0, '#f1f4ff'); body.addColorStop(.5, '#b7b6ee'); body.addColorStop(1, '#555d9b'); g.fillStyle = body; g.fill(); g.shadowBlur = 0; g.strokeStyle = '#e1e5ff'; g.lineWidth = .8; g.stroke(); g.beginPath(); g.moveTo(0, -shipSize * .65); g.lineTo(-3, shipSize * .15); g.lineTo(3, shipSize * .15); g.closePath(); g.fillStyle = '#647ea9'; g.fill(); g.restore();
     const hit = run.last, age = hit ? time - hit.time : 10;
     if (active && age >= 0 && age < .55 && !calm) { const p = project(hit.lane, 0, time); g.globalAlpha = 1 - age / .55; ellipse(p.x, p.y, ringBase + age * 95, ringBase * .3 + age * 25, hit.points ? '#a7ebf0' : '#edb078', 1.2); g.globalAlpha = 1; }
+    particles = particles.filter(p => time - p.time < .8);
+    if (!calm && active) for (const particle of particles) { const age = Math.max(0, time - particle.time), p = project(particle.lane, 0, time); g.globalAlpha = 1 - age / .8; g.fillStyle = particle.color; g.beginPath(); g.arc(p.x + Math.cos(particle.angle) * age * particle.speed, p.y - 12 + Math.sin(particle.angle) * age * particle.speed * .7 - age * 28, 1.7 * (1 - age / 1.1), 0, Math.PI * 2); g.fill(); } g.globalAlpha = 1;
   }
   function frame(now) {
     requestAnimationFrame(frame); const dt = Math.min(.1, (now - (lastFrame || now)) / 1000); lastFrame = now;
@@ -213,7 +363,7 @@
     } else if (phase === 'result') time = run.time;
     if (analyser && ['playing', 'countdown', 'resuming'].includes(phase)) { analyser.getByteTimeDomainData(samples); let sum = 0; for (const value of samples) sum += ((value - 128) / 128) ** 2; level = Math.sqrt(sum / samples.length); } else level = 0;
     document.body.dataset.audioLevel = level.toFixed(5); document.body.dataset.audioState = ac?.state || 'idle'; document.body.dataset.calm = String(calm);
-    updateHud(time); if (!lastVisualTime || now - lastVisualTime >= (calm ? 1000 / 30 : 1000 / 60) - 1) { lastVisualTime = now; draw(time, dt, now); }
+    updateHud(time); updateCalibration(); if (!lastVisualTime || now - lastVisualTime >= (calm ? 1000 / 30 : 1000 / 60) - 1) { lastVisualTime = now; draw(time, dt, now); }
   }
 
   // Handle a touch tap once, without depending on synthesized mouse clicks after a swipe.
@@ -227,13 +377,25 @@
       event.preventDefault(); button.click();
     }, { passive: false });
   }
-  $('flightStart').addEventListener('click', start); $('flightAgain').addEventListener('click', start); $('flightRestart').addEventListener('click', start);
+  for (const b of document.querySelectorAll('[data-flight-mode]')) b.addEventListener('click', () => { if (!['ready', 'loading'].includes(phase)) return; selectedMode = b.dataset.flightMode; savePreferences(); syncIntro(); });
+  $('flightStart').addEventListener('click', () => start(tutorialSeen ? selectedMode : 'tutorial'));
+  $('flightPractice').addEventListener('click', () => start(tutorialSeen ? 'tutorial' : selectedMode));
+  $('flightAgain').addEventListener('click', () => start(playedMode)); $('flightRestart').addEventListener('click', () => start(playedMode));
+  $('flightLaunch').addEventListener('click', () => start(selectedMode)); $('flightRetryPractice').addEventListener('click', () => start('tutorial'));
+  for (const b of document.querySelectorAll('[data-flight-ready]')) b.addEventListener('click', ready);
+  for (const b of document.querySelectorAll('[data-flight-calibrate]')) b.addEventListener('click', openCalibration);
+  $('flightCalibrationListen').addEventListener('click', audition);
+  $('flightCalibrationClose').addEventListener('click', () => closeCalibration(false)); $('flightCalibrationDone').addEventListener('click', () => closeCalibration(true));
+  $('flightCalibration').addEventListener('cancel', event => { event.preventDefault(); closeCalibration(false); });
+  $('flightOffset').addEventListener('input', () => { calibrationDraft = clamp(Math.round(Number($('flightOffset').value) / 10) * 10, -200, 200); calibrationValue(); });
+  $('flightCalibrationReset').addEventListener('click', () => { calibrationDraft = 0; calibrationValue(); });
   $('flightResume').addEventListener('click', resume); $('flightPause').addEventListener('click', () => phase === 'paused' ? resume() : pause());
   for (const button of document.querySelectorAll('[data-flight-lane]')) button.addEventListener('click', () => selectLane(Number(button.dataset.flightLane)));
   $('flightMute').addEventListener('click', () => { mute = !mute; if (bus) bus.gain.setTargetAtTime(mute ? 0 : .72, ac.currentTime, .025); $('flightMute').setAttribute('aria-pressed', String(mute)); $('flightMute').textContent = mute ? '声音 关' : '声音 开'; });
   function syncMotion() { $('flightMotion').setAttribute('aria-pressed', String(calm)); }
   $('flightMotion').addEventListener('click', () => { calm = !calm; syncMotion(); }); query.addEventListener('change', event => { calm = event.matches; syncMotion(); }); syncMotion();
   document.addEventListener('keydown', event => {
+    if ($('flightCalibration').open) return;
     const target = event.target instanceof Element ? event.target : document.activeElement;
     if (event.altKey || event.ctrlKey || event.metaKey || target?.closest('input,textarea,select')) return;
     if (['ArrowLeft', 'ArrowRight', 'KeyA', 'KeyD'].includes(event.code) && ['playing', 'countdown', 'resuming'].includes(phase)) { event.preventDefault(); if (!event.repeat) selectLane(clamp(currentLane + (['ArrowLeft', 'KeyA'].includes(event.code) ? -1 : 1), 0, 2)); }
@@ -244,9 +406,10 @@
   canvas.addEventListener('pointerdown', event => { if (!['playing', 'countdown', 'resuming'].includes(phase)) return; pointer = { id: event.pointerId, x: event.clientX, y: event.clientY }; canvas.setPointerCapture(event.pointerId); });
   canvas.addEventListener('pointerup', event => { if (!pointer || pointer.id !== event.pointerId) return; const dx = event.clientX - pointer.x, dy = event.clientY - pointer.y; if (Math.abs(dx) > 22 && Math.abs(dx) > Math.abs(dy)) selectLane(clamp(currentLane + Math.sign(dx), 0, 2)); else if (Math.abs(dx) < 22 && Math.abs(dy) < 22) { const p = project(1, 0, run.time); selectLane(clamp(Math.round((event.clientX - p.cx) / p.spread + 1), 0, 2)); } pointer = null; });
   canvas.addEventListener('pointercancel', () => { pointer = null; });
-  window.addEventListener('blur', () => pause('窗口已离开，音乐与航路自动暂停。'));
-  document.addEventListener('visibilitychange', () => { if (document.hidden) { pointer = null; pause('页面切到后台，音乐与航路自动暂停。'); } });
-  window.addEventListener('pagehide', () => { token++; stopSource(); if (ac) ac.close().catch(() => {}); }); window.addEventListener('pageshow', event => { if (event.persisted) location.reload(); });
+  window.addEventListener('blur', () => { stopCalibration(); pause('窗口已离开，音乐与航路自动暂停。'); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) { pointer = null; stopCalibration(); pause('页面切到后台，音乐与航路自动暂停。'); } });
+  window.addEventListener('pagehide', () => { token++; stopCalibration(); stopSource(); if (ac) ac.close().catch(() => {}); }); window.addEventListener('pageshow', event => { if (event.persisted) location.reload(); });
   window.addEventListener('resize', resize); if (window.ResizeObserver) new ResizeObserver(resize).observe(canvas);
-  readBest(); resize(); setPhase('ready'); requestAnimationFrame(frame);
+  $('flightGuideChecks').replaceChildren(...lessons.map(() => document.createElement('span')));
+  readBest(); playedMode = selectedMode; run = C.createRun(selectedMode); renderBest(); resize(); setPhase('ready'); requestAnimationFrame(frame);
 })();
