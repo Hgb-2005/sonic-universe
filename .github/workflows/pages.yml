@@ -32,6 +32,10 @@ jobs:
           node tests/music-motion.test.cjs
           node --check outputs/music-motion.js
           node tests/flight-core.test.cjs
+          node --test tests/project-pack.test.cjs
+          node --test tests/visual-presets.test.cjs
+          node --check outputs/project-pack.js
+          node --check outputs/visual-presets.js
           node --check outputs/flight-core.js
           node --check outputs/flight.js
       - name: Configure Pages

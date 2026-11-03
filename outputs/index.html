@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#080811">
-<title>声波宇宙 16 · 听见星云的呼吸</title>
+<title>声波宇宙 17 · 留下自己的星空作品</title>
 <meta name="description" content="让音乐成为星空。在星环、银河、山峰与引力黑洞之间旅行，收藏自己的视觉预设，演奏旋律并导出有声短片。">
 <meta property="og:type" content="website">
 <meta property="og:title" content="声波宇宙 · 让旋律坠入星海">
@@ -137,13 +137,14 @@
 @media(prefers-reduced-motion:reduce){.roam-look-card{transition:none}.roam-look-panel{backdrop-filter:none}}
 </style>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%278%27 fill=%27%23100d1a%27/%3E%3Cellipse cx=%2716%27 cy=%2716%27 rx=%2713%27 ry=%277%27 transform=%27rotate(-30 16 16)%27 fill=%27none%27 stroke=%27%23c7afff%27/%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%272%27 fill=%27%23c7afff%27/%3E%3C/svg%3E">
+<style>.project-note{font-size:12px;line-height:1.9;color:#b5a8c2}.project-steps{padding-left:24px;display:grid;gap:16px}.project-steps button{background:transparent;color:#e3d3ff;padding:6px 0;font-size:14px;text-align:left}.project-steps small{display:block;color:#a99abb;line-height:1.8}.project-actions{display:flex;gap:10px;flex-wrap:wrap}#projectDialog{max-height:86svh;overflow:auto}#projectDialog hr{border:0;border-top:1px solid #ffffff20;margin:24px 0}#projectDialog h3{font-size:15px;font-weight:500}#backupPreview{margin-top:18px;padding:14px;background:#ffffff08;border-radius:10px}#projectDialog button:disabled{opacity:.5;cursor:wait}.quiet #projectDialog{pointer-events:auto}</style>
 </head>
 <body>
 <div class="app" id="app">
   <canvas id="universe" role="img" aria-label="一片随音乐频率起伏的星空，低音推开星云，中频留下星轨，高音点亮星闪">你的浏览器暂不支持星空画布。</canvas>
   <div class="grain" aria-hidden="true"></div>
   <header class="header">
-    <div class="brand"><div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M7 17v-2m4 8V9m5 17V6m5 16V10m4 8v-4"/></svg></div><div><div class="brand-name">声波宇宙<span class="version">VOL.16</span></div><div class="brand-en">SONIC UNIVERSE</div></div></div>
+    <div class="brand"><div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M7 17v-2m4 8V9m5 17V6m5 16V10m4 8v-4"/></svg></div><div><div class="brand-name">声波宇宙<span class="version">VOL.18</span></div><div class="brand-en">SONIC UNIVERSE</div></div></div>
     <div class="header-right"><button class="header-action external-action" id="externalBtn" aria-label="外部音乐联动" title="外部音乐联动"><svg viewBox="0 0 24 24"><path d="M3 10v4m4-7v10m5-14v18m5-14v10m4-7v4"/></svg><span class="action-label">外部联动</span></button><button class="header-action studio-action" id="studioBtn" aria-label="布置我的音乐空间" title="布置空间"><svg viewBox="0 0 24 24"><path d="m12 3 2.3 6.7L21 12l-6.7 2.3L12 21l-2.3-6.7L3 12l6.7-2.3Z"/></svg><span class="action-label">布置空间</span></button><button class="header-action" id="queueBtn" aria-label="打开播放列表" title="播放列表"><svg viewBox="0 0 24 24"><path d="M4 5h16M4 10h16M4 15h9m4-1v7m-3-3h6"/></svg><span class="action-label">音乐库</span><span class="queue-count" id="queueCount">01</span></button><button class="upload-btn" id="uploadBtn" aria-label="导入多首音乐" title="可同时选择多首音乐"><svg viewBox="0 0 24 24"><path d="M12 16V3m-5 5 5-5 5 5M4 15v5h16v-5"/></svg><span>导入音乐</span></button><button class="icon-btn" id="fullscreenBtn" aria-label="进入全屏" title="全屏 · F"><svg viewBox="0 0 24 24"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg></button></div>
   </header>
   <main class="stage" id="stage">
@@ -175,9 +176,9 @@
     <div class="spectrum-panel" aria-label="实时音频频段"><div class="band"><div class="band-label">低频<output id="bassValue">0%</output></div><div class="band-track"><span class="band-fill" id="bassFill"></span></div></div><div class="band"><div class="band-label">中频<output id="midValue">0%</output></div><div class="band-track"><span class="band-fill" id="midFill"></span></div></div><div class="band"><div class="band-label">高频<output id="highValue">0%</output></div><div class="band-track"><span class="band-fill" id="highFill"></span></div></div></div>
   </main>
   <div class="source-ribbon" id="sourceRibbon"><span><i aria-hidden="true"></i>外部声音已接入<small>选歌、暂停与音量在原播放器操作</small></span><button id="sourceManageBtn">管理联动 ↗</button></div><div class="player-wrap"><section class="player" aria-label="音乐播放器"><div class="track"><button class="album album-button" id="albumButton" aria-label="更换歌曲封面" title="布置空间与歌曲封面"><img id="albumImage" alt="" hidden></button><div class="track-text"><div class="track-title" id="trackTitle" title="星际漫游 · Interstellar Drift">星际漫游<span class="track-tag" id="trackTag">DEMO</span></div><div class="track-sub" id="trackSub">Interstellar Drift · 原创合成音景</div></div></div><div class="transport"><div class="transport-buttons"><button class="icon-btn" id="restartBtn" aria-label="上一首" title="上一首"><svg viewBox="0 0 24 24"><path d="M5 5v14m14-14L8 12l11 7Z"/></svg></button><button class="play-btn" id="playBtn" aria-label="播放音乐" title="播放 / 暂停 · 空格"><svg class="play-icon" viewBox="0 0 24 24"><path d="m7 3 15 9-15 9Z"/></svg></button><button class="icon-btn" id="forwardBtn" aria-label="下一首" title="下一首"><svg viewBox="0 0 24 24"><path d="m5 5 11 7-11 7Zm14 0v14"/></svg></button></div><div class="progress-row"><span id="currentTime">00:00</span><input class="range" id="seek" type="range" min="0" max="96" step="0.1" value="0" aria-label="播放进度" aria-valuetext="00:00 / 01:36"><span id="duration">01:36</span></div></div><div class="player-right"><button class="icon-btn active" id="repeatBtn" aria-label="关闭单曲循环" aria-pressed="true" title="单曲循环：开"><svg viewBox="0 0 24 24"><path d="m17 2 4 4-4 4M3 11V8a2 2 0 0 1 2-2h16M7 22l-4-4 4-4m14-1v3a2 2 0 0 1-2 2H3"/></svg></button><div class="volume"><button class="icon-btn" id="muteBtn" aria-label="静音" aria-pressed="false" title="静音 · M"><svg viewBox="0 0 24 24"><path d="m11 4-6 5H2v6h3l6 5Zm4 4a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg></button><input class="range" id="volume" type="range" min="0" max="100" value="65" aria-label="音量" aria-valuetext="65%"></div><span class="player-divider"></span><button class="icon-btn" id="quietBtn" aria-label="进入宇宙" title="沉浸漫游 · H"><svg viewBox="0 0 24 24"><path d="m12 3 2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2Z"/></svg></button></div></section><span class="keyboard-hint">SPACE 播放 / 暂停</span></div>
-  <footer class="footer"><span class="footer-brand"><b>EDITION 16</b> SOUND & STARDUST</span><div class="footer-links footer-center"><button class="help-btn" id="helpBtn">使用指南 ↗</button><span aria-hidden="true">·</span><button class="help-btn" id="flightBtn" title="可选的独立节奏小游戏">星际航行小实验 ↗</button></div><span>你的音乐 · 只在本机流转</span></footer>
+  <footer class="footer"><span class="footer-brand"><b>EDITION 17</b> SOUND & STARDUST</span><div class="footer-links footer-center"><button class="help-btn" id="projectBtn">创作与备份 ↗</button><span aria-hidden="true">·</span><button class="help-btn" id="helpBtn">使用指南 ↗</button><span aria-hidden="true">·</span><button class="help-btn" id="flightBtn" title="可选的独立节奏小游戏">星际航行小实验 ↗</button></div><span>你的音乐 · 只在本机流转</span></footer>
   <div class="roam-surface" id="roamSurface" tabindex="0" role="region" aria-label="星空漫游：轻触唤醒按钮，拖动旋转视角，滚轮或双指缩放，加减键调整距离，0 重置，C 定格，右上角选星空，H 或 Escape 返回"></div>
-  <div class="roam-ui roam-top"><div class="roam-identity"><div class="roam-kicker">SONIC JOURNEY · VOL.16</div><p id="roamTrack">星际漫游</p><button class="roam-export" id="roamClipBtn">录一段星空 ↗</button><button class="roam-export roam-atelier" id="roamAtelierBtn">心情 · 歌词 · 收藏 ↗</button><button class="roam-export roam-atelier" id="roamInstrumentBtn">弹出星空 ↗</button></div><div class="roam-top-actions"><button class="roam-look-toggle" id="roamLookBtn" aria-expanded="false" aria-controls="roamLookPanel" aria-label="选择星空氛围"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.3 6.7L21 12l-6.7 2.3L12 21l-2.3-6.7L3 12l6.7-2.3Z"/></svg>选星空</button><button class="quiet-exit" id="quietExit"><svg viewBox="0 0 24 24"><path d="m14 5-7 7 7 7M7 12h13"/></svg>返回空间 · Esc</button></div>
+  <div class="roam-ui roam-top"><div class="roam-identity"><div class="roam-kicker">SONIC JOURNEY · VOL.18</div><p id="roamTrack">星际漫游</p><button class="roam-export" id="roamClipBtn">录一段星空 ↗</button><button class="roam-export roam-atelier" id="roamAtelierBtn">心情 · 歌词 · 收藏 ↗</button><button class="roam-export roam-atelier" id="roamInstrumentBtn">弹出星空 ↗</button></div><div class="roam-top-actions"><button class="roam-look-toggle" id="roamLookBtn" aria-expanded="false" aria-controls="roamLookPanel" aria-label="选择星空氛围"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.3 6.7L21 12l-6.7 2.3L12 21l-2.3-6.7L3 12l6.7-2.3Z"/></svg>选星空</button><button class="quiet-exit" id="quietExit"><svg viewBox="0 0 24 24"><path d="m14 5-7 7 7 7M7 12h13"/></svg>返回空间 · Esc</button></div>
     <section class="roam-look-panel" id="roamLookPanel" hidden aria-labelledby="roamLookTitle">
       <div class="roam-look-heading"><div><h2 id="roamLookTitle">此刻，想听见哪片星空</h2><span class="roam-look-current" id="roamLookCurrent"></span></div><button class="icon-btn" id="roamLookClose" aria-label="关闭星空氛围">×</button></div>
       <div class="roam-look-grid" id="roamLookGrid" role="group" aria-label="沉浸星空氛围"></div>
@@ -346,7 +347,9 @@
   <div class="instrument-footer"><div><span class="storage-status" role="status">旋律与设置仅保存在本机</span><small>录制一层前数 4 拍，循环播放时可继续录下一层。最多 6 层；关闭乐器台会停止演奏。</small></div><button class="primary-btn" id="instrumentFilmBtn">把演奏录成短片 ↗</button></div>
 </dialog>
 
+<script src="./project-pack.js?v=17"></script>
 <script src="./music-motion.js?v=16"></script>
+<script src="./visual-presets.js?v=18"></script>
 <script>
 (() => {
   'use strict';
@@ -392,7 +395,9 @@
     document.querySelectorAll('.space-dialog').forEach(el=>el.classList.toggle('storage-problem',problem));
     app.dataset.saveState=!libraryReady?'loading':savingCount?'saving':problem?'error':'saved';
   }
+  let backupRestoring=false;
   function saveSession(){
+    if(backupRestoring)return;
     if(!libraryReady||restoring)return;
     try{localStorage.setItem('sonic-universe-session',JSON.stringify({id:activeId,position:getLocalPosition()}));storageIssues.delete('session')}
     catch{storageIssues.add('session')}
@@ -421,7 +426,7 @@
   }
   function requestValue(request){return new Promise((resolve,reject)=>{request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error)})}
   function transactionDone(tx){return new Promise((resolve,reject)=>{tx.oncomplete=()=>resolve();tx.onabort=()=>reject(tx.error||new Error('保存被取消'));tx.onerror=()=>{}})}
-  function queueStorage(area,write){
+  function queueStorage(area,write){if(backupRestoring)return Promise.resolve(false);
     savingCount++;updateStorageStatus();
     const task=storageChain.then(async()=>{const db=await openLibraryDB();await write(db)});
     storageChain=task.catch(()=>{});
@@ -1074,7 +1079,7 @@
     if(!v||v.version!==1)return null;const p={version:1,title:String(v.title||'我的星际即兴').slice(0,60),tone:['bell','air','pluck'].includes(v.tone)?v.tone:'bell',octave:[-1,0,1].includes(v.octave)?v.octave:0,tempo:Math.round(finite(v.tempo,96,60,160)),bars:[1,2,4].includes(v.bars)?v.bars:2,quantize:v.quantize!==false,metronome:v.metronome!==false,volume:finite(v.volume,.7,0,1),layers:[]};
     if(Array.isArray(v.layers))for(const layer of v.layers.slice(0,6)){if(!layer||!Array.isArray(layer.events))continue;const events=layer.events.filter(e=>e&&Number.isInteger(e.pad)&&e.pad>=0&&e.pad<11&&Number.isFinite(e.at)&&e.at>=0&&e.at<p.bars*4).slice(0,512).map(e=>({pad:e.pad,at:e.at,len:finite(e.len,.4,.06,4),tone:['bell','air','pluck'].includes(e.tone)?e.tone:'bell',octave:[-1,0,1].includes(e.octave)?e.octave:0,velocity:finite(e.velocity,.8,.15,1)}));if(events.length)p.layers.push({id:newId('layer'),name:String(layer.name||'一层星光').slice(0,30),muted:layer.muted===true,events})}return p;
   }
-  function saveInstrument(){
+  function saveInstrument(){if(backupRestoring)return;
     try{localStorage.setItem('sonic-universe-instrument',JSON.stringify(instrumentProject));storageIssues.delete('instrument')}catch{storageIssues.add('instrument');instrumentStatus('旋律保留在本页，本机保存暂不可用；请先录成短片带走。',true)}updateStorageStatus();
   }
   function initInstrumentAudio(){
@@ -1252,7 +1257,7 @@
   function filmDraftId(){return clipInstrumentMode?'instrument':'song:'+activeId}
   function captureSongDraft(){if(!polishReady||!draftOwner)return;drafts.songs[draftOwner]=readFields(songDraftFields);drafts.tab=atelierTab}
   function captureFilmDraft(){if(!polishReady||!filmOwner)return;drafts.films[filmOwner]={fields:readFields(filmDraftFields),shape:clipShape,length:clipLength}}
-  function saveDrafts(){clearTimeout(draftTimer);captureSongDraft();captureFilmDraft();try{localStorage.setItem(draftKey,JSON.stringify(drafts));storageIssues.delete('drafts');app.dataset.draftState='saved'}catch{storageIssues.add('drafts');app.dataset.draftState='error'}updateStorageStatus();updateRecoveryButtons()}
+  function saveDrafts(){if(backupRestoring)return;clearTimeout(draftTimer);captureSongDraft();captureFilmDraft();try{localStorage.setItem(draftKey,JSON.stringify(drafts));storageIssues.delete('drafts');app.dataset.draftState='saved'}catch{storageIssues.add('drafts');app.dataset.draftState='error'}updateStorageStatus();updateRecoveryButtons()}
   function scheduleDraftSave(){app.dataset.draftState='saving';clearTimeout(draftTimer);draftTimer=setTimeout(saveDrafts,240)}
   function restoreSongDraft(keep=true){if(!polishReady)return;const changed=draftOwner!==activeId;if(changed){$('memoryNote').value='';$('cueTime').value='0';$('cueText').value='';$('cueBurst').checked=false}draftOwner=activeId;if(keep)writeFields(drafts.songs[activeId],songDraftFields);else drafts.songs[activeId]=readFields(songDraftFields);const note=$('draftRestored');if(note)note.textContent=drafts.songs[activeId]?'已恢复这首歌的草稿 · 应用歌词后才会显示到星空':'未应用的文字也会自动保存，下次继续。';if(changed||!histories.has(historyKey('atelier')))primeHistory('atelier')}
   function restoreFilmDraft(){if(!polishReady)return;filmOwner=filmDraftId();const v=drafts.films[filmOwner];if(v){writeFields(v.fields,filmDraftFields);if(['landscape','portrait'].includes(v.shape))clipShape=v.shape;if([0,15,30].includes(v.length))clipLength=v.length}primeHistory('clip');clipUpdateControls()}
@@ -1361,12 +1366,7 @@
   }
 
   const presetStorageKey='sonic-universe-visual-presets-v1';let customVisualPresets=[],presetStorageError=false;
-  const builtinVisualPresets=[
-    {id:'violet-orbit',name:'紫雾星环',note:'轻柔的呼吸，让旋律缓缓铺开',look:{theme:'nebula',visualMode:'ring',motionSpeed:.75,particleCount:3200,intensity:.65,depth:.55,glow:.55}},
-    {id:'blue-drift',name:'深蓝漫游',note:'流动的旋臂，适合氛围与电子音乐',look:{theme:'galaxy',visualMode:'galaxy',motionSpeed:1,particleCount:4400,intensity:.8,depth:.9,glow:.65}},
-    {id:'gold-horizon',name:'日冕引力',note:'金色吸积盘，低音让引力边界呼吸',look:{theme:'solar',visualMode:'blackhole',motionSpeed:.85,particleCount:4000,intensity:.85,depth:.8,glow:.85}},
-    {id:'lunar-peaks',name:'月下声脊',note:'频谱化作山峦，听见旋律的层次',look:{theme:'galaxy',visualMode:'peaks',motionSpeed:.65,particleCount:3000,intensity:.7,depth:.45,glow:.4}}
-  ];
+  const builtinVisualPresets=SonicVisualPresets.map(preset=>({...preset,look:{...preset.look}}));
   let roamLookSignature='';
   function setRoamLookOpen(open,restoreFocus=true){
     const panel=$('roamLookPanel');
@@ -1428,7 +1428,7 @@
   function persistVisualPresets(){try{localStorage.setItem(presetStorageKey,JSON.stringify({format:'sonic-universe-presets',version:1,presets:customVisualPresets}));presetStorageError=false;storageIssues.delete('presets');updateStorageStatus();return true}catch{presetStorageError=true;storageIssues.add('presets');updateStorageStatus();return false}}
   function presetSignature(look){return JSON.stringify(validLook(look))}
   function renderVisualPresets(){
-    const signature=presetSignature(captureLook());for(const [id,list,custom] of [['builtinPresets',builtinVisualPresets,false],['customPresets',customVisualPresets,true]]){const box=$(id);if(!box)continue;box.replaceChildren();list.forEach((preset,index)=>{const card=document.createElement('div');card.className='preset-card';card.dataset.current=String(presetSignature(preset.look)===signature);const button=document.createElement('button');button.className='preset-apply';button.type='button';button.dataset.preset=custom?'custom-'+index:preset.id;const tag=document.createElement('em'),name=document.createElement('strong'),note=document.createElement('small');tag.textContent=custom?'MY UNIVERSE':'0'+(index+1)+' / '+visualModes[preset.look.visualMode].english;name.textContent=preset.name;note.textContent=preset.note||themes[preset.look.theme].name+' · '+visualModes[preset.look.visualMode].name;button.append(tag,name,note);button.addEventListener('click',()=>{if(clipLocked())return;historyFor('visual');applyLook(preset.look,true);commitRecovery('visual');syncSongControls();renderVisualPresets();presetStatus('已应用「'+preset.name+'」，可撤销；按下播放，让旋律点亮它。')});card.append(button);if(custom){const remove=document.createElement('button');remove.className='preset-remove';remove.textContent='×';remove.setAttribute('aria-label','删除预设 '+preset.name);remove.addEventListener('click',()=>{if(clipLocked())return;customVisualPresets.splice(index,1);const saved=persistVisualPresets();renderVisualPresets();presetStatus(saved?'已删除这个本机预设。':'删除仅在本次页面生效，本机存储未完成。',!saved)});card.append(remove)}box.append(card)});if(custom&&!list.length){const empty=document.createElement('p');empty.className='preset-intro';empty.textContent='还没有收藏。调好画面后，给这片宇宙起个名字。';box.append(empty)}}app.dataset.visualPresetCount=String(customVisualPresets.length);
+    const signature=presetSignature(captureLook());for(const [id,list,custom] of [['builtinPresets',builtinVisualPresets,false],['customPresets',customVisualPresets,true]]){const box=$(id);if(!box)continue;box.replaceChildren();list.forEach((preset,index)=>{const card=document.createElement('div');card.className='preset-card';card.dataset.current=String(presetSignature(preset.look)===signature);const button=document.createElement('button');button.className='preset-apply';button.type='button';button.dataset.preset=custom?'custom-'+index:preset.id;const tag=document.createElement('em'),name=document.createElement('strong'),note=document.createElement('small');tag.textContent=custom?'MY UNIVERSE':'0'+(index+1)+' / '+visualModes[preset.look.visualMode].english;name.textContent=preset.name;note.textContent=preset.note||themes[preset.look.theme].name+' · '+visualModes[preset.look.visualMode].name;button.append(tag,name,note);button.addEventListener('click',()=>{if(clipLocked())return;historyFor('visual');applyLook(preset.look,true);commitRecovery('visual');syncSongControls();renderVisualPresets();presetStatus('已应用「'+preset.name+'」，可撤销；按下播放，让旋律点亮它。')});card.append(button);if(custom){const remove=document.createElement('button');remove.className='preset-remove';remove.textContent='×';remove.setAttribute('aria-label','删除预设 '+preset.name);remove.addEventListener('click',()=>{if(clipLocked())return;customVisualPresets.splice(index,1);const saved=persistVisualPresets();renderVisualPresets();presetStatus(saved?'已删除这个本机预设。':'删除仅在本次页面生效，本机存储未完成。',!saved)});card.append(remove)}box.append(card)});if(custom&&!list.length){const empty=document.createElement('p');empty.className='preset-intro';empty.textContent='还没有收藏。调好画面后，给这片宇宙起个名字。';box.append(empty)}}app.dataset.visualPresetCount=String(customVisualPresets.length);app.dataset.builtinVisualPresetCount=String(builtinVisualPresets.length);
   }
   function setupVisualPresets(){
     for(const preset of builtinVisualPresets)preset.look=validLook({...preset.look,sensitivity:1,storyEnabled:false,journeyAuto:false});
@@ -1534,7 +1534,7 @@
     g.strokeStyle=line;g.lineWidth=1;g.strokeRect(29.5,29.5,1741,1291);
     g.fillStyle=muted;g.font='16px ui-monospace,Consolas,monospace';
     g.fillText('SONIC UNIVERSE  /  A POSTCARD FROM THE STARS',69,78);
-    g.textAlign='right';g.fillText('VOL.16',1731,78);g.textAlign='left';
+    g.textAlign='right';g.fillText('VOL.18',1731,78);g.textAlign='left';
     const art={x:69,y:109,w:1662,h:842},source=capturedScene,aspect=art.w/art.h;
     let sw,sh;
     if(capturedMoment.quiet){sw=source.width;sh=sw/aspect;if(sh>source.height){sh=source.height;sw=sh*aspect}}
@@ -1762,7 +1762,7 @@
   function formatTime(v){v=Math.max(0,Number.isFinite(v)?v:0);return `${String(Math.floor(v/60)).padStart(2,'0')}:${String(Math.floor(v%60)).padStart(2,'0')}`}
   function showToast(message,error=false){clearTimeout(toastTimer);const el=$('toast');el.textContent=message;el.setAttribute('role',error?'alert':'status');el.classList.add('visible');toastTimer=setTimeout(()=>el.classList.remove('visible'),4400)}
   function setFill(el){const v=(el.value-el.min)/(el.max-el.min)*100;el.style.setProperty('--fill',v+'%')}
-  function savePreferences(){
+  function savePreferences(){if(backupRestoring)return;
     try{localStorage.setItem('sonic-universe-preferences',JSON.stringify({theme:themeKey,volume,intensity,repeat,visualMode,particleCount,motionSpeed,playbackMode,space,storyEnabled,journeyAuto,postcardAuthor,postcardStyle,visualEffects}));storageIssues.delete('preferences')}
     catch{const first=!storageIssues.has('preferences');storageIssues.add('preferences');if(first)showToast('设置未能保存，当前浏览器可能限制了本机存储。',true)}
     updateStorageStatus();
@@ -2642,7 +2642,44 @@
   }
   window.addEventListener('pagehide',()=>{saveSession();stopExternal('',true);generation++;loadGeneration++;stopDemo();audio.pause();if(objectUrl)URL.revokeObjectURL(objectUrl);if(audioContext)audioContext.close()});
   window.addEventListener('pageshow',e=>{if(e.persisted)location.reload()});
-  setupJourney();setupPostcards();app.append($('postcardDialog'));setupLibraryFive();setupExternalFive();setupEditionThree();setupFilm();setupAtelier();setupInstrument();setupPolish();setupVisualPresets();updateTimeline();resize();requestAnimationFrame(animate);
+
+  function setupProjectPack(){
+    const dialog=document.createElement('dialog');dialog.id='projectDialog';dialog.className='space-dialog';dialog.setAttribute('aria-labelledby','projectTitle');
+    dialog.innerHTML='<div class="dialog-heading"><div><div class="dialog-kicker">MAKE A UNIVERSE OF YOUR OWN</div><h2 id="projectTitle">从一首歌，到你的星空作品</h2></div><button class="icon-btn" id="projectClose" aria-label="关闭创作与备份">×</button></div><p class="project-note">按自己的节奏完成四步。示例音乐也可以创作。</p><ol class="project-steps"><li><button data-project-action="uploadBtn">选一首音乐 ↗</button><small id="projectSong"></small></li><li><button data-project-action="presetBtn">挑选星空与光感 ↗</button><small>从预设出发，调整粒子、色彩与空间。</small></li><li><button data-project-action="atelierBtn">写歌词，收藏片刻 ↗</button><small>把一句话和一个时间点留在音乐里。</small></li><li><button data-project-action="postcardBtn">制作星空明信片 ↗</button><small>预览画面、填写署名，再保存图片。</small></li></ol><hr><h3>完整作品备份</h3><p class="project-note">把本地音乐文件、封面、歌词、歌单、收藏片刻、演奏和草稿一起保存。备份仅保存在你下载的文件里，最多 1 GB；已导出的视频和图片请另行保管。</p><div class="project-actions"><button class="primary-btn" id="backupExport">导出完整备份</button><button class="secondary-btn" id="backupImport">从文件恢复</button></div><input type="file" id="backupFile" accept=".sonicpack" hidden><section id="backupPreview" hidden><p id="backupSummary"></p><p class="project-note">恢复将替换这个浏览器里的曲库和创作。请先导出当前备份，并关闭其他声波宇宙页面。</p><div class="project-actions"><button class="primary-btn" id="backupRestore">恢复并替换本机内容</button><button class="secondary-btn" id="backupCancel">取消恢复</button></div></section><p id="backupStatus" class="project-note" role="status" aria-live="polite"></p>';
+    app.append(dialog);let pending=null,locked=false;
+    const status=text=>$('backupStatus').textContent=text;
+    function lock(value){locked=value;dialog.querySelectorAll('button').forEach(b=>b.disabled=value);}
+    $('projectBtn').onclick=()=>{if(clipLocked()||importing){showToast('请先完成音乐导入或录制。');return}$('projectSong').textContent='当前：'+(currentTrack()?.name||'星际漫游');dialog.showModal()};
+    $('projectClose').onclick=()=>dialog.close();dialog.addEventListener('cancel',e=>{if(locked)e.preventDefault()});
+    dialog.querySelectorAll('[data-project-action]').forEach(button=>button.onclick=()=>{dialog.close();$(button.dataset.projectAction).click()});
+    $('backupCancel').onclick=()=>{pending=null;$('backupPreview').hidden=true;status('已取消，当前内容保持原样。')};
+    $('backupImport').onclick=()=>$('backupFile').click();
+    $('backupExport').onclick=async()=>{
+      lock(true);status('正在保存草稿和打包音乐，请稍候…');
+      try{
+        await libraryPromise;if(!libraryReady||restoring||!atelierReady)throw Error('作品仍在载入，请稍候重试。');
+        saveSession();savePreferences();saveDrafts();saveInstrument();
+        const writes=await Promise.all([persistLibrary(),persistAtelier(),persistBackground()]);await storageChain;
+        if(writes.some(ok=>!ok)||storageIssues.size)throw Error('部分内容尚未保存，请解决存储提示后重试，避免导出不完整作品。');
+        const blob=await SonicProjectPack.encode(await SonicProjectPack.snapshot(await openLibraryDB(),localStorage));
+        const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='我的声波宇宙-'+new Date().toISOString().slice(0,10)+'.sonicpack';a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);
+        status('完整备份已生成（'+(blob.size/1048576).toFixed(1)+' MB），请保存下载文件。');
+      }catch(error){status('未能导出：'+error.message)}finally{lock(false)}
+    };
+    $('backupFile').onchange=async()=>{
+      const file=$('backupFile').files[0];$('backupFile').value='';pending=null;$('backupPreview').hidden=true;if(!file)return;
+      lock(true);status('正在检查备份完整性…');
+      try{pending=await SonicProjectPack.decode(file);const library=pending.state.find(e=>e[0]==='library')[1];$('backupSummary').textContent='备份包含 '+library.tracks.length+' 首音乐，其中 '+pending.media.length+' 个本地音频文件，以及创作设置和草稿。';$('backupPreview').hidden=false;status('检查通过，确认后才会替换本机内容。')}
+      catch(error){status('无法恢复：'+error.message)}finally{lock(false)}
+    };
+    $('backupRestore').onclick=async()=>{
+      if(!pending)return;lock(true);status('正在恢复，请保持页面打开…');
+      try{await libraryPromise;await storageChain;clearTimeout(draftTimer);backupRestoring=true;await SonicProjectPack.restore(await openLibraryDB(),localStorage,pending);status('恢复完成，正在重新打开作品…');location.reload()}
+      catch(error){backupRestoring=false;status('恢复失败，原有内容已保留：'+error.message);lock(false)}
+    };
+  }
+
+  setupProjectPack();setupJourney();setupPostcards();app.append($('postcardDialog'));setupLibraryFive();setupExternalFive();setupEditionThree();setupFilm();setupAtelier();setupInstrument();setupPolish();setupVisualPresets();updateTimeline();resize();requestAnimationFrame(animate);
 })();
 </script>
 </body>
