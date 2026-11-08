@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'outputs/**'
+      - 'folia-mod/**'
       - 'tests/**'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
@@ -38,6 +39,12 @@ jobs:
           node --check outputs/visual-presets.js
           node --check outputs/flight-core.js
           node --check outputs/flight.js
+          node --check folia-mod/sonic-universe/client.mjs
+          node --check folia-mod/sonic-universe/src/analysis.mjs
+          node --check folia-mod/sonic-universe/src/palette.mjs
+          node --check folia-mod/sonic-universe/src/random.mjs
+          node --check folia-mod/sonic-universe/src/renderer.mjs
+          node tests/folia-sonic-universe.test.cjs
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload artwork

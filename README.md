@@ -4,6 +4,14 @@
 
 **[进入在线体验](https://hgb-2005.github.io/sonic-universe/)** · **[完整使用说明](outputs/使用说明.md)** · **[有声黑洞示例](https://hgb-2005.github.io/sonic-universe/blackhole-demo.webm)**
 
+## Folia 背景版 · 让正在播放的音乐成为星空
+
+现在也可以把「声波宇宙」安装为 [Folia](https://github.com/chthollyphile/folia-major) 的动态背景。它会读取宿主已经提供的音频响应数据，在紫雾星环、深蓝银河、月下声脊与引力黑洞之间缓慢轮换；暂停或静音后画面自然收静。
+
+**[下载 Folia 模组](https://github.com/Hgb-2005/sonic-universe/releases/latest/download/sonic-universe-folia-1.0.0.zip)** · **[查看安装与隐私说明](folia-mod/sonic-universe/README.md)**
+
+下载后，在 Folia 的「设置 → 模组」中拖入 ZIP 或从文件安装，启用「声波宇宙」，再到背景选择器中选择它。模组权限为空，不读取歌词、歌曲信息或文件名，不上传音频，也不发起网络请求。安装页显示“未验证”只表示它没有 Folium 官方签名；该版本已通过 Folia 仓库提供的静态检查器。
+
 ## 第十八版 · 八种即用星空氛围
 
 把内置星空预设扩展到 8 套，覆盖紫雾星环、冰蓝声脊、琥珀潮汐、紫晶旋臂等组合；沉浸漫游也可直接切换这些氛围。每一套都能继续细调，保存为自己的预设，并导入导出分享。

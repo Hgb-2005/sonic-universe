@@ -1,5 +1,6 @@
 # Publish a curated artwork, without local history, fixtures or debugging output.
 /work/
+/dist/
 /__pycache__/
 *.py[cod]
 .DS_Store
