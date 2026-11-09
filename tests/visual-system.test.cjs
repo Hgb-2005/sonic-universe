@@ -2,7 +2,7 @@ const assert = require("node:assert/strict");
 const { test } = require("node:test");
 const visual = require("../outputs/visual-system.js");
 
-test("look normalization preserves v19 defaults and rejects invalid values", () => {
+test("look normalization preserves v20 defaults and rejects invalid values", () => {
   assert.deepEqual(visual.normalizeLook({}), visual.DEFAULTS);
   const clean = visual.normalizeLook({
     theme: "invalid",

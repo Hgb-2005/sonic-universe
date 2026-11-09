@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#080811">
-<title>声波宇宙 19 · 让音乐成为星空</title>
+<title>声波宇宙 20 · 让音乐成为星空</title>
 <style>.help-btn{text-decoration:none}.footer-links{flex-wrap:wrap}</style>
 <meta name="description" content="让音乐成为星空。在星环、银河、山峰与引力黑洞之间旅行，收藏自己的视觉预设，演奏旋律并导出有声短片。">
 <meta property="og:type" content="website">
@@ -166,7 +166,7 @@
   <canvas id="universe" role="img" aria-label="一片随音乐频率起伏的星空，低音推开星云，中频留下星轨，高音点亮星闪">你的浏览器暂不支持星空画布。</canvas>
   <div class="grain" aria-hidden="true"></div>
   <header class="header">
-    <div class="brand"><div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M7 17v-2m4 8V9m5 17V6m5 16V10m4 8v-4"/></svg></div><div><div class="brand-name">声波宇宙<span class="version">VOL.19</span></div><div class="brand-en">SONIC UNIVERSE</div></div></div>
+    <div class="brand"><div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M7 17v-2m4 8V9m5 17V6m5 16V10m4 8v-4"/></svg></div><div><div class="brand-name">声波宇宙<span class="version">VOL.20</span></div><div class="brand-en">SONIC UNIVERSE</div></div></div>
     <div class="header-right"><button class="header-action external-action" id="externalBtn" aria-label="外部音乐联动" title="外部音乐联动"><svg viewBox="0 0 24 24"><path d="M3 10v4m4-7v10m5-14v18m5-14v10m4-7v4"/></svg><span class="action-label">外部联动</span></button><button class="header-action studio-action" id="studioBtn" aria-label="布置我的音乐空间" title="布置空间"><svg viewBox="0 0 24 24"><path d="m12 3 2.3 6.7L21 12l-6.7 2.3L12 21l-2.3-6.7L3 12l6.7-2.3Z"/></svg><span class="action-label">布置空间</span></button><button class="header-action" id="queueBtn" aria-label="打开播放列表" title="播放列表"><svg viewBox="0 0 24 24"><path d="M4 5h16M4 10h16M4 15h9m4-1v7m-3-3h6"/></svg><span class="action-label">音乐库</span><span class="queue-count" id="queueCount">01</span></button><button class="upload-btn" id="uploadBtn" aria-label="导入多首音乐" title="可同时选择多首音乐"><svg viewBox="0 0 24 24"><path d="M12 16V3m-5 5 5-5 5 5M4 15v5h16v-5"/></svg><span>导入音乐</span></button><button class="icon-btn" id="fullscreenBtn" aria-label="进入全屏" title="全屏 · F"><svg viewBox="0 0 24 24"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg></button></div>
   </header>
   <main class="stage" id="stage">
@@ -201,9 +201,9 @@
     <div class="spectrum-panel" aria-label="实时音频频段"><div class="band"><div class="band-label">低频<output id="bassValue">0%</output></div><div class="band-track"><span class="band-fill" id="bassFill"></span></div></div><div class="band"><div class="band-label">中频<output id="midValue">0%</output></div><div class="band-track"><span class="band-fill" id="midFill"></span></div></div><div class="band"><div class="band-label">高频<output id="highValue">0%</output></div><div class="band-track"><span class="band-fill" id="highFill"></span></div></div></div>
   </main>
   <div class="source-ribbon" id="sourceRibbon"><span><i aria-hidden="true"></i>外部声音已接入<small>选歌、暂停与音量在原播放器操作</small></span><button id="sourceManageBtn">管理联动 ↗</button></div><div class="player-wrap"><section class="player" aria-label="音乐播放器"><div class="track"><button class="album album-button" id="albumButton" aria-label="更换歌曲封面" title="布置空间与歌曲封面"><img id="albumImage" alt="" hidden></button><div class="track-text"><div class="track-title" id="trackTitle" title="星际漫游 · Interstellar Drift">星际漫游<span class="track-tag" id="trackTag">DEMO</span></div><div class="track-sub" id="trackSub">Interstellar Drift · 原创合成音景</div></div></div><div class="transport"><div class="transport-buttons"><button class="icon-btn" id="restartBtn" aria-label="上一首" title="上一首"><svg viewBox="0 0 24 24"><path d="M5 5v14m14-14L8 12l11 7Z"/></svg></button><button class="play-btn" id="playBtn" aria-label="播放音乐" title="播放 / 暂停 · 空格"><svg class="play-icon" viewBox="0 0 24 24"><path d="m7 3 15 9-15 9Z"/></svg></button><button class="icon-btn" id="forwardBtn" aria-label="下一首" title="下一首"><svg viewBox="0 0 24 24"><path d="m5 5 11 7-11 7Zm14 0v14"/></svg></button></div><div class="progress-row"><span id="currentTime">00:00</span><input class="range" id="seek" type="range" min="0" max="96" step="0.1" value="0" aria-label="播放进度" aria-valuetext="00:00 / 01:36"><span id="duration">01:36</span></div></div><div class="player-right"><button class="icon-btn active" id="repeatBtn" aria-label="关闭单曲循环" aria-pressed="true" title="单曲循环：开"><svg viewBox="0 0 24 24"><path d="m17 2 4 4-4 4M3 11V8a2 2 0 0 1 2-2h16M7 22l-4-4 4-4m14-1v3a2 2 0 0 1-2 2H3"/></svg></button><div class="volume"><button class="icon-btn" id="muteBtn" aria-label="静音" aria-pressed="false" title="静音 · M"><svg viewBox="0 0 24 24"><path d="m11 4-6 5H2v6h3l6 5Zm4 4a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg></button><input class="range" id="volume" type="range" min="0" max="100" value="65" aria-label="音量" aria-valuetext="65%"></div><span class="player-divider"></span><button class="icon-btn" id="quietBtn" aria-label="进入宇宙" title="沉浸漫游 · H"><svg viewBox="0 0 24 24"><path d="m12 3 2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2Z"/></svg></button></div></section><span class="keyboard-hint">SPACE 播放 / 暂停</span></div>
-  <footer class="footer"><span class="footer-brand"><b>EDITION 19</b> SOUND & STARDUST</span><div class="footer-links footer-center"><button class="help-btn" id="projectBtn">创作与备份 ↗</button><span aria-hidden="true">·</span><button class="help-btn" id="helpBtn">使用指南 ↗</button><span aria-hidden="true">·</span><button class="help-btn" id="flightBtn" title="可选的独立节奏小游戏">星际航行小实验 ↗</button><span aria-hidden="true">·</span><a class="help-btn" href="https://github.com/Hgb-2005/sonic-universe/releases/latest/download/sonic-universe-folia-1.0.0.zip" title="下载 Folia 音乐星空背景模组">Folia 背景版 ↗</a></div><span>你的音乐 · 只在本机流转</span></footer>
+  <footer class="footer"><span class="footer-brand"><b>EDITION 20</b> SOUND & STARDUST</span><div class="footer-links footer-center"><button class="help-btn" id="projectBtn">创作与备份 ↗</button><span aria-hidden="true">·</span><button class="help-btn" id="helpBtn">使用指南 ↗</button><span aria-hidden="true">·</span><button class="help-btn" id="flightBtn" title="可选的独立节奏小游戏">星际航行小实验 ↗</button><span aria-hidden="true">·</span><a class="help-btn" href="https://github.com/Hgb-2005/sonic-universe/releases/latest/download/sonic-universe-folia-1.0.0.zip" title="下载 Folia 音乐星空背景模组">Folia 背景版 ↗</a></div><span>你的音乐 · 只在本机流转</span></footer>
   <div class="roam-surface" id="roamSurface" tabindex="0" role="region" aria-label="星空漫游：轻触唤醒按钮，拖动旋转视角，滚轮或双指缩放，加减键调整距离，0 重置，C 定格，右上角选星空，H 或 Escape 返回"></div>
-  <div class="roam-ui roam-top"><div class="roam-identity"><div class="roam-kicker">SONIC JOURNEY · VOL.19</div><p id="roamTrack">星际漫游</p><button class="roam-export" id="roamClipBtn">录一段星空 ↗</button><button class="roam-export roam-atelier" id="roamAtelierBtn">心情 · 歌词 · 收藏 ↗</button><button class="roam-export roam-atelier" id="roamInstrumentBtn">弹出星空 ↗</button></div><div class="roam-top-actions"><button class="roam-look-toggle" id="roamLookBtn" aria-expanded="false" aria-controls="roamLookPanel" aria-label="选择星空氛围"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.3 6.7L21 12l-6.7 2.3L12 21l-2.3-6.7L3 12l6.7-2.3Z"/></svg>选星空</button><button class="quiet-exit" id="quietExit"><svg viewBox="0 0 24 24"><path d="m14 5-7 7 7 7M7 12h13"/></svg>返回空间 · Esc</button></div>
+  <div class="roam-ui roam-top"><div class="roam-identity"><div class="roam-kicker">SONIC JOURNEY · VOL.20</div><p id="roamTrack">星际漫游</p><button class="roam-export" id="roamClipBtn">录一段星空 ↗</button><button class="roam-export roam-atelier" id="roamAtelierBtn">心情 · 歌词 · 收藏 ↗</button><button class="roam-export roam-atelier" id="roamInstrumentBtn">弹出星空 ↗</button></div><div class="roam-top-actions"><button class="roam-look-toggle" id="roamLookBtn" aria-expanded="false" aria-controls="roamLookPanel" aria-label="选择星空氛围"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.3 6.7L21 12l-6.7 2.3L12 21l-2.3-6.7L3 12l6.7-2.3Z"/></svg>选星空</button><button class="quiet-exit" id="quietExit"><svg viewBox="0 0 24 24"><path d="m14 5-7 7 7 7M7 12h13"/></svg>返回空间 · Esc</button></div>
     <section class="roam-look-panel" id="roamLookPanel" hidden aria-labelledby="roamLookTitle">
       <div class="roam-look-heading"><div><h2 id="roamLookTitle">此刻，想听见哪片星空</h2><span class="roam-look-current" id="roamLookCurrent"></span></div><button class="icon-btn" id="roamLookClose" aria-label="关闭星空氛围">×</button></div>
       <div class="roam-look-grid" id="roamLookGrid" role="group" aria-label="沉浸星空氛围"></div>
@@ -373,10 +373,10 @@
   <div class="instrument-footer"><div><span class="storage-status" role="status">旋律与设置仅保存在本机</span><small>录制一层前数 4 拍，循环播放时可继续录下一层。最多 6 层；关闭乐器台会停止演奏。</small></div><button class="primary-btn" id="instrumentFilmBtn">把演奏录成短片 ↗</button></div>
 </dialog>
 
-<script src="./project-pack.js?v=19"></script>
-<script src="./music-motion.js?v=19"></script>
-<script src="./visual-presets.js?v=19"></script>
-<script src="./visual-system.js?v=19"></script>
+<script src="./project-pack.js?v=20"></script>
+<script src="./music-motion.js?v=20"></script>
+<script src="./visual-presets.js?v=20"></script>
+<script src="./visual-system.js?v=20"></script>
 <script>
 (() => {
   'use strict';
@@ -390,9 +390,49 @@
   const $ = id => document.getElementById(id);
   const app = $('app'), canvas = $('universe');let ctx = canvas && canvas.getContext('2d', { alpha:false });
   if (!ctx) { window.reportVisualFatal?.('当前浏览器无法创建 2D 星空画布。请开启硬件加速或更换新版浏览器。'); return; }
-  let visualInitialized=false;
-  window.addEventListener('error',event=>{if(!visualInitialized)window.reportVisualFatal?.('星空引擎启动失败：'+(event.message||'未知错误'))});
-  window.addEventListener('unhandledrejection',event=>{if(!visualInitialized)window.reportVisualFatal?.('星空引擎启动失败：'+(event.reason?.message||'未知错误'))});
+  const nebulaAssetSources=Object.freeze({ring:'./assets/nebula-ring.png',galaxy:'./assets/nebula-galaxy.png',peaks:'./assets/nebula-landscape.png',blackhole:'./assets/nebula-blackhole.png'});
+  const nebulaImages={},nebulaRecolored=new Map();
+  let nebulaAssetsState='loading',nebulaAssetsSettled=false,visualFirstFrameReady=false;
+  function updateNebulaAssetDiagnostics(progress){
+    app.dataset.nebulaAssets=nebulaAssetsState;
+    if(progress!==undefined)app.dataset.nebulaAssetsProgress=progress;
+  }
+  function maybeFinishVisualLoading(){
+    if(!visualFirstFrameReady||!nebulaAssetsSettled)return;
+    window.finishVisualLoading?.();
+  }
+  function loadNebulaAssets(){
+    const entries=Object.entries(nebulaAssetSources);
+    let completed=0,failed=0;
+    nebulaAssetsState='loading';updateNebulaAssetDiagnostics('0/'+entries.length);
+    return Promise.all(entries.map(([key,source])=>new Promise(resolve=>{
+      const image=new Image();let settled=false;
+      image.decoding='async';
+      image.alt='';
+      const settle=loaded=>{
+        if(settled)return;
+        settled=true;
+        if(loaded&&image.naturalWidth&&image.naturalHeight)nebulaImages[key]=image;
+        else failed++;
+        completed++;
+        updateNebulaAssetDiagnostics(completed+'/'+entries.length);
+        resolve(loaded);
+      };
+      image.onload=()=>settle(true);
+      image.onerror=()=>settle(false);
+      setTimeout(()=>settle(false),6500);
+      image.src=new URL(source,location.href).href;
+    }))).then(()=>{
+      nebulaAssetsState=failed?'fallback':'ready';
+      nebulaAssetsSettled=true;
+      updateNebulaAssetDiagnostics(entries.length+'/'+entries.length);
+      if(failed)console.warn('部分星云纹理未能载入，已启用程序化流体画面。');
+      maybeFinishVisualLoading();
+      return nebulaAssetsState;
+    });
+  }
+  window.addEventListener('error',event=>{if(!visualFirstFrameReady)window.reportVisualFatal?.('星空引擎启动失败：'+(event.message||'未知错误'))});
+  window.addEventListener('unhandledrejection',event=>{if(!visualFirstFrameReady)window.reportVisualFatal?.('星空引擎启动失败：'+(event.reason?.message||'未知错误'))});
   const audio = $('audio'), playBtn = $('playBtn'), seek = $('seek');
   const themes = {
     nebula:{name:'紫色星云',index:1,core:[195,153,255],second:[118,91,218],hot:[238,211,255],accent:'#c7afff',bg:'#171329'},
@@ -751,7 +791,7 @@
     }finally{ctx=saved.ctx;w=saved.w;h=saved.h;dpr=saved.dpr;centerX=saved.centerX;centerY=saved.centerY;baseR=saved.baseR;backgroundLayer=saved.backgroundLayer;exportRendering=false}
     const portrait=shape==='portrait',margin=portrait?58:78,font='"Microsoft YaHei UI","Microsoft YaHei",sans-serif',meta=clipSession||{song:$('clipSong').value,author:$('clipAuthor').value,mood:$('clipMood').value};
     const shade=g.createLinearGradient(0,height*.63,0,height);shade.addColorStop(0,'rgba(8,9,17,0)');shade.addColorStop(1,'rgba(8,9,17,.89)');g.fillStyle=shade;g.fillRect(0,height*.63,width,height*.37);
-    g.textAlign='left';g.textBaseline='top';g.font='13px '+font;g.fillStyle=rgba(palette.core,.72);g.fillText('SONIC UNIVERSE  /  19',margin,portrait?58:42);
+    g.textAlign='left';g.textBaseline='top';g.font='13px '+font;g.fillStyle=rgba(palette.core,.72);g.fillText('SONIC UNIVERSE  /  20',margin,portrait?58:42);
     let y=height-(portrait?294:225);g.fillStyle='#f0e8fc';g.font='500 '+(portrait?36:30)+'px '+font;
     for(const line of clipTextLines(g,meta.song,width-margin*2,2)){g.fillText(line,margin,y);y+=portrait?46:38}
     y+=12;g.font=(portrait?'20':'18')+'px '+font;g.fillStyle='#c0aecf';for(const line of clipTextLines(g,meta.mood,width-margin*2,portrait?3:2)){g.fillText(line,margin,y);y+=portrait?29:25}
@@ -1586,7 +1626,7 @@
     g.strokeStyle=line;g.lineWidth=1;g.strokeRect(29.5,29.5,1741,1291);
     g.fillStyle=muted;g.font='16px ui-monospace,Consolas,monospace';
     g.fillText('SONIC UNIVERSE  /  A POSTCARD FROM THE STARS',69,78);
-    g.textAlign='right';g.fillText('VOL.19',1731,78);g.textAlign='left';
+    g.textAlign='right';g.fillText('VOL.20',1731,78);g.textAlign='left';
     const art={x:69,y:109,w:1662,h:842},source=capturedScene,aspect=art.w/art.h;
     let sw,sh;
     if(capturedMoment.quiet){sw=source.width;sh=sw/aspect;if(sh>source.height){sh=source.height;sw=sh*aspect}}
@@ -1815,7 +1855,7 @@
   function showToast(message,error=false){clearTimeout(toastTimer);const el=$('toast');el.textContent=message;el.setAttribute('role',error?'alert':'status');el.classList.add('visible');toastTimer=setTimeout(()=>el.classList.remove('visible'),4400)}
   function setFill(el){const v=(el.value-el.min)/(el.max-el.min)*100;el.style.setProperty('--fill',v+'%')}
   function savePreferences(){if(backupRestoring)return;
-    try{localStorage.setItem('sonic-universe-preferences',JSON.stringify({theme:themeKey,volume,intensity,repeat,visualMode,particleCount,motionSpeed,playbackMode,space,storyEnabled,journeyAuto,postcardAuthor,postcardStyle,visualEffects,refinement:{...refinement}}));storageIssues.delete('preferences')}
+    try{localStorage.setItem('sonic-universe-preferences',JSON.stringify({preferencesVersion:2,theme:themeKey,volume,intensity,repeat,visualMode,particleCount,motionSpeed,playbackMode,space,storyEnabled,journeyAuto,postcardAuthor,postcardStyle,visualEffects,refinement:{...refinement}}));storageIssues.delete('preferences')}
     catch{const first=!storageIssues.has('preferences');storageIssues.add('preferences');if(first)showToast('设置未能保存，当前浏览器可能限制了本机存储。',true)}
     updateStorageStatus();
   }
@@ -1847,8 +1887,8 @@
   $('intensity').addEventListener('input',()=>{intensity=Number($('intensity').value)/100;$('intensityValue').value=Math.round(intensity*100)+'%';setFill($('intensity'));savePreferences()});
   try{const prefs=JSON.parse(localStorage.getItem('sonic-universe-preferences')||'null');if(prefs){if(themes[prefs.theme])setTheme(prefs.theme,false);if(Number.isFinite(prefs.volume))volume=clamp(prefs.volume,0,1);if(Number.isFinite(prefs.intensity))intensity=clamp(prefs.intensity,.2,1);if(typeof prefs.repeat==='boolean')repeat=prefs.repeat}}catch{}
   palette={...targetPalette,core:[...targetPalette.core],second:[...targetPalette.second],hot:[...targetPalette.hot]};
-  try{const prefs=JSON.parse(localStorage.getItem('sonic-universe-preferences')||'null');if(prefs){if(prefs.visualEffects){const savedResponse=['soft','balanced','strong'].includes(prefs.visualEffects.response)?prefs.visualEffects.response:refinement.profile;visualEffects={depth:finite(prefs.visualEffects.depth,.65,0,1),glow:finite(prefs.visualEffects.glow,.6,0,1),trail:finite(prefs.visualEffects.trail,.55,0,1),response:savedResponse,beat:prefs.visualEffects.beat===true}}if(visualModes[prefs.visualMode])visualMode=prefs.visualMode;if(Number.isFinite(prefs.particleCount))particleCount=Math.round(clamp(prefs.particleCount,400,6000)/200)*200;if(Number.isFinite(prefs.motionSpeed))motionSpeed=clamp(prefs.motionSpeed,.25,2)}}catch{}
-  setVisualMode(visualMode,false);updateVisualControls();
+  try{const prefs=JSON.parse(localStorage.getItem('sonic-universe-preferences')||'null');if(prefs){if(prefs.visualEffects){const savedResponse=['soft','balanced','strong'].includes(prefs.visualEffects.response)?prefs.visualEffects.response:refinement.profile,legacyTrail=prefs.preferencesVersion!==2&&finite(prefs.visualEffects.trail,-1)===0;visualEffects={depth:finite(prefs.visualEffects.depth,.65,0,1),glow:finite(prefs.visualEffects.glow,.6,0,1),trail:legacyTrail?.55:finite(prefs.visualEffects.trail,.55,0,1),response:savedResponse,beat:prefs.visualEffects.beat===true}}if(visualModes[prefs.visualMode])visualMode=prefs.visualMode;if(Number.isFinite(prefs.particleCount))particleCount=Math.round(clamp(prefs.particleCount,400,6000)/200)*200;if(Number.isFinite(prefs.motionSpeed))motionSpeed=clamp(prefs.motionSpeed,.25,2);if(prefs.preferencesVersion!==2)localStorage.setItem('sonic-universe-preferences',JSON.stringify({...prefs,preferencesVersion:2,visualEffects}))}}catch{}
+  setVisualMode(visualMode,false);updateVisualControls();loadNebulaAssets();
   $('volume').value=Math.round(volume*100);$('intensity').value=Math.round(intensity*100);$('intensityValue').value=Math.round(intensity*100)+'%';setFill($('volume'));setFill($('intensity'));
 
   function initAudio(){
@@ -2659,40 +2699,117 @@
     if(state.width!==width||state.height!==height||state.dpr!==pixelRatio){state.surface.width=state.width=width;state.surface.height=state.height=height;state.dpr=pixelRatio;state.ctx.setTransform(pixelRatio,0,0,pixelRatio,0,0)}
     return state;
   }
-  function drawFluidUniverse(cx,cy,r,t,dt){
+  function recolorNebula(scene,key){
+    const image=nebulaImages[scene];if(!image)return null;
+    const cacheKey=scene+'-'+key;if(nebulaRecolored.has(cacheKey))return nebulaRecolored.get(cacheKey);
+    const source=document.createElement('canvas');source.width=image.naturalWidth;source.height=image.naturalHeight;
+    const sourceCtx=source.getContext('2d',{willReadFrequently:true});sourceCtx.drawImage(image,0,0);
+    const frame=sourceCtx.getImageData(0,0,source.width,source.height),data=frame.data,colors=themes[key];
+    const low=colors.second,core=colors.core,hot=colors.hot;
+    const mix=(a,b,amount)=>a+(b-a)*amount;
+    for(let i=0;i<data.length;i+=4){
+      const alpha=data[i+3]/255;
+      if(alpha<.018){data[i+3]=0;continue}
+      const luma=(data[i]*54+data[i+1]*183+data[i+2]*19)/65280;
+      const level=Math.pow(clamp(luma,0,1),.7);
+      if(key==='nebula'){
+        // The reference artwork already carries the exact violet-blue liquid
+        // detail. Keep that palette and only recover a little contrast.
+        data[i]=clamp(data[i]*1.04+3,0,255);
+        data[i+1]=clamp(data[i+1]*1.025+2,0,255);
+        data[i+2]=clamp(data[i+2]*1.06+5,0,255);
+      }else{
+        let red,green,blue;
+        if(level<.58){
+          const amount=clamp(level/.58*1.18,0,1);
+          red=mix(low[0],core[0],amount);green=mix(low[1],core[1],amount);blue=mix(low[2],core[2],amount);
+        }else{
+          const amount=clamp((level-.58)/.42,0,1);
+          red=mix(core[0],hot[0],amount);green=mix(core[1],hot[1],amount);blue=mix(core[2],hot[2],amount);
+        }
+        // Keep the source's blue/magenta breakup instead of flattening the
+        // whole scene into a single flat tint.
+        data[i]=mix(data[i],red,.72);data[i+1]=mix(data[i+1],green,.72);data[i+2]=mix(data[i+2],blue,.72);
+      }
+      data[i+3]=Math.round(clamp(Math.pow(alpha,.9)*(.94+level*.07),0,.97)*255);
+    }
+    sourceCtx.putImageData(frame,0,0);
+    nebulaRecolored.set(cacheKey,source);return source;
+  }
+  function drawNebulaAsset(scene,cx,cy,r,t,opacity,look){
+    const surface=recolorNebula(scene,themeKey);if(!surface||opacity<=.002)return false;
+    const config={
+      ring:{width:3.22,height:2.34,x:0,y:0,rotate:-.055},
+      galaxy:{width:3.45,height:2.50,x:0,y:0,rotate:.06},
+      peaks:{width:3.50,height:2.54,x:0,y:.06,rotate:-.018},
+      blackhole:{width:3.35,height:2.43,x:0,y:.015,rotate:-.05}
+    }[scene];
+    const calm=reduced?0:1,phase=scene==='ring'?0:scene==='galaxy'?1.7:scene==='peaks'?3.1:4.5;
+    const breathe=1+bass*.024*look.intensity+Math.sin(t*.095+phase)*.007*calm;
+    const driftX=cx+r*(config.x+(Math.sin(t*.072+phase)*.012+mouse.x*.012)*calm);
+    const driftY=cy+r*(config.y+(Math.cos(t*.061+phase)*.009+mouse.y*.009)*calm);
+    const width=r*config.width*breathe,height=r*config.height*breathe;
+    const rotation=config.rotate+(Math.sin(t*.055+phase)*.009+mid*.012)*calm*look.motionSpeed;
+    ctx.save();ctx.globalCompositeOperation='screen';
+    ctx.globalAlpha=opacity*clamp(.82+look.intensity*.15+visualEffects.glow*.05,0,1);
+    ctx.translate(driftX,driftY);ctx.rotate(rotation);ctx.drawImage(surface,-width/2,-height/2,width,height);
+    ctx.globalCompositeOperation='lighter';
+    ctx.globalAlpha=opacity*(scene==='peaks'?.06:.045)*(.72+look.intensity*.28);
+    ctx.rotate(-rotation*.55+(scene==='galaxy'?-.08:.035));
+    ctx.drawImage(surface,-width*.54,-height*.54,width*1.08,height*1.08);
+    ctx.restore();return true;
+  }
+  function drawEventHorizon(cx,cy,r,t,opacity){
+    if(opacity<=.002)return;
+    const pulse=1+bass*.07*intensity+treblePulse*.025;
+    ctx.save();ctx.globalCompositeOperation='source-over';ctx.globalAlpha=Math.min(1,opacity);
+    ctx.translate(cx,cy);ctx.rotate(-.11);ctx.scale(1,.47);
+    const radius=r*.39*pulse,halo=ctx.createRadialGradient(0,0,0,0,0,radius*1.07);
+    halo.addColorStop(0,'#03040a');halo.addColorStop(.66,'#03040a');halo.addColorStop(.72,'rgba(3,4,10,.99)');
+    halo.addColorStop(.79,rgba(palette.second,.24));halo.addColorStop(.86,rgba(palette.hot,.17));halo.addColorStop(1,rgba(palette.core,0));
+    ctx.fillStyle=halo;ctx.beginPath();ctx.arc(0,0,radius*1.07,0,Math.PI*2);ctx.fill();
+    ctx.globalAlpha=opacity*(.17+treblePulse*.27);ctx.strokeStyle=rgba(palette.hot,.9);ctx.lineWidth=1.1;
+    ctx.beginPath();ctx.arc(0,0,radius*.82,0,Math.PI*2);ctx.stroke();ctx.restore();
+  }
+  function drawFluidUniverse(cx,cy,r,t,dt,useAssets=false){
     const profile=renderProfile,look=SonicVisualSystem.effectiveLook({...captureLook(),trail:visualEffects.trail,response:visualEffects.response,beat:visualEffects.beat},profile);
     const state=fluidTrailContext(ctx,w,h,Math.max(1,dpr)),g=state.ctx,sprite=fluidSprite(themeKey),count=Math.min(ring.length,look.effectiveParticleCount);
+    const useNebulaAssets=Boolean(useAssets&&nebulaAssetsState==='ready'&&nebulaImages.ring&&nebulaImages.galaxy&&nebulaImages.peaks&&nebulaImages.blackhole);
     g.save();g.setTransform(state.dpr,0,0,state.dpr,0,0);g.globalCompositeOperation='destination-out';g.globalAlpha=SonicVisualSystem.trailAlpha(look.effectiveTrail,Math.max(.012,dt||1/60));g.fillStyle='#000';g.fillRect(0,0,w,h);g.restore();
-    const strength=.42+look.intensity*.72+visualEffects.glow*.18,time=t*.16*look.motionSpeed,bassLift=bass*look.intensity,midFlow=mid*.7+music.flow*.22,flow=midFlow*look.motionSpeed,speed=(8+music.presence*18+mathSmooth(mid))*.08;
-    function mathSmooth(value){return value*value*(3-2*value)}
+    const strength=(useNebulaAssets?.23:.42)+look.intensity*(useNebulaAssets?.38:.72)+visualEffects.glow*(useNebulaAssets?.08:.18),time=t*.16*look.motionSpeed,bassLift=bass*look.intensity,midFlow=mid*.7+music.flow*.22,flow=midFlow*look.motionSpeed;
+    const overlayCount=useNebulaAssets?Math.max(120,Math.round(count*(w<=760?.42:.55))):count;
     function pixel(x,y,size,alpha,hot=false){
       if(alpha<.008)return;g.globalAlpha=clamp(alpha,0,1);const scale=size*(hot?1.7:1);g.drawImage(sprite,x-scale/2,y-scale/2,scale,scale);
     }
     g.save();g.setTransform(state.dpr,0,0,state.dpr,0,0);g.globalCompositeOperation='lighter';
     const ringWeight=sceneWeights.ring;
-    if(ringWeight>.002)for(let i=0;i<count;i++){
+    if(useNebulaAssets)drawNebulaAsset('ring',cx,cy,r,t,ringWeight,look);
+    if(ringWeight>.002)for(let i=0;i<overlayCount;i++){
       const p=ring[i],wave=SonicVisualSystem.fbm2(i*.031+time*.35,p.layer*2.2-time*.12,3),angle=p.a+time*.08+p.layer*.7+flow*.2,radius=r*(.56+p.r*.52+p.band*.055+wave*.07+bassLift*.09),squash=.83+visualEffects.depth*.06,flash=Math.pow(Math.max(0,Math.sin(p.phase*7+t*.5)),18)*treblePulse;
-      pixel(cx+Math.cos(angle)*radius*1.32,cy+Math.sin(angle)*radius*squash,1.7+visualEffects.glow*2.2+p.layer*1.8+flash*4,(.1+p.alpha*.28+flash*.42)*ringWeight*strength,flash>.08);
+      pixel(cx+Math.cos(angle)*radius*1.32,cy+Math.sin(angle)*radius*squash,(useNebulaAssets?1.05:1.7)+visualEffects.glow*(useNebulaAssets?1.15:2.2)+p.layer*(useNebulaAssets?1.1:1.8)+flash*(useNebulaAssets?2.5:4),(useNebulaAssets?.035:.1)+p.alpha*(useNebulaAssets?.15:.28)+flash*(useNebulaAssets?.33:.42),(flash>.08&&(useNebulaAssets?p.layer>.68:p.layer>.4)));
     }
     const galaxyWeight=sceneWeights.galaxy;
-    if(galaxyWeight>.002)for(let i=0;i<count;i++){
+    if(useNebulaAssets)drawNebulaAsset('galaxy',cx,cy,r,t,galaxyWeight,look);
+    if(galaxyWeight>.002)for(let i=0;i<overlayCount;i++){
       const p=galaxyParticles[i],noise=SonicVisualSystem.fbm2(i*.027+time*.2,p.phase-time*.08,3),radius=r*(.08+Math.pow(p.radial,.72)*1.3*(1+bassLift*.09)),angle=p.arm*Math.PI*.5+Math.log1p(radius/r)*2.35+time*.065+flow*.32+noise*.26+p.scatter*.12,flash=Math.pow(Math.max(0,Math.sin(p.phase*9+t*.7)),20)*treblePulse;
-      pixel(cx+Math.cos(angle)*radius*1.36,cy+Math.sin(angle)*radius*(.62+visualEffects.depth*.16),1.2+visualEffects.glow*1.8+p.size+flash*4,(.06+(1-p.radial)*.35+flash*.45)*galaxyWeight*strength,flash>.06||p.radial<.1);
+      pixel(cx+Math.cos(angle)*radius*1.36,cy+Math.sin(angle)*radius*(.62+visualEffects.depth*.16),(useNebulaAssets?.8:1.2)+visualEffects.glow*(useNebulaAssets?1.1:1.8)+p.size*(useNebulaAssets?.72:1)+flash*(useNebulaAssets?2.8:4),(useNebulaAssets?.025:.06)+(1-p.radial)*(useNebulaAssets?.17:.35)+flash*(useNebulaAssets?.34:.45),flash>.06||(p.radial<.1&&(useNebulaAssets?p.depth>.55:true)));
     }
     const peakWeight=sceneWeights.peaks;
-    if(peakWeight>.002)for(let i=0;i<count;i++){
+    if(useNebulaAssets)drawNebulaAsset('peaks',cx,cy,r,t,peakWeight,look);
+    if(peakWeight>.002)for(let i=0;i<overlayCount;i++){
       const u=((i*.61803398875)%1)*2-1,phase=(i*.381966)%1,band=terrainBands[Math.min(terrainBands.length-1,Math.floor((u+1)*.5*terrainBands.length))],noise=SonicVisualSystem.fbm2(i*.021+time*.18,phase-time*.07,3),layer=phase,base=cy+r*(.38-layer*.26)+bassLift*r*.07,height=(band*.34+SonicVisualSystem.smoothstep(-.6,.7,noise)*.2+midFlow*.12)*r*(.7+look.intensity*.45),x=cx+u*r*1.46,flash=Math.pow(Math.max(0,Math.sin(phase*15+t*.8)),22)*treblePulse;
-      pixel(x,base-height,r*(.6+layer*.7),peakWeight*(.035+.07*(1-layer)+flash*.12)*strength,flash>.08);
-      if(layer<.42)pixel(x+noise*r*.1,base-height*.84,r*(.95+layer),peakWeight*.045*strength,false);
+      pixel(x,base-height,(useNebulaAssets?.65:r*(.6+layer*.7))+visualEffects.glow*.8,peakWeight*((useNebulaAssets?.028:.035)+(useNebulaAssets?.018:.07)*(1-layer)+flash*(useNebulaAssets?.18:.12))*strength,flash>.08);
+      if(!useNebulaAssets&&layer<.42)pixel(x+noise*r*.1,base-height*.84,r*(.95+layer),peakWeight*.045*strength,false);
     }
     const holeWeight=sceneWeights.blackhole;
-    if(holeWeight>.002)for(let i=0;i<count;i++){
+    if(useNebulaAssets)drawNebulaAsset('blackhole',cx,cy,r,t,holeWeight,look);
+    if(holeWeight>.002)for(let i=0;i<overlayCount;i++){
       const p=galaxyParticles[i],cycle=(p.radial-time*(.028+midFlow*.06))%1,inward=cycle<0?cycle+1:cycle,radius=r*(.13+Math.pow(inward,1.8)*1.45),noise=SonicVisualSystem.fbm2(i*.025+time*.25,inward*3-time*.15,3),angle=p.arm*Math.PI*.5+inward*5.2-time*.16-flow*.55+noise*.25,heat=1-inward,flash=Math.pow(Math.max(0,Math.sin(p.phase*11+t*.9)),18)*treblePulse,halo=.04+Math.max(0,.5-Math.abs(inward-.13))*.28+bassLift*.06;
-      pixel(cx+Math.cos(angle)*radius*1.42,cy+Math.sin(angle)*radius*.68,1.4+heat*3.8+visualEffects.glow*2+flash*5,(.055+heat*.32+flash*.4+bassLift*halo)*holeWeight*strength,heat>.6||flash>.08);
+      if(inward>.31)pixel(cx+Math.cos(angle)*radius*1.42,cy+Math.sin(angle)*radius*.68,(useNebulaAssets?.9:1.4)+heat*(useNebulaAssets?2.2:3.8)+visualEffects.glow*(useNebulaAssets?1:2)+flash*(useNebulaAssets?3.2:5),(useNebulaAssets?.025:.055)+heat*(useNebulaAssets?.18:.32)+flash*(useNebulaAssets?.3:.4)+bassLift*halo,heat>.6||flash>.08);
     }
     g.restore();
     ctx.save();ctx.globalAlpha=lightAlpha();ctx.drawImage(state.surface,0,0,w,h);ctx.restore();
-    if(holeWeight>.08){ctx.save();ctx.globalCompositeOperation='source-over';ctx.globalAlpha=Math.min(1,holeWeight);ctx.fillStyle='#04050b';ctx.beginPath();ctx.arc(cx,cy,r*(.24+bassLift*.015),0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;ctx.strokeStyle=rgba(palette.hot,(.18+treblePulse*.45)*holeWeight);ctx.lineWidth=1.3;ctx.beginPath();ctx.ellipse(cx,cy,r*.34,r*.2,-.18,0,Math.PI*2);ctx.stroke();ctx.restore()}
+    if(holeWeight>.08)drawEventHorizon(cx,cy,r,t,holeWeight);
   }
   function lightAlpha(){return (storyEnabled?clamp(story.light,0,1):1)*(atelier.settings.breathing?(.46+breath*.54):1)}
   function draw(t,dt){
@@ -2732,7 +2849,7 @@
       for(const points of constellations){ctx.beginPath();for(let i=0;i<points.length;i+=2){const x=points[i]*w,y=points[i+1]*h;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.stroke();for(let i=0;i<points.length;i+=2){ctx.fillStyle=rgba(palette.hot,.35);ctx.fillRect(points[i]*w-1,points[i+1]*h-1,2,2)}}
       for(const key of Object.keys(sceneWeights))drawScene(key,cx,cy,r,t,sceneWeights[key]);
       drawMusicFilaments(cx,cy,r,t);drawReformingStars(cx,cy,r,t);drawDepthMist(cx,cy,r,t,yaw,pitch,true);drawBlackholeCore(cx,cy,r,t,sceneWeights.blackhole);
-    }else drawFluidUniverse(cx,cy,r,t,dt);
+    }else drawFluidUniverse(cx,cy,r,t,dt,true);
     drawStoryBloom(cx,cy,r,t);
     for(let i=shooting.length-1;i>=0;i--){const p=shooting[i];p.life-=dt/p.ttl;if(p.life<=0){shooting.splice(i,1);continue}p.x+=p.vx*dt;p.y+=p.vy*dt;ctx.fillStyle=rgba(palette.hot,p.life*.7);ctx.fillRect(p.x,p.y,1.6,1.6)}
     ctx.restore();
@@ -2753,7 +2870,7 @@
       document.documentElement.style.setProperty('--accent',rgba(palette.core,1));document.documentElement.style.setProperty('--accent-rgb',palette.core.map(Math.round).join(','));
       updatePolish(elapsed,now);draw(sceneTime,elapsed);renderClipFrame();frame++;
       if(now-lastUIUpdate>95){lastUIUpdate=now;updateTimeline();updateJourneyUI();updateExternalSignal(now);if($('clipDialog').open)clipUpdateControls();const values=[bass,mid,high];['bass','mid','high'].forEach((name,i)=>{const value=Math.round(values[i]*100);$(name+'Value').textContent=value+'%';$(name+'Fill').style.width=value+'%'});$('beatLight').style.opacity=.2+music.cloud*.8;$('melodyLight').style.opacity=.2+music.flow*.8;$('trebleLight').style.opacity=.2+music.shimmer*.8;app.dataset.musicLayers=JSON.stringify({cloud:+music.cloud.toFixed(3),flow:+music.flow.toFixed(3),shimmer:+music.shimmer.toFixed(3),presence:+music.presence.toFixed(3)});app.dataset.musicCharacter=JSON.stringify({sustain:+music.sustain.toFixed(3),percussion:+music.percussion.toFixed(3),air:+music.air.toFixed(3),drift:+music.drift.toFixed(3)});app.dataset.musicState=music.presence>.12?'listening':'resting';app.dataset.beatPulse=beatPulse.toFixed(3);app.dataset.treblePulse=treblePulse.toFixed(3)}
-      if(!visualInitialized){visualInitialized=true;window.finishVisualLoading?.()}
+      if(!visualFirstFrameReady){visualFirstFrameReady=true;maybeFinishVisualLoading()}
       requestAnimationFrame(animate);
     }catch(error){console.error(error);window.reportVisualFatal?.('星空引擎运行中断：'+(error.message||'未知错误'))}
   }

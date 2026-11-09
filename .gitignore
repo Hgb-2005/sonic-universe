@@ -22,6 +22,9 @@ Thumbs.db
 !/outputs/blackhole-demo.webm
 !/outputs/interstellar-drift.mp3
 !/outputs/星际漫游-示例短句.lrc
+!/outputs/assets/
+!/outputs/assets/*.png
+/outputs/assets/reference/
 
 !/outputs/project-pack.js
 !/outputs/visual-presets.js
