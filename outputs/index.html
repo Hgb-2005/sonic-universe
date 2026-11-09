@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#080811">
-<title>声波宇宙 21 · 让音乐成为星空</title>
+<title>声波宇宙 22 · 让音乐成为星空</title>
 <style>.help-btn{text-decoration:none}.footer-links{flex-wrap:wrap}</style>
 <meta name="description" content="让音乐成为星空。在星环、银河、山峰与引力黑洞之间旅行，收藏自己的视觉预设，演奏旋律并导出有声短片。">
 <meta property="og:type" content="website">
@@ -166,7 +166,7 @@
   <canvas id="universe" role="img" aria-label="一片随音乐频率起伏的星空，低音推开星云，中频留下星轨，高音点亮星闪">你的浏览器暂不支持星空画布。</canvas>
   <div class="grain" aria-hidden="true"></div>
   <header class="header">
-    <div class="brand"><div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M7 17v-2m4 8V9m5 17V6m5 16V10m4 8v-4"/></svg></div><div><div class="brand-name">声波宇宙<span class="version">VOL.21</span></div><div class="brand-en">SONIC UNIVERSE</div></div></div>
+    <div class="brand"><div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M7 17v-2m4 8V9m5 17V6m5 16V10m4 8v-4"/></svg></div><div><div class="brand-name">声波宇宙<span class="version">VOL.22</span></div><div class="brand-en">SONIC UNIVERSE</div></div></div>
     <div class="header-right"><button class="header-action external-action" id="externalBtn" aria-label="外部音乐联动" title="外部音乐联动"><svg viewBox="0 0 24 24"><path d="M3 10v4m4-7v10m5-14v18m5-14v10m4-7v4"/></svg><span class="action-label">外部联动</span></button><button class="header-action studio-action" id="studioBtn" aria-label="布置我的音乐空间" title="布置空间"><svg viewBox="0 0 24 24"><path d="m12 3 2.3 6.7L21 12l-6.7 2.3L12 21l-2.3-6.7L3 12l6.7-2.3Z"/></svg><span class="action-label">布置空间</span></button><button class="header-action" id="queueBtn" aria-label="打开播放列表" title="播放列表"><svg viewBox="0 0 24 24"><path d="M4 5h16M4 10h16M4 15h9m4-1v7m-3-3h6"/></svg><span class="action-label">音乐库</span><span class="queue-count" id="queueCount">01</span></button><button class="upload-btn" id="uploadBtn" aria-label="导入多首音乐" title="可同时选择多首音乐"><svg viewBox="0 0 24 24"><path d="M12 16V3m-5 5 5-5 5 5M4 15v5h16v-5"/></svg><span>导入音乐</span></button><button class="icon-btn" id="fullscreenBtn" aria-label="进入全屏" title="全屏 · F"><svg viewBox="0 0 24 24"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg></button></div>
   </header>
   <main class="stage" id="stage">
@@ -201,9 +201,9 @@
     <div class="spectrum-panel" aria-label="实时音频频段"><div class="band"><div class="band-label">低频<output id="bassValue">0%</output></div><div class="band-track"><span class="band-fill" id="bassFill"></span></div></div><div class="band"><div class="band-label">中频<output id="midValue">0%</output></div><div class="band-track"><span class="band-fill" id="midFill"></span></div></div><div class="band"><div class="band-label">高频<output id="highValue">0%</output></div><div class="band-track"><span class="band-fill" id="highFill"></span></div></div></div>
   </main>
   <div class="source-ribbon" id="sourceRibbon"><span><i aria-hidden="true"></i>外部声音已接入<small>选歌、暂停与音量在原播放器操作</small></span><button id="sourceManageBtn">管理联动 ↗</button></div><div class="player-wrap"><section class="player" aria-label="音乐播放器"><div class="track"><button class="album album-button" id="albumButton" aria-label="更换歌曲封面" title="布置空间与歌曲封面"><img id="albumImage" alt="" hidden></button><div class="track-text"><div class="track-title" id="trackTitle" title="星际漫游 · Interstellar Drift">星际漫游<span class="track-tag" id="trackTag">DEMO</span></div><div class="track-sub" id="trackSub">Interstellar Drift · 原创合成音景</div></div></div><div class="transport"><div class="transport-buttons"><button class="icon-btn" id="restartBtn" aria-label="上一首" title="上一首"><svg viewBox="0 0 24 24"><path d="M5 5v14m14-14L8 12l11 7Z"/></svg></button><button class="play-btn" id="playBtn" aria-label="播放音乐" title="播放 / 暂停 · 空格"><svg class="play-icon" viewBox="0 0 24 24"><path d="m7 3 15 9-15 9Z"/></svg></button><button class="icon-btn" id="forwardBtn" aria-label="下一首" title="下一首"><svg viewBox="0 0 24 24"><path d="m5 5 11 7-11 7Zm14 0v14"/></svg></button></div><div class="progress-row"><span id="currentTime">00:00</span><input class="range" id="seek" type="range" min="0" max="96" step="0.1" value="0" aria-label="播放进度" aria-valuetext="00:00 / 01:36"><span id="duration">01:36</span></div></div><div class="player-right"><button class="icon-btn active" id="repeatBtn" aria-label="关闭单曲循环" aria-pressed="true" title="单曲循环：开"><svg viewBox="0 0 24 24"><path d="m17 2 4 4-4 4M3 11V8a2 2 0 0 1 2-2h16M7 22l-4-4 4-4m14-1v3a2 2 0 0 1-2 2H3"/></svg></button><div class="volume"><button class="icon-btn" id="muteBtn" aria-label="静音" aria-pressed="false" title="静音 · M"><svg viewBox="0 0 24 24"><path d="m11 4-6 5H2v6h3l6 5Zm4 4a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg></button><input class="range" id="volume" type="range" min="0" max="100" value="65" aria-label="音量" aria-valuetext="65%"></div><span class="player-divider"></span><button class="icon-btn" id="quietBtn" aria-label="进入宇宙" title="沉浸漫游 · H"><svg viewBox="0 0 24 24"><path d="m12 3 2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2Z"/></svg></button></div></section><span class="keyboard-hint">SPACE 播放 / 暂停</span></div>
-  <footer class="footer"><span class="footer-brand"><b>EDITION 21</b> SOUND & STARDUST</span><div class="footer-links footer-center"><button class="help-btn" id="projectBtn">创作与备份 ↗</button><span aria-hidden="true">·</span><button class="help-btn" id="helpBtn">使用指南 ↗</button><span aria-hidden="true">·</span><button class="help-btn" id="flightBtn" title="可选的独立节奏小游戏">星际航行小实验 ↗</button><span aria-hidden="true">·</span><a class="help-btn" href="https://github.com/Hgb-2005/sonic-universe/releases/latest/download/sonic-universe-folia-1.0.0.zip" title="下载 Folia 音乐星空背景模组">Folia 背景版 ↗</a></div><span>你的音乐 · 只在本机流转</span></footer>
+  <footer class="footer"><span class="footer-brand"><b>EDITION 22</b> SOUND & STARDUST</span><div class="footer-links footer-center"><button class="help-btn" id="projectBtn">创作与备份 ↗</button><span aria-hidden="true">·</span><button class="help-btn" id="helpBtn">使用指南 ↗</button><span aria-hidden="true">·</span><button class="help-btn" id="flightBtn" title="可选的独立节奏小游戏">星际航行小实验 ↗</button><span aria-hidden="true">·</span><a class="help-btn" href="https://github.com/Hgb-2005/sonic-universe/releases/latest/download/sonic-universe-folia-1.0.0.zip" title="下载 Folia 音乐星空背景模组">Folia 背景版 ↗</a></div><span>你的音乐 · 只在本机流转</span></footer>
   <div class="roam-surface" id="roamSurface" tabindex="0" role="region" aria-label="星空漫游：轻触唤醒按钮，拖动旋转视角，滚轮或双指缩放，加减键调整距离，0 重置，C 定格，右上角选星空，H 或 Escape 返回"></div>
-  <div class="roam-ui roam-top"><div class="roam-identity"><div class="roam-kicker">SONIC JOURNEY · VOL.21</div><p id="roamTrack">星际漫游</p><button class="roam-export" id="roamClipBtn">录一段星空 ↗</button><button class="roam-export roam-atelier" id="roamAtelierBtn">心情 · 歌词 · 收藏 ↗</button><button class="roam-export roam-atelier" id="roamInstrumentBtn">弹出星空 ↗</button></div><div class="roam-top-actions"><button class="roam-look-toggle" id="roamLookBtn" aria-expanded="false" aria-controls="roamLookPanel" aria-label="选择星空氛围"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.3 6.7L21 12l-6.7 2.3L12 21l-2.3-6.7L3 12l6.7-2.3Z"/></svg>选星空</button><button class="quiet-exit" id="quietExit"><svg viewBox="0 0 24 24"><path d="m14 5-7 7 7 7M7 12h13"/></svg>返回空间 · Esc</button></div>
+  <div class="roam-ui roam-top"><div class="roam-identity"><div class="roam-kicker">SONIC JOURNEY · VOL.22</div><p id="roamTrack">星际漫游</p><button class="roam-export" id="roamClipBtn">录一段星空 ↗</button><button class="roam-export roam-atelier" id="roamAtelierBtn">心情 · 歌词 · 收藏 ↗</button><button class="roam-export roam-atelier" id="roamInstrumentBtn">弹出星空 ↗</button></div><div class="roam-top-actions"><button class="roam-look-toggle" id="roamLookBtn" aria-expanded="false" aria-controls="roamLookPanel" aria-label="选择星空氛围"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.3 6.7L21 12l-6.7 2.3L12 21l-2.3-6.7L3 12l6.7-2.3Z"/></svg>选星空</button><button class="quiet-exit" id="quietExit"><svg viewBox="0 0 24 24"><path d="m14 5-7 7 7 7M7 12h13"/></svg>返回空间 · Esc</button></div>
     <section class="roam-look-panel" id="roamLookPanel" hidden aria-labelledby="roamLookTitle">
       <div class="roam-look-heading"><div><h2 id="roamLookTitle">此刻，想听见哪片星空</h2><span class="roam-look-current" id="roamLookCurrent"></span></div><button class="icon-btn" id="roamLookClose" aria-label="关闭星空氛围">×</button></div>
       <div class="roam-look-grid" id="roamLookGrid" role="group" aria-label="沉浸星空氛围"></div>
@@ -373,10 +373,10 @@
   <div class="instrument-footer"><div><span class="storage-status" role="status">旋律与设置仅保存在本机</span><small>录制一层前数 4 拍，循环播放时可继续录下一层。最多 6 层；关闭乐器台会停止演奏。</small></div><button class="primary-btn" id="instrumentFilmBtn">把演奏录成短片 ↗</button></div>
 </dialog>
 
-<script src="./project-pack.js?v=21"></script>
-<script src="./music-motion.js?v=21"></script>
-<script src="./visual-presets.js?v=21"></script>
-<script src="./visual-system.js?v=21"></script>
+<script src="./project-pack.js?v=22"></script>
+<script src="./music-motion.js?v=22"></script>
+<script src="./visual-presets.js?v=22"></script>
+<script src="./visual-system.js?v=22"></script>
 <script>
 (() => {
   'use strict';
@@ -390,7 +390,7 @@
   const $ = id => document.getElementById(id);
   const app = $('app'), canvas = $('universe');let ctx = canvas && canvas.getContext('2d', { alpha:false });
   if (!ctx) { window.reportVisualFatal?.('当前浏览器无法创建 2D 星空画布。请开启硬件加速或更换新版浏览器。'); return; }
-  const nebulaAssetSources=Object.freeze({ring:'./assets/nebula-ring.png',galaxy:'./assets/nebula-galaxy.png',peaks:'./assets/nebula-landscape.png',blackhole:'./assets/nebula-blackhole.png'});
+  const nebulaAssetSources=Object.freeze({ring:'./assets/nebula-ring.webp',galaxy:'./assets/nebula-galaxy.webp',peaks:'./assets/nebula-landscape.webp',blackhole:'./assets/nebula-blackhole.webp'});
   const nebulaImages={},nebulaRecolored=new Map();
   let nebulaAssetsState='loading',nebulaAssetsSettled=false,visualFirstFrameReady=false;
   function updateNebulaAssetDiagnostics(progress){
@@ -435,7 +435,7 @@
   window.addEventListener('unhandledrejection',event=>{if(!visualFirstFrameReady)window.reportVisualFatal?.('星空引擎启动失败：'+(event.reason?.message||'未知错误'))});
   const audio = $('audio'), playBtn = $('playBtn'), seek = $('seek');
   const themes = {
-    nebula:{name:'紫色星云',index:1,shadow:[7,5,20],second:[91,43,153],core:[193,105,255],cool:[70,143,255],hot:[255,222,250],accent:'#c7afff',bg:'#171329'},
+    nebula:{name:'紫色星云',index:1,shadow:[7,5,20],second:[72,32,145],core:[181,91,255],cool:[55,166,255],hot:[255,184,246],accent:'#c7afff',bg:'#171329'},
     galaxy:{name:'蓝色银河',index:2,shadow:[3,9,24],second:[20,70,145],core:[65,171,255],cool:[106,225,255],hot:[218,248,255],accent:'#9dccff',bg:'#0d1c30'},
     solar:{name:'金色光海',index:3,shadow:[21,10,5],second:[135,61,20],core:[249,139,42],cool:[226,92,40],hot:[255,237,180],accent:'#f1c58f',bg:'#251b13'}
   };
@@ -791,7 +791,7 @@
     }finally{ctx=saved.ctx;w=saved.w;h=saved.h;dpr=saved.dpr;centerX=saved.centerX;centerY=saved.centerY;baseR=saved.baseR;backgroundLayer=saved.backgroundLayer;exportRendering=false}
     const portrait=shape==='portrait',margin=portrait?58:78,font='"Microsoft YaHei UI","Microsoft YaHei",sans-serif',meta=clipSession||{song:$('clipSong').value,author:$('clipAuthor').value,mood:$('clipMood').value};
     const shade=g.createLinearGradient(0,height*.63,0,height);shade.addColorStop(0,'rgba(8,9,17,0)');shade.addColorStop(1,'rgba(8,9,17,.89)');g.fillStyle=shade;g.fillRect(0,height*.63,width,height*.37);
-    g.textAlign='left';g.textBaseline='top';g.font='13px '+font;g.fillStyle=rgba(palette.core,.72);g.fillText('SONIC UNIVERSE  /  21',margin,portrait?58:42);
+    g.textAlign='left';g.textBaseline='top';g.font='13px '+font;g.fillStyle=rgba(palette.core,.72);g.fillText('SONIC UNIVERSE  /  22',margin,portrait?58:42);
     let y=height-(portrait?294:225);g.fillStyle='#f0e8fc';g.font='500 '+(portrait?36:30)+'px '+font;
     for(const line of clipTextLines(g,meta.song,width-margin*2,2)){g.fillText(line,margin,y);y+=portrait?46:38}
     y+=12;g.font=(portrait?'20':'18')+'px '+font;g.fillStyle='#c0aecf';for(const line of clipTextLines(g,meta.mood,width-margin*2,portrait?3:2)){g.fillText(line,margin,y);y+=portrait?29:25}
@@ -1626,7 +1626,7 @@
     g.strokeStyle=line;g.lineWidth=1;g.strokeRect(29.5,29.5,1741,1291);
     g.fillStyle=muted;g.font='16px ui-monospace,Consolas,monospace';
     g.fillText('SONIC UNIVERSE  /  A POSTCARD FROM THE STARS',69,78);
-    g.textAlign='right';g.fillText('VOL.21',1731,78);g.textAlign='left';
+    g.textAlign='right';g.fillText('VOL.22',1731,78);g.textAlign='left';
     const art={x:69,y:109,w:1662,h:842},source=capturedScene,aspect=art.w/art.h;
     let sw,sh;
     if(capturedMoment.quiet){sw=source.width;sh=sw/aspect;if(sh>source.height){sh=source.height;sw=sh*aspect}}
@@ -2706,29 +2706,23 @@
     const sourceCtx=source.getContext('2d',{willReadFrequently:true});sourceCtx.drawImage(image,0,0);
     const frame=sourceCtx.getImageData(0,0,source.width,source.height),data=frame.data,colors=themes[key];
     const shadow=colors.shadow,body=colors.second,core=colors.core,cool=colors.cool,hot=colors.hot;
-    const mix=(a,b,amount)=>a+(b-a)*amount;
-    const smooth=(edge0,edge1,value)=>{const x=clamp((value-edge0)/(edge1-edge0),0,1);return x*x*(3-2*x)};
+    const soft=(edge0,edge1,value)=>{const x=clamp((value-edge0)/(edge1-edge0),0,1);return x*x*(3-2*x)};
     for(let i=0;i<data.length;i+=4){
-      const hotMask=data[i]/255,bodyMask=data[i+1]/255,coolMask=data[i+2]/255,alpha=data[i+3]/255;
-      if(alpha<.008){data[i]=data[i+1]=data[i+2]=data[i+3]=0;continue}
-      // RGB is a material pass shared by every palette:
-      // R = broken hot ridges, G = broad cloud body, B = cool filaments.
-      const liftedBody=Math.pow(bodyMask,.86);
-      const bodyRamp=smooth(.02,.84,liftedBody);
-      const coreRamp=smooth(.34,.98,liftedBody);
-      const ridge=Math.pow(hotMask,.72);
-      const coolRamp=smooth(.08,.92,coolMask);
-      let red=mix(shadow[0],body[0],bodyRamp);
-      let green=mix(shadow[1],body[1],bodyRamp);
-      let blue=mix(shadow[2],body[2],bodyRamp);
-      red=mix(red,core[0],coreRamp*.66);green=mix(green,core[1],coreRamp*.66);blue=mix(blue,core[2],coreRamp*.66);
-      red=mix(red,cool[0],coolRamp*.16);green=mix(green,cool[1],coolRamp*.16);blue=mix(blue,cool[2],coolRamp*.16);
-      red=mix(red,hot[0],ridge*.78);green=mix(green,hot[1],ridge*.78);blue=mix(blue,hot[2],ridge*.78);
-      const contrast=.90+alpha*.13;
-      data[i]=Math.round(clamp(red*contrast,0,255));
-      data[i+1]=Math.round(clamp(green*contrast,0,255));
-      data[i+2]=Math.round(clamp(blue*contrast,0,255));
-      data[i+3]=Math.round(clamp(alpha*(.97+bodyMask*.035),0,.98)*255);
+      const value=data[i]/255,warm=data[i+1]/255,coolMask=data[i+2]/255,alpha=data[i+3]/255;
+      if(alpha<.014){data[i]=data[i+1]=data[i+2]=data[i+3]=0;continue}
+      // R is the shared cloud luminance. G and B identify warm and cool
+      // filaments, so every palette keeps the exact same ridges and dust gaps.
+      const bodyRamp=soft(.015,.74,value),coreRamp=soft(.18,.95,value),ridgeRamp=soft(.18,.92,value);
+      let red=shadow[0]+(body[0]-shadow[0])*bodyRamp;
+      let green=shadow[1]+(body[1]-shadow[1])*bodyRamp;
+      let blue=shadow[2]+(body[2]-shadow[2])*bodyRamp;
+      red+=(core[0]-red)*coreRamp*.54;green+=(core[1]-green)*coreRamp*.54;blue+=(core[2]-blue)*coreRamp*.54;
+      const coolAmount=coolMask*ridgeRamp*.48;
+      red+=(cool[0]-red)*coolAmount;green+=(cool[1]-green)*coolAmount;blue+=(cool[2]-blue)*coolAmount;
+      const hotAmount=warm*ridgeRamp*.58;
+      red+=(hot[0]-red)*hotAmount;green+=(hot[1]-green)*hotAmount;blue+=(hot[2]-blue)*hotAmount;
+      data[i]=Math.round(clamp(red,0,255));data[i+1]=Math.round(clamp(green,0,255));data[i+2]=Math.round(clamp(blue,0,255));
+      data[i+3]=Math.round(alpha*247);
     }
     sourceCtx.putImageData(frame,0,0);
     nebulaRecolored.set(cacheKey,source);return source;
@@ -2736,10 +2730,10 @@
   function drawNebulaAsset(scene,cx,cy,r,t,opacity,look){
     const surface=recolorNebula(scene,themeKey);if(!surface||opacity<=.002)return false;
     const config={
-      ring:{width:4.18,height:2.87,x:.03,y:-.01,rotate:-.055},
-      galaxy:{width:4.36,height:2.99,x:.02,y:0,rotate:.06},
-      peaks:{width:4.30,height:2.95,x:.02,y:.03,rotate:-.018},
-      blackhole:{width:4.32,height:2.96,x:.02,y:0,rotate:-.05}
+      ring:{width:3.80,height:2.62,x:.060,y:-.01,rotate:-.055},
+      galaxy:{width:4.05,height:2.78,x:.035,y:0,rotate:.06},
+      peaks:{width:4.10,height:2.78,x:.025,y:.035,rotate:-.018},
+      blackhole:{width:4.05,height:2.76,x:.035,y:0,rotate:-.05}
     }[scene];
     const calm=reduced?0:1,phase=scene==='ring'?0:scene==='galaxy'?1.7:scene==='peaks'?3.1:4.5;
     const breathe=1+bass*.004*look.intensity+Math.sin(t*.052+phase)*.0025*calm;
@@ -2748,7 +2742,7 @@
     const width=r*config.width*breathe,height=r*config.height*breathe;
     const rotation=config.rotate+(Math.sin(t*.034+phase)*.0025+mid*.0012)*calm*Math.min(1.12,look.motionSpeed);
     ctx.save();ctx.globalCompositeOperation='source-over';
-    ctx.globalAlpha=opacity*clamp(.88+look.intensity*.09+visualEffects.glow*.035,0,.995);
+    ctx.globalAlpha=opacity*clamp(.92+look.intensity*.075+visualEffects.glow*.02,0,1);
     ctx.translate(driftX,driftY);ctx.rotate(rotation);ctx.drawImage(surface,-width/2,-height/2,width,height);
     ctx.restore();return true;
   }

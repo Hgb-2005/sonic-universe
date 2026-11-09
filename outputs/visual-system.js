@@ -133,7 +133,7 @@
     url.searchParams.set("depth", String(Math.round(normalized.depth * 100)));
     url.searchParams.set("glow", String(Math.round(normalized.glow * 100)));
     url.searchParams.set("motionSpeed", String(Math.round(normalized.motionSpeed * 100)));
-    url.searchParams.set("v", "21");
+    url.searchParams.set("v", "22");
     return url.toString();
   }
 
