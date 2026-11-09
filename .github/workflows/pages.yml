@@ -53,6 +53,8 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: outputs
+      - name: Wait for artifact metadata
+        run: sleep 8
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
