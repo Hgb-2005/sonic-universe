@@ -35,8 +35,10 @@ jobs:
           node tests/flight-core.test.cjs
           node --test tests/project-pack.test.cjs
           node --test tests/visual-presets.test.cjs
+          node --test tests/visual-system.test.cjs
           node --check outputs/project-pack.js
           node --check outputs/visual-presets.js
+          node --check outputs/visual-system.js
           node --check outputs/flight-core.js
           node --check outputs/flight.js
           node --check folia-mod/sonic-universe/client.mjs

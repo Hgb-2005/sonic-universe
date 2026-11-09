@@ -14,5 +14,8 @@ test("the scene library has eight unique, valid built-in looks", () => {
     assert.ok(look.particleCount >= 400 && look.particleCount <= 6000, id);
     assert.ok(look.intensity >= .2 && look.intensity <= 1, id);
     assert.ok(look.depth >= 0 && look.depth <= 1 && look.glow >= 0 && look.glow <= 1, id);
+    assert.ok(look.trail >= 0 && look.trail <= 1, id);
+    assert.ok(["soft", "balanced", "strong"].includes(look.response), id);
+    assert.equal(typeof look.beat, "boolean", id);
   }
 });
