@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#080811">
-<title>声波宇宙 23 · 让音乐成为星空</title>
+<title>声波宇宙 24 · 让音乐成为星空</title>
 <style>.help-btn{text-decoration:none}.footer-links{flex-wrap:wrap}</style>
 <meta name="description" content="让音乐成为星空。在星环、银河、山峰与引力黑洞之间旅行，收藏自己的视觉预设，演奏旋律并导出有声短片。">
 <meta property="og:type" content="website">
@@ -154,6 +154,35 @@
 .visual-loading{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;background:#080911;color:#ded3ef;transition:opacity .55s ease}.visual-loading[hidden]{display:none}.visual-loading.ready{opacity:0;pointer-events:none}.visual-loading-card{text-align:center;max-width:430px;padding:28px}.visual-loading-orbit{width:42px;height:42px;margin:0 auto 20px;border:1px solid rgba(var(--accent-rgb),.35);border-radius:50%;box-shadow:0 0 30px rgba(var(--accent-rgb),.12);animation:loadingOrbit 3s linear infinite}.visual-loading-orbit::after{content:"";display:block;width:6px;height:6px;margin:2px auto;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent)}.visual-loading strong{display:block;font-size:14px;font-weight:500;letter-spacing:.18em}.visual-loading p{margin:12px 0 0;color:#968aa6;font-size:11px;line-height:1.8}.visual-fatal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:10002;width:min(420px,calc(100vw - 32px));padding:26px;border:1px solid #ffffff18;border-radius:18px;background:#10101bec;box-shadow:0 24px 80px #0008;text-align:center}.visual-fatal[hidden]{display:none}.visual-fatal h2{margin:0 0 10px;font-size:17px;font-weight:500}.visual-fatal p{margin:0 0 18px;color:#aaa0b8;font-size:12px;line-height:1.8}.visual-fatal button{border:1px solid rgba(var(--accent-rgb),.35);border-radius:999px;padding:9px 16px;background:rgba(var(--accent-rgb),.1);color:#eee5ff}
 @media(max-width:760px){.visual-share small{font-size:7px}.visual-options.visual-toggle{grid-template-columns:auto 1fr auto}.visual-share button{min-height:36px}.themes .visual-share{gap:6px}}
 @media(prefers-reduced-motion:reduce){.mode-button::after,.theme::after,.response-profiles button::after,.band-fill,.visual-loading-orbit{animation:none!important}.visual-toggle input,.visual-toggle input::after{transition:none}}
+/* Edition 24: the interface follows the selected nebula palette. */
+:root{--accent-ui:#c7afff;--accent-ui-rgb:199,175,255;--accent-ink:#231735;--theme-bg-rgb:23,19,41;--line:rgba(var(--accent-ui-rgb),.12)}
+.app{background:radial-gradient(ellipse at 66% 43%,rgba(var(--theme-bg-rgb),.92) 0,transparent 49%),#080911}
+.brand-en,.header-action{color:rgba(var(--accent-ui-rgb),.66)}
+.upload-btn{background:linear-gradient(135deg,var(--accent-ui),rgba(var(--accent-ui-rgb),.88));color:var(--accent-ink);box-shadow:0 7px 25px rgba(var(--accent-rgb),.16);transition:filter .2s,transform .2s,color .2s,box-shadow .2s}
+.upload-btn:hover{background:linear-gradient(135deg,var(--accent-ui),rgba(var(--accent-ui-rgb),.88));filter:brightness(1.07) saturate(1.03);box-shadow:0 9px 30px rgba(var(--accent-rgb),.22)}
+.eyebrow{color:rgba(var(--accent-ui-rgb),.72)}
+.eyebrow:before{background:var(--accent-ui);box-shadow:0 0 8px rgba(var(--accent-ui-rgb),.35)}
+h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--accent-ui)}
+.journey-launch{background:linear-gradient(130deg,var(--accent-ui),rgba(var(--accent-ui-rgb),.84));color:var(--accent-ink);box-shadow:0 7px 24px rgba(var(--accent-rgb),.13)}
+.postcard-launch,.clip-launch{background:linear-gradient(135deg,rgba(var(--accent-rgb),.07),rgba(var(--accent-ui-rgb),.025));border-color:rgba(var(--accent-ui-rgb),.28);color:rgba(var(--accent-ui-rgb),.84)}
+.postcard-launch:hover,.clip-launch:hover{border-color:var(--accent-ui);background:rgba(var(--accent-rgb),.1);color:var(--accent-ui)}
+.instrument-launch{background:linear-gradient(100deg,rgba(var(--accent-rgb),.1),transparent);border-color:rgba(var(--accent-ui-rgb),.24)}
+.instrument-launch:hover{border-color:var(--accent-ui);background:rgba(var(--accent-rgb),.11)}
+.instrument-launch small{color:rgba(var(--accent-ui-rgb),.56)}
+.theme:hover{border-color:rgba(var(--accent-ui-rgb),.52)}
+.theme[aria-pressed=true],.theme[aria-pressed=true] .theme-check,.mode-button:hover,.mode-button[aria-pressed=true],.response-profiles button[aria-pressed=true]{color:var(--accent-ui)}
+.theme[aria-pressed=true]{border-color:var(--accent-ui);background:rgba(var(--accent-ui-rgb),.07)}
+.mode-button:hover,.mode-button[aria-pressed=true]{border-color:rgba(var(--accent-ui-rgb),.6)}
+.mode-button[aria-pressed=true]{background:linear-gradient(140deg,rgba(var(--accent-ui-rgb),.17),rgba(var(--accent-ui-rgb),.035))}
+.response-profiles button[aria-pressed=true]{background:rgba(var(--accent-ui-rgb),.12);border-color:rgba(var(--accent-ui-rgb),.55)}
+.range::-webkit-slider-thumb{background:var(--accent-ui)}
+.range::-moz-range-thumb{background:var(--accent-ui)}
+.play-btn,.primary-btn{background:var(--accent-ui);color:var(--accent-ink);box-shadow:0 0 24px rgba(var(--accent-rgb),.14)}
+.play-btn:hover{background:var(--accent-ui);filter:brightness(1.08)}
+.toast{background:linear-gradient(145deg,rgba(var(--theme-bg-rgb),.97),rgba(12,11,20,.96));border-color:rgba(var(--accent-ui-rgb),.36);color:var(--accent-ui);box-shadow:0 12px 44px #0007,0 0 24px rgba(var(--accent-rgb),.08)}
+.visual-fatal button{color:var(--accent-ui)}
+.eyebrow:before,h1 span,.header-action,.upload-btn,.journey-launch,.postcard-launch,.clip-launch,.atelier-launch,.instrument-launch,.theme,.mode-button,.response-profiles button,.play-btn,.primary-btn,.toast{transition:color .28s ease,background-color .28s ease,border-color .28s ease,box-shadow .28s ease,filter .2s ease,transform .2s ease}
+.range::-webkit-slider-thumb,.range::-moz-range-thumb{transition:background-color .28s ease,box-shadow .28s ease}
 </style>
 </head>
 <body>
@@ -166,7 +195,7 @@
   <canvas id="universe" role="img" aria-label="一片随音乐频率起伏的星空，低音推开星云，中频留下星轨，高音点亮星闪">你的浏览器暂不支持星空画布。</canvas>
   <div class="grain" aria-hidden="true"></div>
   <header class="header">
-    <div class="brand"><div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M7 17v-2m4 8V9m5 17V6m5 16V10m4 8v-4"/></svg></div><div><div class="brand-name">声波宇宙<span class="version">VOL.23</span></div><div class="brand-en">SONIC UNIVERSE</div></div></div>
+    <div class="brand"><div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M7 17v-2m4 8V9m5 17V6m5 16V10m4 8v-4"/></svg></div><div><div class="brand-name">声波宇宙<span class="version">VOL.24</span></div><div class="brand-en">SONIC UNIVERSE</div></div></div>
     <div class="header-right"><button class="header-action external-action" id="externalBtn" aria-label="外部音乐联动" title="外部音乐联动"><svg viewBox="0 0 24 24"><path d="M3 10v4m4-7v10m5-14v18m5-14v10m4-7v4"/></svg><span class="action-label">外部联动</span></button><button class="header-action studio-action" id="studioBtn" aria-label="布置我的音乐空间" title="布置空间"><svg viewBox="0 0 24 24"><path d="m12 3 2.3 6.7L21 12l-6.7 2.3L12 21l-2.3-6.7L3 12l6.7-2.3Z"/></svg><span class="action-label">布置空间</span></button><button class="header-action" id="queueBtn" aria-label="打开播放列表" title="播放列表"><svg viewBox="0 0 24 24"><path d="M4 5h16M4 10h16M4 15h9m4-1v7m-3-3h6"/></svg><span class="action-label">音乐库</span><span class="queue-count" id="queueCount">01</span></button><button class="upload-btn" id="uploadBtn" aria-label="导入多首音乐" title="可同时选择多首音乐"><svg viewBox="0 0 24 24"><path d="M12 16V3m-5 5 5-5 5 5M4 15v5h16v-5"/></svg><span>导入音乐</span></button><button class="icon-btn" id="fullscreenBtn" aria-label="进入全屏" title="全屏 · F"><svg viewBox="0 0 24 24"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg></button></div>
   </header>
   <main class="stage" id="stage">
@@ -201,9 +230,9 @@
     <div class="spectrum-panel" aria-label="实时音频频段"><div class="band"><div class="band-label">低频<output id="bassValue">0%</output></div><div class="band-track"><span class="band-fill" id="bassFill"></span></div></div><div class="band"><div class="band-label">中频<output id="midValue">0%</output></div><div class="band-track"><span class="band-fill" id="midFill"></span></div></div><div class="band"><div class="band-label">高频<output id="highValue">0%</output></div><div class="band-track"><span class="band-fill" id="highFill"></span></div></div></div>
   </main>
   <div class="source-ribbon" id="sourceRibbon"><span><i aria-hidden="true"></i>外部声音已接入<small>选歌、暂停与音量在原播放器操作</small></span><button id="sourceManageBtn">管理联动 ↗</button></div><div class="player-wrap"><section class="player" aria-label="音乐播放器"><div class="track"><button class="album album-button" id="albumButton" aria-label="更换歌曲封面" title="布置空间与歌曲封面"><img id="albumImage" alt="" hidden></button><div class="track-text"><div class="track-title" id="trackTitle" title="星际漫游 · Interstellar Drift">星际漫游<span class="track-tag" id="trackTag">DEMO</span></div><div class="track-sub" id="trackSub">Interstellar Drift · 原创合成音景</div></div></div><div class="transport"><div class="transport-buttons"><button class="icon-btn" id="restartBtn" aria-label="上一首" title="上一首"><svg viewBox="0 0 24 24"><path d="M5 5v14m14-14L8 12l11 7Z"/></svg></button><button class="play-btn" id="playBtn" aria-label="播放音乐" title="播放 / 暂停 · 空格"><svg class="play-icon" viewBox="0 0 24 24"><path d="m7 3 15 9-15 9Z"/></svg></button><button class="icon-btn" id="forwardBtn" aria-label="下一首" title="下一首"><svg viewBox="0 0 24 24"><path d="m5 5 11 7-11 7Zm14 0v14"/></svg></button></div><div class="progress-row"><span id="currentTime">00:00</span><input class="range" id="seek" type="range" min="0" max="96" step="0.1" value="0" aria-label="播放进度" aria-valuetext="00:00 / 01:36"><span id="duration">01:36</span></div></div><div class="player-right"><button class="icon-btn active" id="repeatBtn" aria-label="关闭单曲循环" aria-pressed="true" title="单曲循环：开"><svg viewBox="0 0 24 24"><path d="m17 2 4 4-4 4M3 11V8a2 2 0 0 1 2-2h16M7 22l-4-4 4-4m14-1v3a2 2 0 0 1-2 2H3"/></svg></button><div class="volume"><button class="icon-btn" id="muteBtn" aria-label="静音" aria-pressed="false" title="静音 · M"><svg viewBox="0 0 24 24"><path d="m11 4-6 5H2v6h3l6 5Zm4 4a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg></button><input class="range" id="volume" type="range" min="0" max="100" value="65" aria-label="音量" aria-valuetext="65%"></div><span class="player-divider"></span><button class="icon-btn" id="quietBtn" aria-label="进入宇宙" title="沉浸漫游 · H"><svg viewBox="0 0 24 24"><path d="m12 3 2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2Z"/></svg></button></div></section><span class="keyboard-hint">SPACE 播放 / 暂停</span></div>
-  <footer class="footer"><span class="footer-brand"><b>EDITION 23</b> SOUND & STARDUST</span><div class="footer-links footer-center"><button class="help-btn" id="projectBtn">创作与备份 ↗</button><span aria-hidden="true">·</span><button class="help-btn" id="helpBtn">使用指南 ↗</button><span aria-hidden="true">·</span><button class="help-btn" id="flightBtn" title="可选的独立节奏小游戏">星际航行小实验 ↗</button><span aria-hidden="true">·</span><a class="help-btn" href="https://github.com/Hgb-2005/sonic-universe/releases/latest/download/sonic-universe-folia-1.0.0.zip" title="下载 Folia 音乐星空背景模组">Folia 背景版 ↗</a></div><span>你的音乐 · 只在本机流转</span></footer>
+  <footer class="footer"><span class="footer-brand"><b>EDITION 24</b> SOUND & STARDUST</span><div class="footer-links footer-center"><button class="help-btn" id="projectBtn">创作与备份 ↗</button><span aria-hidden="true">·</span><button class="help-btn" id="helpBtn">使用指南 ↗</button><span aria-hidden="true">·</span><button class="help-btn" id="flightBtn" title="可选的独立节奏小游戏">星际航行小实验 ↗</button><span aria-hidden="true">·</span><a class="help-btn" href="https://github.com/Hgb-2005/sonic-universe/releases/latest/download/sonic-universe-folia-1.0.0.zip" title="下载 Folia 音乐星空背景模组">Folia 背景版 ↗</a></div><span>你的音乐 · 只在本机流转</span></footer>
   <div class="roam-surface" id="roamSurface" tabindex="0" role="region" aria-label="星空漫游：轻触唤醒按钮，拖动旋转视角，滚轮或双指缩放，加减键调整距离，0 重置，C 定格，右上角选星空，H 或 Escape 返回"></div>
-  <div class="roam-ui roam-top"><div class="roam-identity"><div class="roam-kicker">SONIC JOURNEY · VOL.23</div><p id="roamTrack">星际漫游</p><button class="roam-export" id="roamClipBtn">录一段星空 ↗</button><button class="roam-export roam-atelier" id="roamAtelierBtn">心情 · 歌词 · 收藏 ↗</button><button class="roam-export roam-atelier" id="roamInstrumentBtn">弹出星空 ↗</button></div><div class="roam-top-actions"><button class="roam-look-toggle" id="roamLookBtn" aria-expanded="false" aria-controls="roamLookPanel" aria-label="选择星空氛围"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.3 6.7L21 12l-6.7 2.3L12 21l-2.3-6.7L3 12l6.7-2.3Z"/></svg>选星空</button><button class="quiet-exit" id="quietExit"><svg viewBox="0 0 24 24"><path d="m14 5-7 7 7 7M7 12h13"/></svg>返回空间 · Esc</button></div>
+  <div class="roam-ui roam-top"><div class="roam-identity"><div class="roam-kicker">SONIC JOURNEY · VOL.24</div><p id="roamTrack">星际漫游</p><button class="roam-export" id="roamClipBtn">录一段星空 ↗</button><button class="roam-export roam-atelier" id="roamAtelierBtn">心情 · 歌词 · 收藏 ↗</button><button class="roam-export roam-atelier" id="roamInstrumentBtn">弹出星空 ↗</button></div><div class="roam-top-actions"><button class="roam-look-toggle" id="roamLookBtn" aria-expanded="false" aria-controls="roamLookPanel" aria-label="选择星空氛围"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.3 6.7L21 12l-6.7 2.3L12 21l-2.3-6.7L3 12l6.7-2.3Z"/></svg>选星空</button><button class="quiet-exit" id="quietExit"><svg viewBox="0 0 24 24"><path d="m14 5-7 7 7 7M7 12h13"/></svg>返回空间 · Esc</button></div>
     <section class="roam-look-panel" id="roamLookPanel" hidden aria-labelledby="roamLookTitle">
       <div class="roam-look-heading"><div><h2 id="roamLookTitle">此刻，想听见哪片星空</h2><span class="roam-look-current" id="roamLookCurrent"></span></div><button class="icon-btn" id="roamLookClose" aria-label="关闭星空氛围">×</button></div>
       <div class="roam-look-grid" id="roamLookGrid" role="group" aria-label="沉浸星空氛围"></div>
@@ -373,10 +402,10 @@
   <div class="instrument-footer"><div><span class="storage-status" role="status">旋律与设置仅保存在本机</span><small>录制一层前数 4 拍，循环播放时可继续录下一层。最多 6 层；关闭乐器台会停止演奏。</small></div><button class="primary-btn" id="instrumentFilmBtn">把演奏录成短片 ↗</button></div>
 </dialog>
 
-<script src="./project-pack.js?v=23"></script>
-<script src="./music-motion.js?v=23"></script>
-<script src="./visual-presets.js?v=23"></script>
-<script src="./visual-system.js?v=23"></script>
+<script src="./project-pack.js?v=24"></script>
+<script src="./music-motion.js?v=24"></script>
+<script src="./visual-presets.js?v=24"></script>
+<script src="./visual-system.js?v=24"></script>
 <script>
 (() => {
   'use strict';
@@ -435,15 +464,15 @@
   window.addEventListener('unhandledrejection',event=>{if(!visualFirstFrameReady)window.reportVisualFatal?.('星空引擎启动失败：'+(event.reason?.message||'未知错误'))});
   const audio = $('audio'), playBtn = $('playBtn'), seek = $('seek');
   const themes = {
-    nebula:{name:'紫色星云',index:1,shadow:[7,5,20],second:[72,32,145],core:[181,91,255],cool:[55,166,255],hot:[255,184,246],accent:'#c7afff',bg:'#171329'},
-    galaxy:{name:'蓝色银河',index:2,shadow:[3,9,24],second:[20,70,145],core:[65,171,255],cool:[106,225,255],hot:[218,248,255],accent:'#9dccff',bg:'#0d1c30'},
-    solar:{name:'金色光海',index:3,shadow:[21,10,5],second:[135,61,20],core:[249,139,42],cool:[226,92,40],hot:[255,237,180],accent:'#f1c58f',bg:'#251b13'}
+    nebula:{name:'紫色星云',index:1,shadow:[7,5,20],second:[72,32,145],core:[181,91,255],cool:[55,166,255],hot:[255,184,246],ui:[199,175,255],accent:'#c7afff',bg:'#171329'},
+    galaxy:{name:'蓝色银河',index:2,shadow:[3,9,24],second:[20,70,145],core:[65,171,255],cool:[106,225,255],hot:[218,248,255],ui:[157,204,255],accent:'#9dccff',bg:'#0d1c30'},
+    solar:{name:'金色光海',index:3,shadow:[21,10,5],second:[135,61,20],core:[249,139,42],cool:[226,92,40],hot:[255,237,180],ui:[241,197,143],accent:'#f1c58f',bg:'#251b13'}
   };
   const visualModes={ring:{name:'星环',english:'STAR RING',number:'01',description:'低频驱动星环震动，高音点亮环绕星光'},galaxy:{name:'银河粒子',english:'GALACTIC FLOW',number:'02',description:'粒子沿银河旋臂流动，随鼓点向外涌动'},peaks:{name:'山峰声波',english:'SONIC LANDSCAPE',number:'03',description:'真实频谱化作层叠山峰，旋律留下地形轨迹'},blackhole:{name:'引力黑洞',english:'EVENT HORIZON',number:'04',description:'低音推动吸积盘呼吸，高音点亮光子环，星尘沿引力轨道流转'}};
   let visualMode='ring',particleCount=2400,motionSpeed=1,galaxyParticles=[],terrainHistory=[],terrainClock=0;
   const terrainBands=new Float32Array(96);
   let beatPulse=0,treblePulse=0,bassFloor=.12,previousBass=0,previousHigh=0,lastBeatAt=-1000,lastTrebleAt=-1000,beatAge=10,beatWaves=[],modeOpacity=1,previousMode='ring';
-  let themeKey='nebula', palette={...themes.nebula}, targetPalette=themes.nebula;
+  let themeKey='nebula', palette={...themes.nebula,ui:[...themes.nebula.ui]}, targetPalette=themes.nebula;
   const cloudTextures={};let cloudBlend=1,previousTheme='nebula',mistOrigins=[];
   let w=0,h=0,dpr=1,centerX=0,centerY=0,baseR=190,stars=[],dust=[],ring=[],shooting=[];
   let renderProfile=SonicVisualSystem.performanceProfile({width:innerWidth,dpr:devicePixelRatio||1,deviceMemory:navigator.deviceMemory,hardwareConcurrency:navigator.hardwareConcurrency,coarsePointer:matchMedia('(pointer: coarse)').matches});
@@ -791,7 +820,7 @@
     }finally{ctx=saved.ctx;w=saved.w;h=saved.h;dpr=saved.dpr;centerX=saved.centerX;centerY=saved.centerY;baseR=saved.baseR;backgroundLayer=saved.backgroundLayer;exportRendering=false}
     const portrait=shape==='portrait',margin=portrait?58:78,font='"Microsoft YaHei UI","Microsoft YaHei",sans-serif',meta=clipSession||{song:$('clipSong').value,author:$('clipAuthor').value,mood:$('clipMood').value};
     const shade=g.createLinearGradient(0,height*.63,0,height);shade.addColorStop(0,'rgba(8,9,17,0)');shade.addColorStop(1,'rgba(8,9,17,.89)');g.fillStyle=shade;g.fillRect(0,height*.63,width,height*.37);
-    g.textAlign='left';g.textBaseline='top';g.font='13px '+font;g.fillStyle=rgba(palette.core,.72);g.fillText('SONIC UNIVERSE  /  23',margin,portrait?58:42);
+    g.textAlign='left';g.textBaseline='top';g.font='13px '+font;g.fillStyle=rgba(palette.core,.72);g.fillText('SONIC UNIVERSE  /  24',margin,portrait?58:42);
     let y=height-(portrait?294:225);g.fillStyle='#f0e8fc';g.font='500 '+(portrait?36:30)+'px '+font;
     for(const line of clipTextLines(g,meta.song,width-margin*2,2)){g.fillText(line,margin,y);y+=portrait?46:38}
     y+=12;g.font=(portrait?'20':'18')+'px '+font;g.fillStyle='#c0aecf';for(const line of clipTextLines(g,meta.mood,width-margin*2,portrait?3:2)){g.fillText(line,margin,y);y+=portrait?29:25}
@@ -1626,7 +1655,7 @@
     g.strokeStyle=line;g.lineWidth=1;g.strokeRect(29.5,29.5,1741,1291);
     g.fillStyle=muted;g.font='16px ui-monospace,Consolas,monospace';
     g.fillText('SONIC UNIVERSE  /  A POSTCARD FROM THE STARS',69,78);
-    g.textAlign='right';g.fillText('VOL.23',1731,78);g.textAlign='left';
+    g.textAlign='right';g.fillText('VOL.24',1731,78);g.textAlign='left';
     const art={x:69,y:109,w:1662,h:842},source=capturedScene,aspect=art.w/art.h;
     let sw,sh;
     if(capturedMoment.quiet){sw=source.width;sh=sw/aspect;if(sh>source.height){sh=source.height;sw=sh*aspect}}
@@ -1886,7 +1915,7 @@
   document.querySelectorAll('[data-theme]').forEach(b=>b.addEventListener('click',()=>setTheme(b.dataset.theme)));
   $('intensity').addEventListener('input',()=>{intensity=Number($('intensity').value)/100;$('intensityValue').value=Math.round(intensity*100)+'%';setFill($('intensity'));savePreferences()});
   try{const prefs=JSON.parse(localStorage.getItem('sonic-universe-preferences')||'null');if(prefs){if(themes[prefs.theme])setTheme(prefs.theme,false);if(Number.isFinite(prefs.volume))volume=clamp(prefs.volume,0,1);if(Number.isFinite(prefs.intensity))intensity=clamp(prefs.intensity,.2,1);if(typeof prefs.repeat==='boolean')repeat=prefs.repeat}}catch{}
-  palette={...targetPalette,core:[...targetPalette.core],second:[...targetPalette.second],shadow:[...targetPalette.shadow],cool:[...targetPalette.cool],hot:[...targetPalette.hot]};
+  palette={...targetPalette,core:[...targetPalette.core],second:[...targetPalette.second],shadow:[...targetPalette.shadow],cool:[...targetPalette.cool],hot:[...targetPalette.hot],ui:[...targetPalette.ui]};
   try{const prefs=JSON.parse(localStorage.getItem('sonic-universe-preferences')||'null');if(prefs){if(prefs.visualEffects){const savedResponse=['soft','balanced','strong'].includes(prefs.visualEffects.response)?prefs.visualEffects.response:refinement.profile,legacyTrail=prefs.preferencesVersion!==2&&finite(prefs.visualEffects.trail,-1)===0;visualEffects={depth:finite(prefs.visualEffects.depth,.65,0,1),glow:finite(prefs.visualEffects.glow,.6,0,1),trail:legacyTrail?.55:finite(prefs.visualEffects.trail,.55,0,1),response:savedResponse,beat:prefs.visualEffects.beat===true}}if(visualModes[prefs.visualMode])visualMode=prefs.visualMode;if(Number.isFinite(prefs.particleCount))particleCount=Math.round(clamp(prefs.particleCount,400,6000)/200)*200;if(Number.isFinite(prefs.motionSpeed))motionSpeed=clamp(prefs.motionSpeed,.25,2);if(prefs.preferencesVersion!==2)localStorage.setItem('sonic-universe-preferences',JSON.stringify({...prefs,preferencesVersion:2,visualEffects}))}}catch{}
   setVisualMode(visualMode,false);updateVisualControls();loadNebulaAssets();
   $('volume').value=Math.round(volume*100);$('intensity').value=Math.round(intensity*100);$('intensityValue').value=Math.round(intensity*100)+'%';setFill($('volume'));setFill($('intensity'));
@@ -2953,8 +2982,8 @@
       mouse.x+=(mouse.tx-mouse.x)*(reduced?0:.04);mouse.y+=(mouse.ty-mouse.y)*(reduced?0:.04);
       cloudBlend=Math.min(1,cloudBlend+elapsed*.65);
       modeOpacity=Math.min(1,modeOpacity+elapsed*2.2);
-      ['core','second','shadow','cool','hot'].forEach(k=>{for(let i=0;i<3;i++)palette[k][i]+=(targetPalette[k][i]-palette[k][i])*(1-Math.exp(-elapsed*3))});
-      document.documentElement.style.setProperty('--accent',rgba(palette.core,1));document.documentElement.style.setProperty('--accent-rgb',palette.core.map(Math.round).join(','));
+      ['core','second','shadow','cool','hot','ui'].forEach(k=>{for(let i=0;i<3;i++)palette[k][i]+=(targetPalette[k][i]-palette[k][i])*(1-Math.exp(-elapsed*3))});
+      const uiRgb=palette.ui.map(Math.round),inkRgb=palette.shadow.map(v=>Math.min(255,Math.round(v+18))),themeBgRgb=palette.shadow.map((v,i)=>Math.min(255,Math.round(v+(palette.core[i]-v)*.12))),rootStyle=document.documentElement.style;rootStyle.setProperty('--accent',rgba(palette.core,1));rootStyle.setProperty('--accent-rgb',palette.core.map(Math.round).join(','));rootStyle.setProperty('--accent-ui',`rgb(${uiRgb.join(',')})`);rootStyle.setProperty('--accent-ui-rgb',uiRgb.join(','));rootStyle.setProperty('--accent-ink',`rgb(${inkRgb.join(',')})`);rootStyle.setProperty('--theme-bg-rgb',themeBgRgb.join(','));
       updatePolish(elapsed,now);draw(sceneTime,elapsed);renderClipFrame();frame++;
       if(now-lastUIUpdate>95){lastUIUpdate=now;updateTimeline();updateJourneyUI();updateExternalSignal(now);if($('clipDialog').open)clipUpdateControls();const values=[bass,mid,high];['bass','mid','high'].forEach((name,i)=>{const value=Math.round(values[i]*100);$(name+'Value').textContent=value+'%';$(name+'Fill').style.width=value+'%'});$('beatLight').style.opacity=.2+music.cloud*.8;$('melodyLight').style.opacity=.2+music.flow*.8;$('trebleLight').style.opacity=.2+music.shimmer*.8;app.dataset.musicLayers=JSON.stringify({cloud:+music.cloud.toFixed(3),flow:+music.flow.toFixed(3),shimmer:+music.shimmer.toFixed(3),presence:+music.presence.toFixed(3)});app.dataset.musicCharacter=JSON.stringify({sustain:+music.sustain.toFixed(3),percussion:+music.percussion.toFixed(3),air:+music.air.toFixed(3),drift:+music.drift.toFixed(3)});app.dataset.musicState=music.presence>.12?'listening':'resting';app.dataset.beatPulse=beatPulse.toFixed(3);app.dataset.treblePulse=treblePulse.toFixed(3)}
       if(!visualFirstFrameReady){visualFirstFrameReady=true;maybeFinishVisualLoading()}
