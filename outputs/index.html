@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#080811">
-<title>声波宇宙 22 · 让音乐成为星空</title>
+<title>声波宇宙 23 · 让音乐成为星空</title>
 <style>.help-btn{text-decoration:none}.footer-links{flex-wrap:wrap}</style>
 <meta name="description" content="让音乐成为星空。在星环、银河、山峰与引力黑洞之间旅行，收藏自己的视觉预设，演奏旋律并导出有声短片。">
 <meta property="og:type" content="website">
@@ -166,7 +166,7 @@
   <canvas id="universe" role="img" aria-label="一片随音乐频率起伏的星空，低音推开星云，中频留下星轨，高音点亮星闪">你的浏览器暂不支持星空画布。</canvas>
   <div class="grain" aria-hidden="true"></div>
   <header class="header">
-    <div class="brand"><div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M7 17v-2m4 8V9m5 17V6m5 16V10m4 8v-4"/></svg></div><div><div class="brand-name">声波宇宙<span class="version">VOL.22</span></div><div class="brand-en">SONIC UNIVERSE</div></div></div>
+    <div class="brand"><div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M7 17v-2m4 8V9m5 17V6m5 16V10m4 8v-4"/></svg></div><div><div class="brand-name">声波宇宙<span class="version">VOL.23</span></div><div class="brand-en">SONIC UNIVERSE</div></div></div>
     <div class="header-right"><button class="header-action external-action" id="externalBtn" aria-label="外部音乐联动" title="外部音乐联动"><svg viewBox="0 0 24 24"><path d="M3 10v4m4-7v10m5-14v18m5-14v10m4-7v4"/></svg><span class="action-label">外部联动</span></button><button class="header-action studio-action" id="studioBtn" aria-label="布置我的音乐空间" title="布置空间"><svg viewBox="0 0 24 24"><path d="m12 3 2.3 6.7L21 12l-6.7 2.3L12 21l-2.3-6.7L3 12l6.7-2.3Z"/></svg><span class="action-label">布置空间</span></button><button class="header-action" id="queueBtn" aria-label="打开播放列表" title="播放列表"><svg viewBox="0 0 24 24"><path d="M4 5h16M4 10h16M4 15h9m4-1v7m-3-3h6"/></svg><span class="action-label">音乐库</span><span class="queue-count" id="queueCount">01</span></button><button class="upload-btn" id="uploadBtn" aria-label="导入多首音乐" title="可同时选择多首音乐"><svg viewBox="0 0 24 24"><path d="M12 16V3m-5 5 5-5 5 5M4 15v5h16v-5"/></svg><span>导入音乐</span></button><button class="icon-btn" id="fullscreenBtn" aria-label="进入全屏" title="全屏 · F"><svg viewBox="0 0 24 24"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg></button></div>
   </header>
   <main class="stage" id="stage">
@@ -201,9 +201,9 @@
     <div class="spectrum-panel" aria-label="实时音频频段"><div class="band"><div class="band-label">低频<output id="bassValue">0%</output></div><div class="band-track"><span class="band-fill" id="bassFill"></span></div></div><div class="band"><div class="band-label">中频<output id="midValue">0%</output></div><div class="band-track"><span class="band-fill" id="midFill"></span></div></div><div class="band"><div class="band-label">高频<output id="highValue">0%</output></div><div class="band-track"><span class="band-fill" id="highFill"></span></div></div></div>
   </main>
   <div class="source-ribbon" id="sourceRibbon"><span><i aria-hidden="true"></i>外部声音已接入<small>选歌、暂停与音量在原播放器操作</small></span><button id="sourceManageBtn">管理联动 ↗</button></div><div class="player-wrap"><section class="player" aria-label="音乐播放器"><div class="track"><button class="album album-button" id="albumButton" aria-label="更换歌曲封面" title="布置空间与歌曲封面"><img id="albumImage" alt="" hidden></button><div class="track-text"><div class="track-title" id="trackTitle" title="星际漫游 · Interstellar Drift">星际漫游<span class="track-tag" id="trackTag">DEMO</span></div><div class="track-sub" id="trackSub">Interstellar Drift · 原创合成音景</div></div></div><div class="transport"><div class="transport-buttons"><button class="icon-btn" id="restartBtn" aria-label="上一首" title="上一首"><svg viewBox="0 0 24 24"><path d="M5 5v14m14-14L8 12l11 7Z"/></svg></button><button class="play-btn" id="playBtn" aria-label="播放音乐" title="播放 / 暂停 · 空格"><svg class="play-icon" viewBox="0 0 24 24"><path d="m7 3 15 9-15 9Z"/></svg></button><button class="icon-btn" id="forwardBtn" aria-label="下一首" title="下一首"><svg viewBox="0 0 24 24"><path d="m5 5 11 7-11 7Zm14 0v14"/></svg></button></div><div class="progress-row"><span id="currentTime">00:00</span><input class="range" id="seek" type="range" min="0" max="96" step="0.1" value="0" aria-label="播放进度" aria-valuetext="00:00 / 01:36"><span id="duration">01:36</span></div></div><div class="player-right"><button class="icon-btn active" id="repeatBtn" aria-label="关闭单曲循环" aria-pressed="true" title="单曲循环：开"><svg viewBox="0 0 24 24"><path d="m17 2 4 4-4 4M3 11V8a2 2 0 0 1 2-2h16M7 22l-4-4 4-4m14-1v3a2 2 0 0 1-2 2H3"/></svg></button><div class="volume"><button class="icon-btn" id="muteBtn" aria-label="静音" aria-pressed="false" title="静音 · M"><svg viewBox="0 0 24 24"><path d="m11 4-6 5H2v6h3l6 5Zm4 4a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg></button><input class="range" id="volume" type="range" min="0" max="100" value="65" aria-label="音量" aria-valuetext="65%"></div><span class="player-divider"></span><button class="icon-btn" id="quietBtn" aria-label="进入宇宙" title="沉浸漫游 · H"><svg viewBox="0 0 24 24"><path d="m12 3 2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2Z"/></svg></button></div></section><span class="keyboard-hint">SPACE 播放 / 暂停</span></div>
-  <footer class="footer"><span class="footer-brand"><b>EDITION 22</b> SOUND & STARDUST</span><div class="footer-links footer-center"><button class="help-btn" id="projectBtn">创作与备份 ↗</button><span aria-hidden="true">·</span><button class="help-btn" id="helpBtn">使用指南 ↗</button><span aria-hidden="true">·</span><button class="help-btn" id="flightBtn" title="可选的独立节奏小游戏">星际航行小实验 ↗</button><span aria-hidden="true">·</span><a class="help-btn" href="https://github.com/Hgb-2005/sonic-universe/releases/latest/download/sonic-universe-folia-1.0.0.zip" title="下载 Folia 音乐星空背景模组">Folia 背景版 ↗</a></div><span>你的音乐 · 只在本机流转</span></footer>
+  <footer class="footer"><span class="footer-brand"><b>EDITION 23</b> SOUND & STARDUST</span><div class="footer-links footer-center"><button class="help-btn" id="projectBtn">创作与备份 ↗</button><span aria-hidden="true">·</span><button class="help-btn" id="helpBtn">使用指南 ↗</button><span aria-hidden="true">·</span><button class="help-btn" id="flightBtn" title="可选的独立节奏小游戏">星际航行小实验 ↗</button><span aria-hidden="true">·</span><a class="help-btn" href="https://github.com/Hgb-2005/sonic-universe/releases/latest/download/sonic-universe-folia-1.0.0.zip" title="下载 Folia 音乐星空背景模组">Folia 背景版 ↗</a></div><span>你的音乐 · 只在本机流转</span></footer>
   <div class="roam-surface" id="roamSurface" tabindex="0" role="region" aria-label="星空漫游：轻触唤醒按钮，拖动旋转视角，滚轮或双指缩放，加减键调整距离，0 重置，C 定格，右上角选星空，H 或 Escape 返回"></div>
-  <div class="roam-ui roam-top"><div class="roam-identity"><div class="roam-kicker">SONIC JOURNEY · VOL.22</div><p id="roamTrack">星际漫游</p><button class="roam-export" id="roamClipBtn">录一段星空 ↗</button><button class="roam-export roam-atelier" id="roamAtelierBtn">心情 · 歌词 · 收藏 ↗</button><button class="roam-export roam-atelier" id="roamInstrumentBtn">弹出星空 ↗</button></div><div class="roam-top-actions"><button class="roam-look-toggle" id="roamLookBtn" aria-expanded="false" aria-controls="roamLookPanel" aria-label="选择星空氛围"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.3 6.7L21 12l-6.7 2.3L12 21l-2.3-6.7L3 12l6.7-2.3Z"/></svg>选星空</button><button class="quiet-exit" id="quietExit"><svg viewBox="0 0 24 24"><path d="m14 5-7 7 7 7M7 12h13"/></svg>返回空间 · Esc</button></div>
+  <div class="roam-ui roam-top"><div class="roam-identity"><div class="roam-kicker">SONIC JOURNEY · VOL.23</div><p id="roamTrack">星际漫游</p><button class="roam-export" id="roamClipBtn">录一段星空 ↗</button><button class="roam-export roam-atelier" id="roamAtelierBtn">心情 · 歌词 · 收藏 ↗</button><button class="roam-export roam-atelier" id="roamInstrumentBtn">弹出星空 ↗</button></div><div class="roam-top-actions"><button class="roam-look-toggle" id="roamLookBtn" aria-expanded="false" aria-controls="roamLookPanel" aria-label="选择星空氛围"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.3 6.7L21 12l-6.7 2.3L12 21l-2.3-6.7L3 12l6.7-2.3Z"/></svg>选星空</button><button class="quiet-exit" id="quietExit"><svg viewBox="0 0 24 24"><path d="m14 5-7 7 7 7M7 12h13"/></svg>返回空间 · Esc</button></div>
     <section class="roam-look-panel" id="roamLookPanel" hidden aria-labelledby="roamLookTitle">
       <div class="roam-look-heading"><div><h2 id="roamLookTitle">此刻，想听见哪片星空</h2><span class="roam-look-current" id="roamLookCurrent"></span></div><button class="icon-btn" id="roamLookClose" aria-label="关闭星空氛围">×</button></div>
       <div class="roam-look-grid" id="roamLookGrid" role="group" aria-label="沉浸星空氛围"></div>
@@ -373,10 +373,10 @@
   <div class="instrument-footer"><div><span class="storage-status" role="status">旋律与设置仅保存在本机</span><small>录制一层前数 4 拍，循环播放时可继续录下一层。最多 6 层；关闭乐器台会停止演奏。</small></div><button class="primary-btn" id="instrumentFilmBtn">把演奏录成短片 ↗</button></div>
 </dialog>
 
-<script src="./project-pack.js?v=22"></script>
-<script src="./music-motion.js?v=22"></script>
-<script src="./visual-presets.js?v=22"></script>
-<script src="./visual-system.js?v=22"></script>
+<script src="./project-pack.js?v=23"></script>
+<script src="./music-motion.js?v=23"></script>
+<script src="./visual-presets.js?v=23"></script>
+<script src="./visual-system.js?v=23"></script>
 <script>
 (() => {
   'use strict';
@@ -791,7 +791,7 @@
     }finally{ctx=saved.ctx;w=saved.w;h=saved.h;dpr=saved.dpr;centerX=saved.centerX;centerY=saved.centerY;baseR=saved.baseR;backgroundLayer=saved.backgroundLayer;exportRendering=false}
     const portrait=shape==='portrait',margin=portrait?58:78,font='"Microsoft YaHei UI","Microsoft YaHei",sans-serif',meta=clipSession||{song:$('clipSong').value,author:$('clipAuthor').value,mood:$('clipMood').value};
     const shade=g.createLinearGradient(0,height*.63,0,height);shade.addColorStop(0,'rgba(8,9,17,0)');shade.addColorStop(1,'rgba(8,9,17,.89)');g.fillStyle=shade;g.fillRect(0,height*.63,width,height*.37);
-    g.textAlign='left';g.textBaseline='top';g.font='13px '+font;g.fillStyle=rgba(palette.core,.72);g.fillText('SONIC UNIVERSE  /  22',margin,portrait?58:42);
+    g.textAlign='left';g.textBaseline='top';g.font='13px '+font;g.fillStyle=rgba(palette.core,.72);g.fillText('SONIC UNIVERSE  /  23',margin,portrait?58:42);
     let y=height-(portrait?294:225);g.fillStyle='#f0e8fc';g.font='500 '+(portrait?36:30)+'px '+font;
     for(const line of clipTextLines(g,meta.song,width-margin*2,2)){g.fillText(line,margin,y);y+=portrait?46:38}
     y+=12;g.font=(portrait?'20':'18')+'px '+font;g.fillStyle='#c0aecf';for(const line of clipTextLines(g,meta.mood,width-margin*2,portrait?3:2)){g.fillText(line,margin,y);y+=portrait?29:25}
@@ -1626,7 +1626,7 @@
     g.strokeStyle=line;g.lineWidth=1;g.strokeRect(29.5,29.5,1741,1291);
     g.fillStyle=muted;g.font='16px ui-monospace,Consolas,monospace';
     g.fillText('SONIC UNIVERSE  /  A POSTCARD FROM THE STARS',69,78);
-    g.textAlign='right';g.fillText('VOL.22',1731,78);g.textAlign='left';
+    g.textAlign='right';g.fillText('VOL.23',1731,78);g.textAlign='left';
     const art={x:69,y:109,w:1662,h:842},source=capturedScene,aspect=art.w/art.h;
     let sw,sh;
     if(capturedMoment.quiet){sw=source.width;sh=sw/aspect;if(sh>source.height){sh=source.height;sw=sh*aspect}}
@@ -2388,7 +2388,7 @@
     h=app.classList.contains('quiet')?app.getBoundingClientRect().height:app.clientHeight;dpr=renderProfile.pixelRatio;canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);
     const perfLabel={mobile:'移动端性能模式',balanced:'平衡性能模式',desktop:'完整性能模式'}[renderProfile.tier];
     $('performanceStatus').textContent=perfLabel+' · 上限 '+renderProfile.maxParticles.toLocaleString('en-US')+' 粒子 · '+Math.round(renderProfile.maxTrail*100)+'% 拖尾';app.dataset.performanceTier=renderProfile.tier;app.dataset.effectiveParticleCap=String(renderProfile.maxParticles);app.dataset.effectiveTrailCap=renderProfile.maxTrail.toFixed(2);
-    const mobile=w<=760,quiet=app.classList.contains('quiet');centerX=w*(mobile||quiet?.5:.647);centerY=quiet?h*.5:mobile?406+mobileExtra:Math.min(h*.443,430);baseR=quiet?Math.min(w*.31,h*.31,340):mobile?Math.min(w*.30,152):Math.min(w*.185,h*.225,255);
+    const mobile=w<=760,quiet=app.classList.contains('quiet');centerX=w*(mobile||quiet?.5:.647);centerY=quiet?h*.5:mobile?406+mobileExtra:Math.min(h*.47,500);baseR=quiet?Math.min(w*.31,h*.31,340):mobile?Math.min(w*.30,152):Math.min(w*.185,h*.225,255);
     randState=104729;stars=Array.from({length:Math.min(850,Math.round(w*h/1450))},()=>({x:rand(),y:rand(),r:.35+rand()*1.15,alpha:.12+rand()*.64,speed:.2+rand()*.8,phase:rand()*Math.PI*2}));
     dust=Array.from({length:mobile?210:390},()=>({angle:rand()*Math.PI*2,distance:.65+rand()*2.2,z:rand(),size:.3+rand()*1.5,phase:rand()*6.28}));
     rebuildParticles();rebuildBackground();
@@ -2730,10 +2730,10 @@
   function drawNebulaAsset(scene,cx,cy,r,t,opacity,look){
     const surface=recolorNebula(scene,themeKey);if(!surface||opacity<=.002)return false;
     const config={
-      ring:{width:3.80,height:2.62,x:.060,y:-.01,rotate:-.055},
-      galaxy:{width:4.05,height:2.78,x:.035,y:0,rotate:.06},
-      peaks:{width:4.10,height:2.78,x:.025,y:.035,rotate:-.018},
-      blackhole:{width:4.05,height:2.76,x:.035,y:0,rotate:-.05}
+      ring:{width:3.80,height:2.94,x:.060,y:-.01,rotate:-.055},
+      galaxy:{width:4.05,height:3.08,x:.035,y:0,rotate:.06},
+      peaks:{width:4.10,height:3.05,x:.025,y:.035,rotate:-.018},
+      blackhole:{width:4.05,height:3.02,x:.035,y:0,rotate:-.05}
     }[scene];
     const calm=reduced?0:1,phase=scene==='ring'?0:scene==='galaxy'?1.7:scene==='peaks'?3.1:4.5;
     const breathe=1+bass*.004*look.intensity+Math.sin(t*.052+phase)*.0025*calm;
@@ -2744,7 +2744,95 @@
     ctx.save();ctx.globalCompositeOperation='source-over';
     ctx.globalAlpha=opacity*clamp(.92+look.intensity*.075+visualEffects.glow*.02,0,1);
     ctx.translate(driftX,driftY);ctx.rotate(rotation);ctx.drawImage(surface,-width/2,-height/2,width,height);
-    ctx.restore();return true;
+    ctx.restore();drawNebulaFlow(scene,surface,cx,cy,r,t,opacity,look);return true;
+  }
+  const nebulaFlowCache=new Map();
+  function nebulaFlowSurface(surface,scene,r){
+    const key=scene+'-'+themeKey+'-'+w+'x'+h;
+    if(nebulaFlowCache.has(key))return nebulaFlowCache.get(key);
+    const width=Math.max(640,Math.round(w*.66)),height=Math.max(380,Math.round(Math.min(h*.58,r*2.55)));
+    const layer=document.createElement('canvas');layer.width=width;layer.height=height;
+    const g=layer.getContext('2d');
+    const crop={
+      ring:{x:.48,y:.20,w:.52,h:.75,flip:true,rotate:-.16},
+      galaxy:{x:.64,y:.14,w:.32,h:.80,flip:false,rotate:.11},
+      peaks:{x:.55,y:.28,w:.45,h:.67,flip:false,rotate:-.045},
+      blackhole:{x:.58,y:.15,w:.42,h:.78,flip:true,rotate:-.12}
+    }[scene];
+    g.save();g.translate(width*.55,height*.47);g.rotate(crop.rotate);g.scale(crop.flip?-1.18:1.18,1.04);
+    g.drawImage(surface,surface.width*crop.x,surface.height*crop.y,surface.width*crop.w,surface.height*crop.h,-width*.54,-height*.44,width*1.08,height*.88);
+    g.restore();
+    const maskLayer=document.createElement('canvas');maskLayer.width=width;maskLayer.height=height;
+    const m=maskLayer.getContext('2d');m.fillStyle='#000';m.beginPath();
+    for(let i=0;i<=88;i++){
+      const a=i/88*Math.PI*2;
+      const wobble=1+Math.sin(a*3.7+.8)*.085+Math.sin(a*8.3-1.4)*.04+Math.sin(a*15.1+2.2)*.02;
+      const x=width*.56+Math.cos(a)*width*.48*wobble,y=height*.50+Math.sin(a)*height*.48*wobble;
+      i?m.lineTo(x,y):m.moveTo(x,y);
+    }
+    m.closePath();m.fill();
+    m.globalCompositeOperation='destination-out';
+    m.fillStyle=m.createLinearGradient(width*.84,0,width,0);
+    m.fillStyle.addColorStop(0,'rgba(0,0,0,0)');m.fillStyle.addColorStop(1,'rgba(0,0,0,.92)');
+    m.fillRect(width*.84,0,width*.16,height);
+    m.fillStyle=m.createLinearGradient(0,0,width*.09,0);
+    m.fillStyle.addColorStop(0,'rgba(0,0,0,.90)');m.fillStyle.addColorStop(1,'rgba(0,0,0,0)');
+    m.fillRect(0,0,width*.09,height);
+    // Tear several dust gaps through the continuation so it reads as a
+    // current of nebula rather than a soft reflection of the main galaxy.
+    for(let i=0;i<7;i++){
+      const y=height*(.24+i*.09),bend=height*(.05+i*.007);
+      m.strokeStyle='rgba(0,0,0,'+(.15+i*.022).toFixed(3)+')';m.lineWidth=height*(.021+i*.003);
+      m.beginPath();m.moveTo(-width*.04,y);
+      m.bezierCurveTo(width*.24,y-bend,width*.56,y+bend*.7,width*1.04,y-bend*.35);m.stroke();
+    }
+    const feather=m.createRadialGradient(width*.56,height*.49,height*.10,width*.56,height*.49,width*.55);
+    feather.addColorStop(0,'rgba(0,0,0,1)');feather.addColorStop(.55,'rgba(0,0,0,.92)');feather.addColorStop(.78,'rgba(0,0,0,.55)');feather.addColorStop(1,'rgba(0,0,0,0)');
+    m.globalCompositeOperation='destination-in';m.fillStyle=feather;m.fillRect(0,0,width,height);
+    g.save();g.globalCompositeOperation='destination-in';g.filter='blur('+(w<=760?12:20)+'px)';g.drawImage(maskLayer,0,0);g.restore();
+    nebulaFlowCache.set(key,layer);return layer;
+  }
+  function drawNebulaFlow(scene,surface,cx,cy,r,t,opacity,look){
+    const mobile=w<=760,calm=reduced?0:1;
+    const phase=scene==='ring'?.7:scene==='galaxy'?2.1:scene==='peaks'?3.9:5.3;
+    const startX=mobile?w*.06:Math.max(w*.34,cx-r*2.0),endX=w*.985;
+    const yBase=cy+r*(mobile?2.1:1.72),ySpan=Math.max(0,Math.min(h-yBase-r*.18,r*(mobile?1.25:2.36)));
+    const alpha=clamp(opacity*(1.75+look.intensity*.22)*(.92+visualEffects.glow*.1),0,1);
+    if(alpha<.004||ySpan<=0)return;
+    const layer=nebulaFlowSurface(surface,scene,r),flowX=startX+(Math.sin(t*.026+phase)*r*.008+mouse.x*r*.006)*calm;
+    const flowY=yBase+(Math.cos(t*.031+phase)*r*.006+mouse.y*r*.005)*calm;
+    ctx.save();ctx.globalCompositeOperation='source-over';
+    ctx.globalAlpha=alpha*clamp(.54+look.intensity*.15,0,.78);
+    ctx.drawImage(layer,flowX,flowY,endX-startX,ySpan);
+    ctx.restore();
+    const fract=value=>value-Math.floor(value),hash=(value,salt=0)=>fract(Math.sin(value*127.1+salt*311.7)*43758.5453);
+    ctx.save();ctx.globalCompositeOperation='lighter';
+    const count=mobile?120:260;
+    for(let i=0;i<count;i++){
+      const u=hash(i,phase),v=hash(i,phase+2.7),wgt=hash(i,phase+5.1);
+      const centerY=yBase+ySpan*(.04+u*.72+.08*Math.sin(u*8.2+phase+t*.022)*calm);
+      const spread=(v+v*v+hash(i,phase+8.2)*.7-.85)*r*(.18+wgt*.30);
+      const x=startX+(endX-startX)*(.04+u*.94)+Math.sin(t*.022+phase+i*.13)*calm*1.8;
+      const y=clamp(centerY+spread,yBase,yBase+ySpan);
+      const cluster=.65+.35*Math.sin(u*15.5+phase*2.1);
+      const twinkle=.76+.24*Math.sin(t*(.38+wgt*.42)+i*1.73+phase);
+      const a=alpha*(.028+v*.08)*cluster*twinkle;
+      const size=.34+wgt*.95+(v>.985?1.8:0);
+      ctx.fillStyle=rgba(v>.92?palette.hot:palette.core,a);
+      ctx.fillRect(x,y,size,size);
+      if(v>.992){
+        const ray=2.4+wgt*3.5;ctx.strokeStyle=rgba(palette.hot,a*.5);ctx.lineWidth=.45;
+        ctx.beginPath();ctx.moveTo(x-ray,y+.5);ctx.lineTo(x+ray+1,y+.5);ctx.moveTo(x+.5,y-ray);ctx.lineTo(x+.5,y+ray+1);ctx.stroke();
+      }
+    }
+    for(let i=0;i<(mobile?12:24);i++){
+      const u=hash(i,phase+11.3),v=hash(i,phase+14.8);
+      const x=startX+(endX-startX)*(.05+u*.9),y=yBase+ySpan*(.08+hash(i,phase+17.2)*.64);
+      const radius=.8+v*2.2;
+      ctx.fillStyle=rgba(palette.hot,alpha*(.05+v*.11));ctx.beginPath();ctx.arc(x,y,radius,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle=rgba(palette.core,alpha*.026);ctx.beginPath();ctx.arc(x,y,radius*5,0,Math.PI*2);ctx.fill();
+    }
+    ctx.restore();
   }
   function drawEventHorizon(cx,cy,r,t,opacity){
     if(opacity<=.002)return;
