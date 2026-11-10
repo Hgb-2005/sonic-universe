@@ -133,7 +133,7 @@
     url.searchParams.set("depth", String(Math.round(normalized.depth * 100)));
     url.searchParams.set("glow", String(Math.round(normalized.glow * 100)));
     url.searchParams.set("motionSpeed", String(Math.round(normalized.motionSpeed * 100)));
-    url.searchParams.set("v", "24");
+    url.searchParams.set("v", "25");
     return url.toString();
   }
 
@@ -209,6 +209,65 @@
     return value / total;
   }
 
+  const NEBULA_REACTION = Object.freeze({
+    ring: Object.freeze({ scaleX: 0.072, scaleY: 0.052, rotation: 0.022, bend: 0.030, ridge: 0.12 }),
+    galaxy: Object.freeze({ scaleX: 0.050, scaleY: 0.066, rotation: 0.062, bend: 0.036, ridge: 0.14 }),
+    peaks: Object.freeze({ scaleX: 0.030, scaleY: 0.105, rotation: 0.008, bend: 0.074, ridge: 0.20 }),
+    blackhole: Object.freeze({ scaleX: 0.058, scaleY: 0.046, rotation: 0.092, bend: 0.044, ridge: 0.18 }),
+  });
+
+  function nebulaMotion(scene, signals, time, options) {
+    const key = MODES.includes(scene) ? scene : "ring";
+    const profile = NEBULA_REACTION[key];
+    const input = signals && typeof signals === "object" ? signals : {};
+    const tuning = options && typeof options === "object" ? options : {};
+    const intensity = clamp(finite(tuning.intensity, 0.7), 0.2, 1);
+    const glowTune = clamp(finite(tuning.glow, 0.6), 0, 1);
+    const gate = clamp(finite(input.presence, input.active ? 1 : 0), 0, 1);
+    const bass = clamp(finite(input.bass, 0), 0, 1) * gate;
+    const mid = clamp(finite(input.mid, 0), 0, 1) * gate;
+    const high = clamp(finite(input.high, 0), 0, 1) * gate;
+    const spectrum = input.spectrum && Number.isFinite(input.spectrum.length) ? input.spectrum : [];
+    const sample = (from, to) => {
+      if (!spectrum.length || to <= from) return 0;
+      let sum = 0, count = 0;
+      const first = Math.max(0, Math.floor(from * spectrum.length));
+      const last = Math.min(spectrum.length, Math.ceil(to * spectrum.length));
+      for (let index = first; index < last; index += 1) {
+        sum += clamp(finite(spectrum[index], 0), 0, 1);
+        count += 1;
+      }
+      return count ? sum / count : 0;
+    };
+    const lowBand = sample(0, 0.34) * gate;
+    const midBand = sample(0.30, 0.72) * gate;
+    const highBand = sample(0.68, 1) * gate;
+    const contour = clamp(Math.abs(midBand - lowBand) * 1.35 + Math.abs(highBand - midBand) * 0.85, 0, 1);
+    const definition = clamp((mid * 0.58 + contour * 0.42) * (0.72 + intensity * 0.40), 0, 1);
+    const ridge = clamp((high * 0.58 + highBand * 0.24 + contour * 0.18) * (0.70 + glowTune * 0.48), 0, 1);
+    const motion = (tuning.reduced ? 0.18 : 1) * clamp(finite(tuning.motionSpeed, 1), 0.25, 2);
+    const phase = finite(time, 0) * (0.28 + mid * 0.24) * motion;
+    return Object.freeze({
+      scene: key,
+      activity: gate,
+      bass,
+      mid,
+      high,
+      spectrumLow: lowBand,
+      spectrumMid: midBand,
+      spectrumHigh: highBand,
+      scaleX: 1 + bass * profile.scaleX * motion + mid * profile.scaleX * 0.18 * motion,
+      scaleY: 1 + bass * profile.scaleY * motion + mid * profile.scaleY * 0.42 * motion,
+      rotation: (mid * profile.rotation + bass * profile.rotation * 0.16) * motion,
+      bend: definition,
+      swirl: clamp(mid * (0.65 + motion * 0.35) + contour * 0.24, 0, 1),
+      ridge,
+      glow: clamp(high * 0.72 + ridge * 0.28, 0, 1),
+      ambient: Math.sin(phase + (key === "galaxy" ? 1.7 : key === "peaks" ? 3.1 : key === "blackhole" ? 4.5 : 0)),
+      warp: clamp((definition * 0.62 + ridge * 0.38) * (motion / 2), 0, 1),
+    });
+  }
+
   return Object.freeze({
     DEFAULTS,
     MODES,
@@ -225,5 +284,6 @@
     noise2,
     fbm2,
     smoothstep,
+    nebulaMotion,
   });
 });

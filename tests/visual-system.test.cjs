@@ -95,3 +95,49 @@ test("noise is finite, centered and changes smoothly", () => {
   assert.ok(Math.abs(visual.fbm2(2.1, 3.7, 3) - visual.fbm2(2.1, 3.7, 3)) < 1e-12);
   assert.ok(Math.abs(visual.fbm2(2.1, 3.7, 3) - visual.fbm2(2.11, 3.7, 3)) < 0.08);
 });
+
+test("music drives nebula body deformation without changing silent geometry", () => {
+  const spectrum = new Float32Array(96);
+  spectrum.fill(0.08, 0, 32);
+  spectrum.fill(0.42, 32, 69);
+  spectrum.fill(0.2, 69);
+  const silent = visual.nebulaMotion("ring", {
+    presence: 0, bass: 1, mid: 1, high: 1, spectrum,
+  }, 4, { intensity: 1, glow: 1, motionSpeed: 1 });
+  assert.equal(silent.scaleX, 1);
+  assert.equal(silent.scaleY, 1);
+  assert.equal(silent.rotation, 0);
+  assert.equal(silent.warp, 0);
+
+  const ring = visual.nebulaMotion("ring", {
+    presence: 0.9, bass: 0.8, mid: 0.5, high: 0.25, spectrum,
+  }, 4, { intensity: 0.8, glow: 0.7, motionSpeed: 1 });
+  const peaks = visual.nebulaMotion("peaks", {
+    presence: 0.9, bass: 0.8, mid: 0.5, high: 0.25, spectrum,
+  }, 4, { intensity: 0.8, glow: 0.7, motionSpeed: 1 });
+  assert.ok(ring.scaleX > 1.02 && ring.scaleY > 1.01);
+  assert.ok(ring.rotation > 0 && ring.warp > 0);
+  assert.ok(peaks.scaleY - 1 > ring.scaleY - 1);
+  assert.ok(peaks.bend > 0 && peaks.glow > 0);
+});
+
+test("nebula reaction is deterministic, bounded and reduced by motion preferences", () => {
+  const input = {
+    presence: 1,
+    bass: 0.75,
+    mid: 0.6,
+    high: 0.4,
+    spectrum: new Float32Array(96).fill(0.5),
+  };
+  const options = { intensity: 0.7, glow: 0.6, motionSpeed: 1.4 };
+  const first = visual.nebulaMotion("blackhole", input, 7.2, options);
+  const second = visual.nebulaMotion("blackhole", input, 7.2, options);
+  const reduced = visual.nebulaMotion("blackhole", input, 7.2, { ...options, reduced: true });
+  assert.deepEqual(first, second);
+  assert.ok(first.warp >= 0 && first.warp <= 1);
+  assert.ok(first.glow >= 0 && first.glow <= 1);
+  assert.ok(reduced.scaleX < first.scaleX && reduced.rotation < first.rotation);
+  const invalid = visual.nebulaMotion("unknown", { presence: NaN, bass: Infinity, mid: -2, high: NaN }, NaN, {});
+  assert.equal(invalid.scene, "ring");
+  assert.ok(["scaleX", "scaleY", "rotation", "bend", "swirl", "ridge", "glow", "ambient", "warp"].every(key => Number.isFinite(invalid[key])));
+});
