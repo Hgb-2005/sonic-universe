@@ -10,6 +10,7 @@ Thumbs.db
 *.log
 /outputs/*
 !/outputs/index.html
+!/outputs/film-story.js
 !/outputs/music-motion.js
 !/outputs/flight.html
 !/outputs/flight.css

@@ -5,7 +5,6 @@ on:
     branches: [main]
     paths:
       - 'outputs/**'
-      - 'folia-mod/**'
       - 'tests/**'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
@@ -28,10 +27,12 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v4
-      - name: Verify music response and optional flight
+      - name: Verify music response, film analysis and optional flight
         run: |
           node tests/music-motion.test.cjs
+          node --test tests/film-story.test.cjs
           node --check outputs/music-motion.js
+          node --check outputs/film-story.js
           node tests/flight-core.test.cjs
           node --test tests/project-pack.test.cjs
           node --test tests/visual-presets.test.cjs
@@ -41,12 +42,6 @@ jobs:
           node --check outputs/visual-system.js
           node --check outputs/flight-core.js
           node --check outputs/flight.js
-          node --check folia-mod/sonic-universe/client.mjs
-          node --check folia-mod/sonic-universe/src/analysis.mjs
-          node --check folia-mod/sonic-universe/src/palette.mjs
-          node --check folia-mod/sonic-universe/src/random.mjs
-          node --check folia-mod/sonic-universe/src/renderer.mjs
-          node tests/folia-sonic-universe.test.cjs
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload artwork
