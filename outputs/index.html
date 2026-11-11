@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#080811">
-<title>声波宇宙 27 · 从一首歌生成星空短片</title>
+<title>声波宇宙 28 · 让汽水歌单成为星空</title>
 <style>.help-btn{text-decoration:none}.footer-links{flex-wrap:wrap}</style>
-<meta name="description" content="从一首歌生成自己的星空短片：自动分析能量、寻找高潮、编排四章，并录制带音乐的竖屏视频。">
+<meta name="description" content="保存自己的汽水音乐歌单，一键打开分享链接，并用汽水音乐正在播放的声音实时驱动星空。">
 <meta property="og:type" content="website">
 <meta property="og:title" content="声波宇宙 · 让旋律坠入星海">
-<meta property="og:description" content="导入一首歌，自动找到高潮并编排四章星空，录制 15 或 30 秒竖屏短片。">
+<meta property="og:description" content="整理自己的汽水音乐入口，显示歌曲信息并一键跳转，也能用实际播放的声音实时驱动星空。">
 <meta property="og:url" content="https://hgb-2005.github.io/sonic-universe/">
 <meta property="og:image" content="https://hgb-2005.github.io/sonic-universe/preview.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -51,6 +51,11 @@
 @media(max-width:760px){.header-right{gap:4px}.header-action{padding:0 7px}.external-hero{gap:14px}.signal-orbit{width:52px;height:52px}.external-hero strong{font-size:12px}.external-note{padding:12px}.connection-steps li{font-size:11px;gap:12px}.source-ribbon{margin:0 5% 15px;padding:10px 12px;font-size:10px}.source-ribbon small{display:none}.library-browser{align-items:stretch;flex-direction:column;gap:12px}.library-search{flex:auto}.library-tabs button{flex:1;padding:8px 10px}.queue-toolbar{align-items:flex-start}.import-buttons{flex:1}.import-buttons button{font-size:10px;padding:10px}.playback-label{margin-left:auto}.playlist-shelf{flex-wrap:wrap;gap:8px}.playlist-shelf label{flex-basis:100%}.library-panel form,.membership-actions{flex-wrap:wrap}.library-panel input,.library-panel select{flex-basis:100%}.queue-row{grid-template-columns:minmax(0,1fr) auto;padding:8px 6px}.queue-row .queue-tools{display:grid;grid-template-columns:repeat(3,27px);gap:0}.queue-tools .icon-btn{width:27px;height:27px}.queue-tools .favorite-song{grid-column:1}.queue-tools .membership-song{grid-column:2}.queue-art{width:30px;height:36px}.queue-title{font-size:11px}.queue-meta{font-size:8px}.queue-select{gap:7px}.queue-bottom>span{max-width:155px}.queue-list{max-height:39dvh}.library-context{align-items:flex-start}.external-actions{gap:11px}.external-actions .primary-btn{flex:1}.external-hero p{font-size:10px}}
 @media(max-width:380px){.version{display:none}.header-right{gap:3px}.header-action{padding:0 6px}.brand-name{font-size:11px}.library-context{gap:6px}.import-buttons button{padding:9px}.queue-tools .icon-btn{width:25px}.queue-row .queue-tools{grid-template-columns:repeat(3,25px)}.queue-art{display:none}.queue-title{font-size:11px}.source-ribbon{font-size:9px}}
 @media(max-width:450px){.queue-toolbar .import-buttons{flex-basis:100%}.import-buttons button{flex:1;white-space:nowrap}.queue-toolbar .playback-label{margin-left:0;width:100%;justify-content:space-between}.queue-toolbar .playback-label select{min-width:145px}.library-scope{font-size:9px}}
+
+/* Edition 28: a personal soda-music doorway. */
+.soda-panel{margin-top:13px;padding:15px;background:linear-gradient(135deg,rgba(64,210,177,.055),rgba(180,126,236,.07));border:1px solid rgba(111,215,188,.2);border-radius:10px}.soda-panel[hidden]{display:none}.soda-panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:12px}.soda-panel-head strong{display:block;color:#d8eee8;font-size:12px;font-weight:500;letter-spacing:.3px}.soda-panel-head p{margin:6px 0 0;color:#91a9a3;font-size:9px;line-height:1.8}.soda-panel-head span{font:9px ui-monospace,monospace;color:#76cdb8;letter-spacing:1.4px;white-space:nowrap}.soda-form{display:grid;grid-template-columns:1fr 1fr;gap:8px}.soda-form .soda-url{grid-column:1/-1}.soda-form input{width:100%;min-width:0}.soda-form-actions{grid-column:1/-1;display:flex;align-items:center;gap:8px;flex-wrap:wrap}.soda-form-actions button{font-size:10px;padding:9px 11px}.soda-status{min-height:16px;margin:10px 0 0!important;font-size:9px!important;color:#9fb8b1!important}.soda-status.error{color:#efbc9b!important}.soda-batch{margin-top:12px;border-top:1px solid rgba(255,255,255,.075);padding-top:12px}.soda-batch summary{cursor:pointer;color:#b7d6ce;font-size:10px;line-height:1.8}.soda-batch-body{margin-top:10px}.soda-batch textarea{width:100%;min-height:94px;font-size:10px}.soda-batch-actions{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}.soda-batch-preview{margin-top:9px!important;padding:9px 11px;border-radius:7px;background:#09120f8c;color:#aec9c2!important;font-size:9px!important;white-space:pre-wrap}.soda-batch-preview:empty{display:none}.queue-row.soda-row .queue-art{color:#8fe0cb;background:radial-gradient(circle at 45% 42%,#eafff8 0,#67cbae 12%,#24493f 35%,#101916 78%)}.queue-row.soda-row .queue-select{cursor:pointer}.queue-tools .edit-song{font-size:15px}
+@media(max-width:760px){.soda-panel{padding:12px}.soda-panel-head{gap:8px}.soda-panel-head span{display:none}.soda-form{grid-template-columns:1fr}.soda-form .soda-url{grid-column:auto}.soda-form-actions{grid-column:auto}.soda-form-actions button{flex:1}.queue-row .queue-tools{grid-template-columns:repeat(6,24px)}}
+@media(max-width:380px){.queue-row .queue-tools{grid-template-columns:repeat(6,22px)}}
 
 /* Edition 06: a score for the stars. */
 .journey-route{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:-5px 0 13px;font-size:9px;color:#9989ab}.journey-route>span{font-size:8px;letter-spacing:1px;color:#80718f}.journey-route .story-toggle{font-size:9px;padding:4px 0}.chapter-rail{display:flex;align-items:center;gap:5px;width:126px;margin:12px auto 0;opacity:.7}.chapter-rail i{height:2px;flex:1;background:#7b628b35;border-radius:2px;transition:background .7s}.chapter-rail i.active{background:var(--accent);box-shadow:0 0 8px rgba(var(--accent-rgb),.35)}.camera-toggle{display:block;margin-top:8px;padding:0;background:transparent;color:#9a88b2;font-size:8px;letter-spacing:.3px;pointer-events:auto;line-height:1.6}.camera-toggle[aria-pressed=true]{color:#ccb5ed}.camera-toggle:disabled{opacity:.65;cursor:default}.roam-chapter{min-width:90px}.roam-chapter strong{white-space:nowrap}.roam-chapter small{font-variant-numeric:tabular-nums}.roam-instructions{max-width:100%}
@@ -201,7 +206,7 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
   <canvas id="universe" role="img" aria-label="一片随音乐频率起伏的星空，低音推开星云，中频留下星轨，高音点亮星闪">你的浏览器暂不支持星空画布。</canvas>
   <div class="grain" aria-hidden="true"></div>
   <header class="header">
-    <div class="brand"><div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M7 17v-2m4 8V9m5 17V6m5 16V10m4 8v-4"/></svg></div><div><div class="brand-name">声波宇宙<span class="version">VOL.27</span></div><div class="brand-en">SONIC UNIVERSE</div></div></div>
+    <div class="brand"><div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M7 17v-2m4 8V9m5 17V6m5 16V10m4 8v-4"/></svg></div><div><div class="brand-name">声波宇宙<span class="version">VOL.28</span></div><div class="brand-en">SONIC UNIVERSE</div></div></div>
     <div class="header-right"><button class="header-action external-action" id="externalBtn" aria-label="外部音乐联动" title="外部音乐联动"><svg viewBox="0 0 24 24"><path d="M3 10v4m4-7v10m5-14v18m5-14v10m4-7v4"/></svg><span class="action-label">外部联动</span></button><button class="header-action studio-action" id="studioBtn" aria-label="布置我的音乐空间" title="布置空间"><svg viewBox="0 0 24 24"><path d="m12 3 2.3 6.7L21 12l-6.7 2.3L12 21l-2.3-6.7L3 12l6.7-2.3Z"/></svg><span class="action-label">布置空间</span></button><button class="header-action" id="queueBtn" aria-label="打开播放列表" title="播放列表"><svg viewBox="0 0 24 24"><path d="M4 5h16M4 10h16M4 15h9m4-1v7m-3-3h6"/></svg><span class="action-label">音乐库</span><span class="queue-count" id="queueCount">01</span></button><button class="upload-btn" id="uploadBtn" aria-label="导入多首音乐" title="可同时选择多首音乐"><svg viewBox="0 0 24 24"><path d="M12 16V3m-5 5 5-5 5 5M4 15v5h16v-5"/></svg><span>导入音乐</span></button><button class="icon-btn" id="fullscreenBtn" aria-label="进入全屏" title="全屏 · F"><svg viewBox="0 0 24 24"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg></button></div>
   </header>
   <main class="stage" id="stage">
@@ -236,9 +241,9 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
     <div class="spectrum-panel" aria-label="实时音频频段"><div class="band"><div class="band-label">低频<output id="bassValue">0%</output></div><div class="band-track"><span class="band-fill" id="bassFill"></span></div></div><div class="band"><div class="band-label">中频<output id="midValue">0%</output></div><div class="band-track"><span class="band-fill" id="midFill"></span></div></div><div class="band"><div class="band-label">高频<output id="highValue">0%</output></div><div class="band-track"><span class="band-fill" id="highFill"></span></div></div></div>
   </main>
   <div class="source-ribbon" id="sourceRibbon"><span><i aria-hidden="true"></i>外部声音已接入<small>选歌、暂停与音量在原播放器操作</small></span><button id="sourceManageBtn">管理联动 ↗</button></div><div class="player-wrap"><section class="player" aria-label="音乐播放器"><div class="track"><button class="album album-button" id="albumButton" aria-label="更换歌曲封面" title="布置空间与歌曲封面"><img id="albumImage" alt="" hidden></button><div class="track-text"><div class="track-title" id="trackTitle" title="星际漫游 · Interstellar Drift">星际漫游<span class="track-tag" id="trackTag">DEMO</span></div><div class="track-sub" id="trackSub">Interstellar Drift · 原创合成音景</div></div></div><div class="transport"><div class="transport-buttons"><button class="icon-btn" id="restartBtn" aria-label="上一首" title="上一首"><svg viewBox="0 0 24 24"><path d="M5 5v14m14-14L8 12l11 7Z"/></svg></button><button class="play-btn" id="playBtn" aria-label="播放音乐" title="播放 / 暂停 · 空格"><svg class="play-icon" viewBox="0 0 24 24"><path d="m7 3 15 9-15 9Z"/></svg></button><button class="icon-btn" id="forwardBtn" aria-label="下一首" title="下一首"><svg viewBox="0 0 24 24"><path d="m5 5 11 7-11 7Zm14 0v14"/></svg></button></div><div class="progress-row"><span id="currentTime">00:00</span><input class="range" id="seek" type="range" min="0" max="96" step="0.1" value="0" aria-label="播放进度" aria-valuetext="00:00 / 01:36"><span id="duration">01:36</span></div></div><div class="player-right"><button class="icon-btn active" id="repeatBtn" aria-label="关闭单曲循环" aria-pressed="true" title="单曲循环：开"><svg viewBox="0 0 24 24"><path d="m17 2 4 4-4 4M3 11V8a2 2 0 0 1 2-2h16M7 22l-4-4 4-4m14-1v3a2 2 0 0 1-2 2H3"/></svg></button><div class="volume"><button class="icon-btn" id="muteBtn" aria-label="静音" aria-pressed="false" title="静音 · M"><svg viewBox="0 0 24 24"><path d="m11 4-6 5H2v6h3l6 5Zm4 4a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg></button><input class="range" id="volume" type="range" min="0" max="100" value="65" aria-label="音量" aria-valuetext="65%"></div><span class="player-divider"></span><button class="icon-btn" id="quietBtn" aria-label="进入宇宙" title="沉浸漫游 · H"><svg viewBox="0 0 24 24"><path d="m12 3 2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2Z"/></svg></button></div></section><span class="keyboard-hint">SPACE 播放 / 暂停</span></div>
-  <footer class="footer"><span class="footer-brand"><b>EDITION 27</b> SOUND & STARDUST</span><div class="footer-links footer-center"><button class="help-btn" id="projectBtn">创作与备份 ↗</button><span aria-hidden="true">·</span><button class="help-btn" id="helpBtn">使用指南 ↗</button><span aria-hidden="true">·</span><button class="help-btn" id="flightBtn" title="可选的独立节奏小游戏">星际航行小实验 ↗</button></div><span>你的音乐 · 只在本机流转</span></footer>
+  <footer class="footer"><span class="footer-brand"><b>EDITION 28</b> SOUND & STARDUST</span><div class="footer-links footer-center"><button class="help-btn" id="projectBtn">创作与备份 ↗</button><span aria-hidden="true">·</span><button class="help-btn" id="helpBtn">使用指南 ↗</button><span aria-hidden="true">·</span><button class="help-btn" id="flightBtn" title="可选的独立节奏小游戏">星际航行小实验 ↗</button></div><span>你的音乐 · 只在本机流转</span></footer>
   <div class="roam-surface" id="roamSurface" tabindex="0" role="region" aria-label="星空漫游：轻触唤醒按钮，拖动旋转视角，滚轮或双指缩放，加减键调整距离，0 重置，C 定格，右上角选星空，H 或 Escape 返回"></div>
-  <div class="roam-ui roam-top"><div class="roam-identity"><div class="roam-kicker">SONIC JOURNEY · VOL.27</div><p id="roamTrack">星际漫游</p><button class="roam-export" id="roamClipBtn">生成星空短片 ↗</button><button class="roam-export roam-atelier" id="roamAtelierBtn">心情 · 歌词 · 收藏 ↗</button><button class="roam-export roam-atelier" id="roamInstrumentBtn">弹出星空 ↗</button></div><div class="roam-top-actions"><button class="roam-look-toggle" id="roamLookBtn" aria-expanded="false" aria-controls="roamLookPanel" aria-label="选择星空氛围"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.3 6.7L21 12l-6.7 2.3L12 21l-2.3-6.7L3 12l6.7-2.3Z"/></svg>选星空</button><button class="quiet-exit" id="quietExit"><svg viewBox="0 0 24 24"><path d="m14 5-7 7 7 7M7 12h13"/></svg>返回空间 · Esc</button></div>
+  <div class="roam-ui roam-top"><div class="roam-identity"><div class="roam-kicker">SONIC JOURNEY · VOL.28</div><p id="roamTrack">星际漫游</p><button class="roam-export" id="roamClipBtn">生成星空短片 ↗</button><button class="roam-export roam-atelier" id="roamAtelierBtn">心情 · 歌词 · 收藏 ↗</button><button class="roam-export roam-atelier" id="roamInstrumentBtn">弹出星空 ↗</button></div><div class="roam-top-actions"><button class="roam-look-toggle" id="roamLookBtn" aria-expanded="false" aria-controls="roamLookPanel" aria-label="选择星空氛围"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.3 6.7L21 12l-6.7 2.3L12 21l-2.3-6.7L3 12l6.7-2.3Z"/></svg>选星空</button><button class="quiet-exit" id="quietExit"><svg viewBox="0 0 24 24"><path d="m14 5-7 7 7 7M7 12h13"/></svg>返回空间 · Esc</button></div>
     <section class="roam-look-panel" id="roamLookPanel" hidden aria-labelledby="roamLookTitle">
       <div class="roam-look-heading"><div><h2 id="roamLookTitle">此刻，想听见哪片星空</h2><span class="roam-look-current" id="roamLookCurrent"></span></div><button class="icon-btn" id="roamLookClose" aria-label="关闭星空氛围">×</button></div>
       <div class="roam-look-grid" id="roamLookGrid" role="group" aria-label="沉浸星空氛围"></div>
@@ -266,10 +271,22 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
 <dialog class="space-dialog queue-dialog" id="queueDialog" aria-labelledby="queueHeading">
   <div class="dialog-heading"><div><div class="dialog-kicker">YOUR PRIVATE COLLECTION</div><h2 id="queueHeading">收藏喜欢的歌，也收藏星光。</h2><p id="queueSummary">正在打开播放列表…</p></div><button class="icon-btn dialog-close" data-close="queueDialog" aria-label="关闭播放列表">✕</button></div>
   <div class="queue-toolbar"><div class="import-buttons"><button class="primary-btn" id="queueImportBtn">＋ 添加音乐</button><button class="secondary-btn" id="folderImportBtn">选择文件夹</button></div><label class="playback-label" for="playbackMode">播放方式<select id="playbackMode"><option value="sequence">顺序播放</option><option value="list">列表循环</option><option value="single">单曲循环</option><option value="shuffle">随机播放</option></select></label></div>
-  <div class="library-browser"><div class="library-tabs" role="group" aria-label="音乐库分类"><button data-library-view="all" aria-pressed="true">全部音乐</button><button data-library-view="favorites" aria-pressed="false">☆ 我的收藏</button><button data-library-view="playlists" aria-pressed="false">我的歌单</button></div><label class="library-search"><input class="text-input" type="search" id="librarySearch" placeholder="寻找一首歌…" aria-label="搜索音乐名称或文件夹" autocomplete="off"></label></div>
+  <div class="library-browser"><div class="library-tabs" role="group" aria-label="音乐库分类"><button data-library-view="all" aria-pressed="true">全部音乐</button><button data-library-view="favorites" aria-pressed="false">☆ 我的收藏</button><button data-library-view="playlists" aria-pressed="false">我的歌单</button><button data-library-view="soda" aria-pressed="false">↗ 汽水音乐</button></div><label class="library-search"><input class="text-input" type="search" id="librarySearch" placeholder="搜索歌曲、歌手或专辑…" aria-label="搜索歌曲、歌手、专辑或文件夹" autocomplete="off"></label></div>
   <div class="playlist-shelf"><label for="libraryPlaylist">歌单<select id="libraryPlaylist"><option value="">还没有歌单，创建一个吧</option></select></label><button class="text-btn" id="newPlaylistBtn">＋ 新建歌单</button><button class="text-btn" id="renamePlaylistBtn" hidden>重命名</button><button class="text-btn" id="deletePlaylistBtn" hidden>删除歌单</button></div>
   <div class="library-panel" id="playlistEditor" hidden><p id="playlistEditorTitle">新建歌单</p><form id="playlistForm"><input class="text-input" id="playlistName" maxlength="32" placeholder="给这段旅程起个名字" aria-label="歌单名称" required><button class="primary-btn" type="submit">保存歌单</button><button class="secondary-btn" type="button" id="cancelPlaylistBtn">取消</button></form></div>
   <div class="library-panel" id="membershipPanel" hidden><p id="membershipTitle">加入歌单</p><div class="membership-actions"><select id="songPlaylistSelect" aria-label="选择要加入的歌单"></select><button class="primary-btn" id="addMembershipBtn">加入歌单</button><button class="secondary-btn" id="closeMembershipBtn">关闭</button></div><p id="membershipHint"></p></div>
+  <section class="soda-panel" id="sodaPanel" hidden aria-labelledby="sodaHeading">
+    <div class="soda-panel-head"><div><strong id="sodaHeading">我的汽水音乐入口</strong><p>这里只保存你自己填写的歌名和分享链接。点击歌曲会打开汽水音乐；想用实际播放的声音驱动星空，请同时开启「外部联动」并共享系统声音。不下载音频，不读取账号。</p></div><span>SODA · LINK ONLY</span></div>
+    <form class="soda-form" id="sodaEditor" novalidate>
+      <input class="text-input" id="sodaName" maxlength="100" placeholder="歌曲名称" aria-label="歌曲名称" required>
+      <input class="text-input" id="sodaArtist" maxlength="80" placeholder="歌手（可选）" aria-label="歌手">
+      <input class="text-input" id="sodaAlbum" maxlength="100" placeholder="专辑或备注（可选）" aria-label="专辑或备注">
+      <input class="text-input soda-url" id="sodaUrl" maxlength="2048" type="url" inputmode="url" placeholder="粘贴汽水音乐分享链接 https://…" aria-label="汽水音乐分享链接" required>
+      <div class="soda-form-actions"><button class="primary-btn" id="sodaSaveBtn" type="submit">加入我的汽水歌单</button><button class="secondary-btn" id="sodaPasteBtn" type="button">从剪贴板读取链接</button><button class="secondary-btn" id="sodaCancelBtn" type="button" hidden>取消编辑</button></div>
+    </form>
+    <p class="soda-status" id="sodaStatus" role="status" aria-live="polite">单首保存会按链接去重；歌曲只保存元数据与跳转地址。</p>
+    <details class="soda-batch"><summary>批量整理：每行一首，支持「歌名 | 歌手 | 专辑 | 链接」或制表符分隔</summary><div class="soda-batch-body"><textarea class="text-input" id="sodaBatch" placeholder="千万人之中 | 王奕心 | 收藏 | https://qishui.douyin.com/s/...&#10;第二首歌 | 歌手名 | https://qishui.douyin.com/s/..."></textarea><div class="soda-batch-actions"><button class="secondary-btn" id="sodaBatchParseBtn" type="button">检查这批歌曲</button><button class="primary-btn" id="sodaBatchConfirmBtn" type="button" hidden>确认加入</button></div><p class="soda-batch-preview" id="sodaBatchPreview"></p></div></details>
+  </section>
   <div class="library-context"><p><strong id="libraryViewName">全部音乐</strong> · <span id="libraryResultCount">0 首音乐</span></p><button class="secondary-btn" id="playCollectionBtn">播放此列表 ↗</button></div>
   <p class="library-scope" id="playbackScope">正在使用的播放范围：全部音乐 · 搜索只筛选显示</p>
   <p class="import-status" id="importStatus" role="status" aria-live="polite">支持多选、拖入或文件夹导入 · ☆ 收藏 · ＋ 加入歌单 · ↑ ↓ 调整顺序。</p>
@@ -315,7 +332,7 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
   <p class="external-note">想听更多热歌，可以直接在汽水音乐中播放热歌歌单；歌曲列表与播放权限由汽水音乐提供。本页通过你主动共享的声音驱动画面，不会导入汽水曲库、读取账号或自动同步歌名、封面和歌词。</p>
   <p class="external-note">声音来源由你在浏览器弹窗中选择。能否共享系统声音取决于浏览器与系统；某些窗口只有画面、没有声音。若内置预览无法接入，请在 Chrome 或 Edge 打开本机地址再试。浏览器会申请屏幕共享；本作品只在本机分析音轨，不读取或保存画面，也不重复播放共享声音。</p>
   <p class="connection-status" id="externalStatus" role="status" aria-live="polite">接入成功后，本地歌曲会停在原来的位置。</p>
-  <div class="external-actions"><button class="primary-btn" id="connectExternalBtn">选择声音来源 ↗</button><a class="secondary-btn" id="qishuiOfficialLink" href="https://www.qishui.com/" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;text-decoration:none">汽水音乐官网 ↗</a><button class="secondary-btn" id="stopExternalBtn" hidden>停止联动</button><button class="text-btn" id="externalExploreBtn" hidden>进入宇宙 ↗</button></div>
+  <div class="external-actions"><button class="primary-btn" id="connectExternalBtn">选择声音来源 ↗</button><button class="secondary-btn" id="openSodaLibraryBtn">我的汽水歌单 ↗</button><a class="secondary-btn" id="qishuiOfficialLink" href="https://www.qishui.com/" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;text-decoration:none">汽水音乐官网 ↗</a><button class="secondary-btn" id="stopExternalBtn" hidden>停止联动</button><button class="text-btn" id="externalExploreBtn" hidden>进入宇宙 ↗</button></div>
 </dialog>
 
 <dialog class="space-dialog clip-dialog" id="clipDialog" aria-labelledby="clipHeading">
@@ -417,11 +434,12 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
   <div class="instrument-footer"><div><span class="storage-status" role="status">旋律与设置仅保存在本机</span><small>录制一层前数 4 拍，循环播放时可继续录下一层。最多 6 层；关闭乐器台会停止演奏。</small></div><button class="primary-btn" id="instrumentFilmBtn">把演奏录成短片 ↗</button></div>
 </dialog>
 
-<script src="./project-pack.js?v=27"></script>
-<script src="./music-motion.js?v=27"></script>
-<script src="./visual-presets.js?v=27"></script>
-<script src="./visual-system.js?v=27"></script>
-<script src="./film-story.js?v=27"></script>
+<script src="./project-pack.js?v=28"></script>
+<script src="./music-motion.js?v=28"></script>
+<script src="./visual-presets.js?v=28"></script>
+<script src="./visual-system.js?v=28"></script>
+<script src="./film-story.js?v=28"></script>
+<script src="./soda-library.js?v=28"></script>
 <script>
 (() => {
   'use strict';
@@ -543,10 +561,21 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
   let dbPromise=null,storageChain=Promise.resolve(),savingCount=0,lastSessionSave=0,coverTargetId=null,backgroundRequest=0;
   const storageIssues=new Set(),playbackLabels={sequence:'顺序播放',list:'列表循环',single:'单曲循环',shuffle:'随机播放'};
   let playlists=[],libraryView='all',playbackScope='all',libraryQuery='',editingPlaylistId=null,membershipTrackId=null;
+  let editingSodaId=null,sodaBatchPreview=null,sodaBatchText='';
   let shuffleBag=[],shuffleHistory=[],shuffleCursor=-1;
   let externalStream=null,externalNode=null,externalAnalyser=null,externalSink=null,externalPending=false,externalGeneration=0,externalStartedAt=0,externalSilentSince=0;
+  function isPlayableTrack(track){return track?.kind==='demo'||track?.kind==='file'}
   function makeDemo(){return {id:'demo',kind:'demo',name:'星际漫游',duration:96,cover:null,stored:true}}
-  function currentTrack(){return tracks.find(t=>t.id===activeId)||null}
+  function currentTrack(){return tracks.find(t=>t.id===activeId&&isPlayableTrack(t))||null}
+  function normalizeSodaUrl(value){return globalThis.SonicSodaLibrary?.normalizeSodaUrl(value)||null}
+  function openSodaUrl(value){
+    const url=normalizeSodaUrl(value);
+    if(!url){showToast('链接无效，请重新粘贴汽水音乐分享链接。',true);return false}
+    const link=document.createElement('a');
+    link.href=url;link.target='_blank';link.rel='noopener noreferrer';
+    document.body.append(link);link.click();link.remove();
+    return true;
+  }
   function updateStorageStatus(){
     const problem=storageIssues.size>0;
     const message=!libraryReady?'正在读取本机收藏…':savingCount?'正在保存在本机…':problem?'保存未完成：浏览器存储不可用或容量不足。请保留此页面。':'已保存在本机 · 下次打开继续使用';
@@ -597,11 +626,11 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
   }
   function persistLibrary(){
     const snapshot=tracks.slice();
-    const metadata=snapshot.map(t=>({id:t.id,kind:t.kind,name:t.name,duration:t.duration,cover:t.cover||null,size:t.blob?.size||0,favorite:Boolean(t.favorite),sourcePath:t.sourcePath||'',signature:t.signature||''}));
+    const metadata=snapshot.map(t=>({id:t.id,kind:t.kind,name:t.name,artist:t.artist||'',album:t.album||'',externalUrl:t.externalUrl||'',duration:t.kind==='soda'?0:t.duration,cover:t.cover||null,size:t.blob?.size||0,favorite:Boolean(t.favorite),sourcePath:t.sourcePath||'',signature:t.signature||''}));
     const collections=playlists.map(p=>({id:p.id,name:p.name,trackIds:p.trackIds.slice()})),view=libraryView,scope=playbackScope;
     return queueStorage('library',async db=>{
       const tx=db.transaction(['state','media'],'readwrite'),done=transactionDone(tx),media=tx.objectStore('media'),ids=new Set(snapshot.map(t=>t.id));
-      tx.objectStore('state').put({version:5,tracks:metadata,playlists:collections,libraryView:view,playbackScope:scope},'library');
+      tx.objectStore('state').put({version:6,tracks:metadata,playlists:collections,libraryView:view,playbackScope:scope},'library');
       snapshot.forEach(t=>{if(t.kind==='file'&&!t.stored)media.put(t.blob,t.id)});
       const cursor=media.openKeyCursor();
       cursor.onsuccess=()=>{const entry=cursor.result;if(entry){if(!ids.has(entry.key))media.delete(entry.key);entry.continue()}};
@@ -619,26 +648,35 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
       const values=await Promise.all([requestValue(tx.objectStore('state').get('library')),requestValue(tx.objectStore('state').get('background')),requestValue(tx.objectStore('media').getAll()),requestValue(tx.objectStore('media').getAllKeys()),done]);
       const [saved,bg,blobs,keys]=values,media=new Map(keys.map((key,i)=>[key,blobs[i]]));
       if(saved&&Array.isArray(saved.tracks)){
-        const seen=new Set();tracks=[];
+        const seen=new Set(),seenSodaUrls=new Set();tracks=[];
         for(const meta of saved.tracks){
           if(!meta||typeof meta.id!=='string'||seen.has(meta.id))continue;
+          if(meta.kind==='soda'){
+            const valid=globalThis.SonicSodaLibrary?.validateSodaRecord(meta);
+            if(!valid?.ok)continue;
+            const key=valid.value.externalUrl.toLocaleLowerCase();
+            if(seenSodaUrls.has(key))continue;
+            seenSodaUrls.add(key);seen.add(meta.id);
+            tracks.push({id:meta.id,kind:'soda',name:valid.value.name,artist:valid.value.artist,album:valid.value.album,externalUrl:valid.value.externalUrl,duration:0,cover:null,blob:null,stored:true,favorite:meta.favorite===true,sourcePath:'汽水音乐',signature:typeof meta.signature==='string'?meta.signature:'soda:'+key});
+            continue;
+          }
           if(meta.kind!=='demo'&&meta.kind!=='file')continue;
           const blob=meta.kind==='file'?media.get(meta.id):null;
           if(meta.kind==='file'&&(!(blob instanceof Blob)||!blob.size)){missing++;continue}
           seen.add(meta.id);
-          tracks.push({id:meta.id,kind:meta.kind,name:String(meta.name||'未命名音乐'),duration:Number.isFinite(meta.duration)&&meta.duration>0?meta.duration:96,cover:typeof meta.cover==='string'&&meta.cover.startsWith('data:image/')?meta.cover:null,blob,stored:true,favorite:meta.favorite===true,sourcePath:typeof meta.sourcePath==='string'?meta.sourcePath:'',signature:typeof meta.signature==='string'?meta.signature:''});
+          tracks.push({id:meta.id,kind:meta.kind,name:String(meta.name||'未命名音乐'),artist:typeof meta.artist==='string'?meta.artist:'',album:typeof meta.album==='string'?meta.album:'',duration:Number.isFinite(meta.duration)&&meta.duration>0?meta.duration:96,cover:typeof meta.cover==='string'&&meta.cover.startsWith('data:image/')?meta.cover:null,blob,stored:true,favorite:meta.favorite===true,sourcePath:typeof meta.sourcePath==='string'?meta.sourcePath:'',signature:typeof meta.signature==='string'?meta.signature:''});
         }
       }
       if(Array.isArray(saved?.playlists)){
         const seen=new Set(),ids=new Set(tracks.map(t=>t.id));
         playlists=saved.playlists.filter(p=>p&&typeof p.id==='string'&&p.id.startsWith('playlist-')&&!seen.has(p.id)&&seen.add(p.id)&&typeof p.name==='string'&&Array.isArray(p.trackIds)).map(p=>({id:p.id,name:p.name.slice(0,32)||'未命名歌单',trackIds:[...new Set(p.trackIds.filter(id=>ids.has(id)))]}));
       }
-      libraryView=validCollection(saved?.libraryView)?saved.libraryView:'all';playbackScope=validCollection(saved?.playbackScope)?saved.playbackScope:'all';resetShuffle();
+      libraryView=validCollection(saved?.libraryView)?saved.libraryView:'all';playbackScope=validPlaybackScope(saved?.playbackScope)?saved.playbackScope:'all';resetShuffle();
       if(typeof bg==='string'&&bg.startsWith('data:image/')){try{await applyBackground(bg)}catch{storageIssues.add('background')}}
     }catch{storageIssues.add('library')}
     let session=null;
     try{session=JSON.parse(localStorage.getItem('sonic-universe-session')||'null')}catch{storageIssues.add('session')}
-    const selected=tracks.find(t=>t.id===session?.id)||tracks[0];
+    const selected=tracks.find(t=>t.id===session?.id&&isPlayableTrack(t))||tracks.find(isPlayableTrack)||null;
     activeId=null;
     if(selected)await selectTrack(selected.id,false,session?.id===selected.id&&Number.isFinite(session.position)?session.position:0);
     else clearActiveTrack();
@@ -1829,7 +1867,7 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
     g.strokeStyle=line;g.lineWidth=1;g.strokeRect(29.5,29.5,1741,1291);
     g.fillStyle=muted;g.font='16px ui-monospace,Consolas,monospace';
     g.fillText('SONIC UNIVERSE  /  A POSTCARD FROM THE STARS',69,78);
-    g.textAlign='right';g.fillText('VOL.27',1731,78);g.textAlign='left';
+    g.textAlign='right';g.fillText('VOL.28',1731,78);g.textAlign='left';
     const art={x:69,y:109,w:1662,h:842},source=capturedScene,aspect=art.w/art.h;
     let sw,sh;
     if(capturedMoment.quiet){sw=source.width;sh=sw/aspect;if(sh>source.height){sh=source.height;sw=sh*aspect}}
@@ -1894,20 +1932,23 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
   }
 
   function collectionTracks(view='all'){
+    if(view==='soda')return tracks.filter(t=>t.kind==='soda');
     if(view==='favorites')return tracks.filter(t=>t.favorite);
     const collection=playlists.find(p=>p.id===view);
     return collection?collection.trackIds.map(id=>tracks.find(t=>t.id===id)).filter(Boolean):tracks.slice();
   }
-  function collectionName(view){return view==='favorites'?'我的收藏':playlists.find(p=>p.id===view)?.name||'全部音乐'}
-  function validCollection(view){return view==='all'||view==='favorites'||playlists.some(p=>p.id===view)}
+  function playableTracks(view='all'){return collectionTracks(view).filter(isPlayableTrack)}
+  function collectionName(view){return view==='soda'?'汽水音乐':view==='favorites'?'我的收藏':playlists.find(p=>p.id===view)?.name||'全部音乐'}
+  function validCollection(view){return view==='all'||view==='favorites'||view==='soda'||playlists.some(p=>p.id===view)}
+  function validPlaybackScope(view){return view!=='soda'&&validCollection(view)}
   function newId(prefix){return prefix+'-'+(typeof crypto.randomUUID==='function'?crypto.randomUUID():Date.now()+'-'+Math.random().toString(36).slice(2))}
   function shuffled(ids){const result=ids.slice();for(let i=result.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[result[i],result[j]]=[result[j],result[i]]}return result}
   function resetShuffle(id=activeId){
-    const ids=collectionTracks(playbackScope).map(t=>t.id);
+    const ids=playableTracks(playbackScope).map(t=>t.id);
     shuffleBag=shuffled(ids.filter(value=>value!==id));shuffleHistory=ids.includes(id)?[id]:[];shuffleCursor=shuffleHistory.length-1;
   }
   function nextShuffle(direction=1){
-    const ids=collectionTracks(playbackScope).map(t=>t.id);if(!ids.length)return null;
+    const ids=playableTracks(playbackScope).map(t=>t.id);if(!ids.length)return null;
     if(direction<0){if(shuffleCursor>0)return shuffleHistory[--shuffleCursor];showToast('已经是随机播放记录的第一首。');return null}
     if(shuffleCursor<shuffleHistory.length-1)return shuffleHistory[++shuffleCursor];
     shuffleBag=shuffleBag.filter(id=>ids.includes(id)&&id!==activeId);
@@ -1916,12 +1957,13 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
   }
   function setLibraryView(view){
     libraryView=validCollection(view)?view:'all';$('membershipPanel').hidden=true;$('playlistEditor').hidden=true;
+    $('sodaPanel').hidden=libraryView!=='soda';
     persistLibrary();renderPlaylist();
   }
   function renderLibraryControls(){
     for(const id of ['libraryPlaylist','newPlaylistBtn','renamePlaylistBtn','deletePlaylistBtn'])$(id).disabled=!libraryReady;
     document.querySelectorAll('button[data-library-view]').forEach(button=>button.disabled=!libraryReady);
-    document.querySelectorAll('button[data-library-view]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.libraryView==='playlists'?libraryView!=='all'&&libraryView!=='favorites':button.dataset.libraryView===libraryView)));
+    document.querySelectorAll('button[data-library-view]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.libraryView==='playlists'?libraryView!=='all'&&libraryView!=='favorites'&&libraryView!=='soda':button.dataset.libraryView===libraryView)));
     const select=$('libraryPlaylist'),previous=select.value;select.replaceChildren();
     const placeholder=new Option(playlists.length?'选择一个歌单':'还没有歌单，创建一个吧','');select.add(placeholder);
     playlists.forEach(p=>select.add(new Option(p.name+' · '+p.trackIds.length+' 首',p.id)));
@@ -1929,9 +1971,97 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
     const playlist=playlists.find(p=>p.id===libraryView);
     $('renamePlaylistBtn').hidden=!playlist;$('deletePlaylistBtn').hidden=!playlist;
     $('libraryViewName').textContent=collectionName(libraryView);
-    $('playCollectionBtn').disabled=!collectionTracks(libraryView).length||!libraryReady;
-    $('playbackScope').textContent='正在使用的播放范围：'+collectionName(playbackScope)+' · 搜索只筛选显示';
+    $('sodaPanel').hidden=libraryView!=='soda';
+    const localCount=playableTracks(libraryView).length;
+    if(libraryView==='soda'){
+      $('playCollectionBtn').textContent='打开第一首汽水音乐 ↗';
+      $('playCollectionBtn').disabled=!collectionTracks('soda').length||!libraryReady;
+      $('playCollectionBtn').title='单曲会在新标签页打开汽水分享页；汽水歌曲不会进入本地音频队列';
+    }else{
+      $('playCollectionBtn').textContent=libraryView==='favorites'||libraryView==='all'?'播放此列表 ↗':'播放本地音乐 ↗';
+      $('playCollectionBtn').disabled=!localCount||!libraryReady;
+      $('playCollectionBtn').title='只播放本地音频与内置音景';
+    }
+    $('playbackScope').textContent='正在使用的播放范围：'+collectionName(playbackScope)+' · 汽水歌曲只打开外链，不进入本地音频处理';
     app.dataset.collectionView=libraryView;app.dataset.playbackScope=playbackScope;
+  }
+  function setSodaStatus(message,error=false){$('sodaStatus').textContent=message;$('sodaStatus').classList.toggle('error',error)}
+  function resetSodaEditor(){
+    editingSodaId=null;$('sodaEditor').reset();$('sodaSaveBtn').textContent='加入我的汽水歌单';$('sodaCancelBtn').hidden=true;
+  }
+  function beginSodaEdit(id){
+    const track=tracks.find(t=>t.id===id&&t.kind==='soda');if(!track)return;
+    editingSodaId=id;$('sodaName').value=track.name;$('sodaArtist').value=track.artist||'';$('sodaAlbum').value=track.album||'';$('sodaUrl').value=track.externalUrl;
+    $('sodaSaveBtn').textContent='保存汽水信息';$('sodaCancelBtn').hidden=false;setSodaStatus('正在编辑「'+track.name+'」。保存后不会改变收藏与歌单归属。');
+    $('sodaPanel').scrollIntoView({block:'nearest'});$('sodaName').focus();
+  }
+  function saveSodaRecord(event){
+    event.preventDefault();
+    const checked=globalThis.SonicSodaLibrary?.validateSodaRecord({name:$('sodaName').value,artist:$('sodaArtist').value,album:$('sodaAlbum').value,externalUrl:$('sodaUrl').value});
+    if(!checked?.ok){setSodaStatus(checked?.error||'汽水音乐入口暂时不可用，请刷新页面后重试。',true);return}
+    const value=checked.value,duplicate=tracks.find(t=>t.kind==='soda'&&t.id!==editingSodaId&&t.externalUrl.toLocaleLowerCase()===value.externalUrl.toLocaleLowerCase());
+    if(duplicate){setSodaStatus('这个分享链接已经在「'+duplicate.name+'」中，未重复加入。',true);return}
+    if(editingSodaId){
+      const track=tracks.find(t=>t.id===editingSodaId&&t.kind==='soda');if(!track){resetSodaEditor();setSodaStatus('这首汽水歌曲已不存在，请重新添加。',true);return}
+      Object.assign(track,value,{sourcePath:'汽水音乐',signature:'soda:'+value.externalUrl.toLocaleLowerCase()});
+      setSodaStatus('已保存「'+track.name+'」的新信息。');
+    }else{
+      tracks.push({id:newId('soda'),kind:'soda',...value,duration:0,cover:null,blob:null,stored:true,favorite:false,sourcePath:'汽水音乐',signature:'soda:'+value.externalUrl.toLocaleLowerCase()});
+      setSodaStatus('已加入「'+value.name+'」。点击歌曲即可在新标签页打开汽水音乐。');
+    }
+    libraryView='soda';resetSodaEditor();resetShuffle();persistLibrary();renderPlaylist();
+  }
+  function sodaBatchSummary(result){
+    const parts=['可加入 '+result.items.length+' 首'];
+    if(result.duplicates.length)parts.push('重复 '+result.duplicates.length+' 首');
+    if(result.invalid.length)parts.push('未识别 '+result.invalid.length+' 行');
+    if(result.limited)parts.push('超出单次上限 '+result.limited+' 首');
+    const names=result.items.slice(0,6).map((item,index)=>(index+1)+'. '+item.name+(item.artist?' · '+item.artist:''));
+    return parts.join('；')+'。'+(names.length?'\n'+names.join('\n')+(result.items.length>names.length?'\n…':'') :'');
+  }
+  function previewSodaBatch(){
+    const existing=tracks.filter(t=>t.kind==='soda').map(t=>t.externalUrl);
+    sodaBatchText=$('sodaBatch').value;
+    sodaBatchPreview=globalThis.SonicSodaLibrary?.parseSodaLines(sodaBatchText,existing);
+    if(!sodaBatchPreview){setSodaStatus('批量整理暂时不可用，请刷新页面后重试。',true);return}
+    $('sodaBatchPreview').textContent=sodaBatchSummary(sodaBatchPreview);
+    $('sodaBatchConfirmBtn').hidden=!sodaBatchPreview.items.length;
+    setSodaStatus(sodaBatchPreview.items.length?'请核对预览；确认后只保存歌曲信息与分享链接。':'没有可加入的新歌曲，请检查格式与链接。',!sodaBatchPreview.items.length);
+  }
+  function confirmSodaBatch(){
+    if(!sodaBatchPreview)return;
+    if($('sodaBatch').value!==sodaBatchText){setSodaStatus('批量内容已改动，请重新检查后再确认。',true);$('sodaBatchConfirmBtn').hidden=true;sodaBatchPreview=null;return}
+    const existing=tracks.filter(t=>t.kind==='soda').map(t=>t.externalUrl),latest=globalThis.SonicSodaLibrary?.parseSodaLines(sodaBatchText,existing);
+    if(!latest?.items.length){setSodaStatus('没有可加入的新歌曲，请重新检查内容。',true);return}
+    for(const value of latest.items)tracks.push({id:newId('soda'),kind:'soda',...value,duration:0,cover:null,blob:null,stored:true,favorite:false,sourcePath:'汽水音乐',signature:'soda:'+value.externalUrl.toLocaleLowerCase()});
+    libraryView='soda';sodaBatchPreview=null;sodaBatchText='';$('sodaBatch').value='';$('sodaBatchPreview').textContent='';$('sodaBatchConfirmBtn').hidden=true;
+    setSodaStatus('已加入 '+latest.items.length+' 首汽水音乐。列表只保存你填写的歌曲信息与分享链接。');
+    resetShuffle();persistLibrary();renderPlaylist();
+  }
+  function setupSodaLibrary(){
+    $('sodaEditor').addEventListener('submit',saveSodaRecord);
+    $('sodaCancelBtn').addEventListener('click',()=>{resetSodaEditor();setSodaStatus('已取消编辑。')});
+    $('sodaPasteBtn').addEventListener('click',async()=>{
+      try{
+        if(!navigator.clipboard?.readText)throw new Error('当前浏览器没有开放剪贴板读取。');
+        const text=await navigator.clipboard.readText(),match=String(text||'').match(/https?:\/\/[^\s<>"']+/i);
+        $('sodaUrl').value=(match?.[0]||'').replace(/[),.;，。；）}\]]+$/g,'');
+        if(!$('sodaUrl').value)throw new Error('剪贴板里没有找到 http/https 分享链接。');
+        setSodaStatus('已从剪贴板填入分享链接，请补充歌曲名称后保存。');
+      }catch(error){setSodaStatus(error.message||'无法读取剪贴板，请手动粘贴分享链接。',true)}
+    });
+    $('sodaBatch').addEventListener('input',()=>{
+      if($('sodaBatch').value===sodaBatchText)return;
+      sodaBatchPreview=null;$('sodaBatchPreview').textContent='';$('sodaBatchConfirmBtn').hidden=true;
+    });
+    $('sodaBatchParseBtn').addEventListener('click',previewSodaBatch);
+    $('sodaBatchConfirmBtn').addEventListener('click',confirmSodaBatch);
+    $('openSodaLibraryBtn').addEventListener('click',async()=>{
+      if($('externalDialog').open)$('externalDialog').close();
+      if(!$('queueDialog').open)$('queueDialog').showModal();
+      if(!libraryReady&&libraryPromise)await libraryPromise;
+      setLibraryView('soda');
+    });
   }
   function openPlaylistEditor(edit=false){
     const playlist=playlists.find(p=>p.id===libraryView);editingPlaylistId=edit&&playlist?playlist.id:null;
@@ -1978,9 +2108,15 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
       persistLibrary();renderPlaylist();$('membershipPanel').hidden=true;showToast('已加入「'+playlist.name+'」。');
     });
     $('playCollectionBtn').addEventListener('click',()=>{
-      const songs=collectionTracks(libraryView);if(!songs.length)return;playbackScope=libraryView;persistLibrary();resetShuffle(songs[0].id);
+      if(libraryView==='soda'){
+        const first=collectionTracks('soda')[0];if(!first)return;
+        openSodaUrl(first.externalUrl);showToast('已打开第一首汽水音乐。其余歌曲可从列表逐首打开。');
+        return;
+      }
+      const songs=playableTracks(libraryView);if(!songs.length)return;playbackScope=libraryView;persistLibrary();resetShuffle(songs[0].id);
       selectTrack(songs[0].id,true);renderLibraryControls();
     });
+    setupSodaLibrary();
   }
 
   function stopStream(stream){stream?.getTracks().forEach(track=>track.stop())}
@@ -2204,7 +2340,7 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
     if(externalStream)return;playing=false;offset=duration;
     if(clipLocked()){finishClip('歌曲已结束');updatePlaying();updateTimeline();saveSession();return}
     if(atelierLoopAtEnd())return;
-    const songs=collectionTracks(playbackScope),index=songs.findIndex(t=>t.id===activeId);
+    const songs=playableTracks(playbackScope),index=songs.findIndex(t=>t.id===activeId);
     if(playbackMode==='single'&&currentTrack()){seekTo(0);play();return}
     if(playbackMode==='shuffle'&&songs.length){const id=nextShuffle();if(id)selectTrack(id,true,0,true);return}
     if(index+1<songs.length){selectTrack(songs[index+1].id,true);return}
@@ -2259,30 +2395,34 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
       const current=!externalStream&&row.dataset.trackId===activeId,track=tracks.find(t=>t.id===row.dataset.trackId);
       row.classList.toggle('current',current);
       if(current)row.setAttribute('aria-current','true');else row.removeAttribute('aria-current');
-      row.querySelector('.queue-number').textContent=current&&playing?'▥':String(tracks.indexOf(track)+1).padStart(2,'0');
-      row.querySelector('.queue-select').setAttribute('aria-label',(current&&playing?'暂停「':'播放「')+(track?.name||'')+'」');
-      row.querySelector('.queue-select').setAttribute('aria-pressed',String(current&&playing));
+      const soda=track?.kind==='soda';
+      row.querySelector('.queue-number').textContent=soda?'↗':current&&playing?'▥':String(tracks.indexOf(track)+1).padStart(2,'0');
+      row.querySelector('.queue-select').setAttribute('aria-label',soda?'打开汽水音乐「'+(track?.name||'')+'」':(current&&playing?'暂停「':'播放「')+(track?.name||'')+'」');
+      row.querySelector('.queue-select').setAttribute('aria-pressed',String(!soda&&current&&playing));
     });
   }
   function renderPlaylist(){
     renderLibraryControls();const list=$('queueList');list.replaceChildren();
     const collection=collectionTracks(libraryView),query=libraryQuery.trim().toLocaleLowerCase();
-    const visible=collection.filter(t=>!query||(t.name+' '+(t.sourcePath||'')).toLocaleLowerCase().includes(query));
+    const visible=collection.filter(t=>!query||[t.name,t.artist,t.album,t.sourcePath].filter(Boolean).join(' ').toLocaleLowerCase().includes(query));
     $('queueCount').textContent=String(tracks.length).padStart(2,'0');
-    $('queueSummary').textContent='共 '+tracks.length+' 首 · '+formatTime(tracks.reduce((sum,t)=>sum+t.duration,0))+' 的星际旅程';
+    const sodaCount=tracks.filter(t=>t.kind==='soda').length,localTracks=playableTracks();
+    $('queueSummary').textContent='共 '+tracks.length+' 首 · 本地 '+localTracks.length+' 首 '+formatTime(localTracks.reduce((sum,t)=>sum+(t.duration||0),0))+(sodaCount?' · 汽水入口 '+sodaCount+' 首':'');
     $('libraryResultCount').textContent=query?'找到 '+visible.length+' / '+collection.length+' 首':collection.length+' 首音乐';
-    if(!visible.length){const empty=document.createElement('li');empty.className='queue-empty';empty.textContent=query?'没有找到这首歌，试试其他名字。':libraryView==='favorites'?'点歌曲旁的星星，把喜欢的歌留在这里。':libraryView==='all'?'这里还没有音乐。添加歌曲或选择音乐文件夹。':'这个歌单还没有歌。在全部音乐里点 ＋ 添加，或直接导入音乐。';list.append(empty)}
+    if(!visible.length){const empty=document.createElement('li');empty.className='queue-empty';empty.textContent=query?'没有找到这首歌，试试歌名、歌手、专辑或其他关键词。':libraryView==='soda'?'这里还没有汽水音乐。在上方粘贴分享链接，或展开「批量整理」一次加入多首。':libraryView==='favorites'?'点歌曲旁的星星，把喜欢的歌留在这里。':libraryView==='all'?'这里还没有音乐。添加歌曲或选择音乐文件夹。':'这个歌单还没有歌。在全部音乐里点 ＋ 添加，或直接导入音乐。';list.append(empty)}
     visible.forEach(track=>{
-      const index=collection.indexOf(track),row=document.createElement('li');row.className='queue-row';row.dataset.trackId=track.id;
+      const index=collection.indexOf(track),soda=track.kind==='soda',row=document.createElement('li');row.className='queue-row'+(soda?' soda-row':'');row.dataset.trackId=track.id;
       const select=document.createElement('button');select.className='queue-select';select.disabled=!libraryReady;
       const number=document.createElement('span');number.className='queue-number';number.setAttribute('aria-hidden','true');
-      const art=document.createElement('span');art.className='queue-art';art.setAttribute('aria-hidden','true');art.textContent='✧';
+      const art=document.createElement('span');art.className='queue-art';art.setAttribute('aria-hidden','true');art.textContent=soda?'↗':'✧';
       if(track.cover){const img=document.createElement('img');img.src=track.cover;img.alt='';art.append(img)}
       const info=document.createElement('span');info.className='queue-info';
       const title=document.createElement('span');title.className='queue-title';title.textContent=track.name;title.title=track.name;
-      const meta=document.createElement('span');meta.className='queue-meta';meta.textContent=(track.kind==='demo'?'原创音景':track.sourcePath||'本地音乐')+' · '+formatTime(track.duration);meta.title=meta.textContent;
+      const meta=document.createElement('span');meta.className='queue-meta';
+      meta.textContent=soda?['汽水音乐',track.artist,track.album].filter(Boolean).join(' · '):(track.kind==='demo'?'原创音景':track.sourcePath||'本地音乐')+' · '+formatTime(track.duration);meta.title=meta.textContent;
       info.append(title,meta);select.append(number,art,info);
       select.addEventListener('click',()=>{
+        if(soda){openSodaUrl(track.externalUrl);return}
         const switched=playbackScope!==libraryView;playbackScope=libraryView;if(switched)resetShuffle(track.id);persistLibrary();renderLibraryControls();
         if(activeId===track.id&&!externalStream&&!externalPending)play();else selectTrack(track.id,true);
       });
@@ -2291,6 +2431,9 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
       favorite.addEventListener('click',()=>{track.favorite=!track.favorite;if(playbackScope==='favorites')resetShuffle();persistLibrary();renderPlaylist();const target=list.querySelector('[data-track-id="'+CSS.escape(track.id)+'"] [data-action=favorite]');(target||$('librarySearch')).focus()});
       const add=document.createElement('button');add.className='icon-btn membership-song';add.dataset.action='playlist';add.textContent='＋';add.title='加入歌单';add.setAttribute('aria-label','将「'+track.name+'」加入歌单');add.addEventListener('click',()=>openMembership(track.id));
       controls.append(favorite,add);
+      if(soda){
+        const edit=document.createElement('button');edit.className='icon-btn edit-song';edit.dataset.action='edit';edit.textContent='✎';edit.title='编辑汽水歌曲信息';edit.setAttribute('aria-label','编辑「'+track.name+'」的汽水歌曲信息');edit.addEventListener('click',()=>beginSodaEdit(track.id));controls.append(edit);
+      }
       [[-1,'↑','上移'],[1,'↓','下移'],[0,'×',playlists.some(p=>p.id===libraryView)?'移出歌单':'从音乐库移除']].forEach(([direction,text,label])=>{
         const button=document.createElement('button');button.className='icon-btn '+(direction?'move-song':'remove-song');button.textContent=text;
         button.setAttribute('aria-label',label+'「'+track.name+'」');button.title=label;button.dataset.action=direction<0?'up':direction>0?'down':'remove';
@@ -2300,7 +2443,7 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
       row.append(select,controls);list.append(row);
     });
     $('queueDemoBtn').disabled=tracks.some(t=>t.kind==='demo');$('queueDemoBtn').textContent=tracks.some(t=>t.kind==='demo')?'✧ 内置音景已在列表中':'＋ 加入内置音景';
-    $('libraryRemoveHint').textContent=playlists.some(p=>p.id===libraryView)?'× 只移出当前歌单 · 歌曲仍在全部音乐中':'× 从本机音乐库移除 · 不会删除原始文件';
+    $('libraryRemoveHint').textContent=playlists.some(p=>p.id===libraryView)?'× 只移出当前歌单 · 歌曲仍在全部音乐中':libraryView==='soda'?'× 只删除本页保存的歌名与分享链接 · 不会操作汽水账号':'× 从本机音乐库移除 · 不会删除原始文件';
     refreshQueueState();renderActiveTrack();
   }
   function moveTrack(id,direction){
@@ -2316,11 +2459,15 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
     const index=tracks.findIndex(t=>t.id===id);if(index<0)return;
     const playlist=playlists.find(p=>p.id===libraryView);
     if(playlist){playlist.trackIds=playlist.trackIds.filter(value=>value!==id);resetShuffle();persistLibrary();renderPlaylist();showToast('已移出歌单，音乐保留在全部音乐中。');return}
-    const wasCurrent=activeId===id,wasPlaying=playing,name=tracks[index].name;
+    const wasCurrent=activeId===id,wasPlaying=playing,name=tracks[index].name,removedKind=tracks[index].kind,localBefore=playableTracks(),localIndex=localBefore.findIndex(t=>t.id===id);
     tracks.splice(index,1);playlists.forEach(p=>p.trackIds=p.trackIds.filter(value=>value!==id));resetShuffle();persistLibrary();renderPlaylist();
-    if(wasCurrent){if(tracks.length)await selectTrack(tracks[Math.min(index,tracks.length-1)].id,wasPlaying);else clearActiveTrack()}
+    if(editingSodaId===id)resetSodaEditor();
+    if(wasCurrent){
+      const replacement=localBefore.filter(t=>t.id!==id)[Math.min(Math.max(localIndex,0),Math.max(0,localBefore.length-2))];
+      if(replacement)await selectTrack(replacement.id,wasPlaying);else clearActiveTrack();
+    }
     persistLibrary();saveSession();renderPlaylist();
-    const row=$('queueList').children[Math.min(index,tracks.length-1)];row?.querySelector('.queue-select')?.focus();showToast('已从音乐库移除「'+name+'」');
+    const row=$('queueList').children[Math.min(index,tracks.length-1)];row?.querySelector('.queue-select')?.focus();showToast((removedKind==='soda'?'已从汽水音乐入口删除「':'已从音乐库移除「')+name+'」');
   }
 
   function clearActiveTrack(){
@@ -2344,7 +2491,10 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
       element.src=url;element.load();
     });
   }
-  async function selectTrack(id,autoplay=true,position=0,keepShuffle=false){if(instrumentOpen){showToast("请先关闭乐器台，再切换歌曲。");return}
+  async function selectTrack(id,autoplay=true,position=0,keepShuffle=false){
+    const requested=tracks.find(t=>t.id===id);
+    if(requested?.kind==='soda'){openSodaUrl(requested.externalUrl);return}
+    if(instrumentOpen){showToast("请先关闭乐器台，再切换歌曲。");return}
     if(clipLocked()){showToast('请先结束短片录制，再切换歌曲。');return}
     if(externalStream||externalPending)stopExternal();
     if(!keepShuffle)resetShuffle(id);
@@ -2373,7 +2523,7 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
   }
   function navigateTrack(direction){
     if(externalStream){showToast('请在原播放器切换歌曲。');return}
-    const songs=collectionTracks(playbackScope);if(!songs.length){showToast('当前播放范围里没有歌曲，请从音乐库选择。');return}
+    const songs=playableTracks(playbackScope);if(!songs.length){showToast('当前播放范围里没有本地歌曲；汽水歌曲需要在列表中逐首打开。');return}
     if(pendingFile||busy){showToast('正在准备音乐，请稍候。');return}
     if(playbackMode==='shuffle'){const id=nextShuffle(direction);if(id)selectTrack(id,playing,0,true);return}
     const index=songs.findIndex(t=>t.id===activeId);let next=index<0?(direction>0?0:songs.length-1):index+direction;

@@ -20,10 +20,19 @@
       prefs.add(entry[0]);
     }
     const library = h.state.find(e => e[0] === 'library')?.[1];
-    if (!library || library.version !== 5 || !Array.isArray(library.tracks) || library.tracks.length > 2001) throw Error('备份缺少完整曲库。');
-    const ids = new Set(), files = new Set();
+    if (!library || ![5, 6].includes(library.version) || !Array.isArray(library.tracks) || library.tracks.length > 2001) throw Error('备份缺少完整曲库。');
+    const ids = new Set(), files = new Set(), sodaUrls = new Set();
     for (const t of library.tracks) {
-      if (!t || typeof t.id !== 'string' || !t.id || t.id.length > 160 || ids.has(t.id) || !['demo','file'].includes(t.kind) || typeof t.name !== 'string') throw Error('曲库中有无效或重复歌曲。');
+      if (!t || typeof t.id !== 'string' || !t.id || t.id.length > 160 || ids.has(t.id) || !['demo','file','soda'].includes(t.kind) || typeof t.name !== 'string') throw Error('曲库中有无效或重复歌曲。');
+      if (t.kind === 'soda') {
+        if (typeof t.externalUrl !== 'string' || !t.externalUrl || t.externalUrl.length > 2048) throw Error('汽水音乐入口缺少有效分享链接。');
+        let parsed;
+        try { parsed = new URL(t.externalUrl); } catch { throw Error('汽水音乐入口缺少有效分享链接。'); }
+        if (!['http:','https:'].includes(parsed.protocol) || !parsed.hostname || parsed.username || parsed.password) throw Error('汽水音乐入口缺少有效分享链接。');
+        const key = parsed.href.toLocaleLowerCase();
+        if (sodaUrls.has(key)) throw Error('曲库中有重复的汽水音乐链接。');
+        sodaUrls.add(key);
+      }
       ids.add(t.id); if (t.kind === 'file') files.add(t.id);
     }
     const mediaIds = new Set(); let size = 0;
