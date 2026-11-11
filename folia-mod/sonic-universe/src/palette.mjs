@@ -47,13 +47,13 @@ export function createPalette(theme = {}) {
 
   return {
     daylight: Boolean(theme.isDaylight),
-    core: mixColor([195, 153, 255], accent, 0.34),
-    second: mixColor([78, 134, 235], secondary, 0.28),
-    hot: mixColor([244, 222, 255], primary, 0.18),
-    themePrimary: mixColor([118, 91, 218], primary, 0.45),
-    themeSecondary: mixColor([54, 104, 209], secondary, 0.36),
-    warm: mixColor([255, 205, 128], accent, 0.24),
-    deep: mixColor([3, 5, 18], backgroundColor, 0.12),
+    core: mixColor(primary, accent, 0.46),
+    second: mixColor(secondary, primary, 0.38),
+    hot: mixColor(accent, [255, 244, 218], 0.48),
+    themePrimary: primary,
+    themeSecondary: secondary,
+    warm: mixColor([255, 190, 92], accent, 0.3),
+    deep: mixColor([3, 5, 18], backgroundColor, 0.18),
     black: [1, 3, 10],
   };
 }

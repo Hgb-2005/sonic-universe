@@ -131,6 +131,7 @@ function feedAudio(host, frames = 120) {
   const manifest = JSON.parse(fs.readFileSync(path.join(moduleRoot, 'mod.json'), 'utf8'));
   assert.equal(manifest.folium, 1);
   assert.equal(manifest.id, 'sonic-universe');
+  assert.equal(manifest.version, '1.1.0');
   assert.equal(manifest.client, 'client.mjs');
   assert.deepEqual(manifest.permissions, []);
   assert.ok(fs.existsSync(path.join(moduleRoot, manifest.client)));
@@ -141,6 +142,70 @@ function feedAudio(host, frames = 120) {
   assert.ok(preview.length < 1024 * 1024, 'store preview should stay below 1 MiB');
   assert.equal(preview.readUInt32BE(16), 1280);
   assert.equal(preview.readUInt32BE(20), 720);
+
+  const previewHtml = fs.readFileSync(path.join(moduleRoot, 'preview.html'), 'utf8');
+  for (const theme of ['purple', 'blue', 'gold']) {
+    assert.match(previewHtml, new RegExp(`\\b${theme}: \\{`), `preview should expose the ${theme} theme`);
+  }
+
+  const {
+    createNebulaLibrary,
+    recolorNebulaPixels,
+    nebulaThemeKey,
+    NEBULA_LAYOUTS,
+    NEBULA_SCENES,
+    NEBULA_SOURCES,
+    NEBULA_SOURCE_VERSION,
+  } = await importModule('src/nebula.mjs');
+  const { createPalette } = await importModule('src/palette.mjs');
+  assert.equal(NEBULA_SOURCE_VERSION, '2026.11.11-v26');
+  assert.deepEqual([...NEBULA_SCENES], ['ring', 'galaxy', 'peaks', 'blackhole']);
+  for (const scene of NEBULA_SCENES) {
+    assert.equal(typeof NEBULA_LAYOUTS[scene]?.width, 'number');
+    assert.match(NEBULA_SOURCES[scene], /^data:image\/webp;base64,/);
+  }
+
+  const nebulaStructure = new Uint8Array([
+    230, 176, 36, 224,
+    132, 32, 180, 171,
+    64, 8, 52, 93,
+    0, 0, 0, 0,
+  ]);
+  const purplePalette = createPalette({
+    primaryColor: '#765bda',
+    accentColor: '#c399ff',
+    secondaryColor: '#3668d1',
+  });
+  const bluePalette = createPalette({
+    primaryColor: '#398ae8',
+    accentColor: '#a8e8ff',
+    secondaryColor: '#2154d4',
+  });
+  const goldPalette = createPalette({
+    primaryColor: '#e7a84b',
+    accentColor: '#ffe0a0',
+    secondaryColor: '#c66d2d',
+  });
+  assert.notEqual(nebulaThemeKey(purplePalette), nebulaThemeKey(goldPalette));
+  const purplePixels = recolorNebulaPixels(nebulaStructure.slice(), purplePalette);
+  const goldPixels = recolorNebulaPixels(nebulaStructure.slice(), goldPalette);
+  const bluePixels = recolorNebulaPixels(nebulaStructure.slice(), bluePalette);
+  for (let index = 3; index < purplePixels.length; index += 4) {
+    assert.equal(goldPixels[index], purplePixels[index], 'themes must preserve the same coverage masks');
+    assert.equal(bluePixels[index], purplePixels[index], 'themes must preserve the same coverage masks');
+  }
+  assert.notDeepEqual([...goldPixels.slice(0, 3)], [...purplePixels.slice(0, 3)]);
+  assert.ok(goldPixels[0] > goldPixels[2], 'gold theme should make the dense ridge warm');
+  assert.ok(bluePixels[2] > bluePixels[0], 'blue theme should make the dense ridge cool');
+
+  const unsupportedNebulaLibrary = createNebulaLibrary({
+    documentRef: null,
+    imageFactory: null,
+  });
+  assert.equal(await unsupportedNebulaLibrary.load(), false);
+  assert.equal(unsupportedNebulaLibrary.getStats().status, 'unsupported');
+  unsupportedNebulaLibrary.dispose();
+  assert.equal(unsupportedNebulaLibrary.getStats().disposed, true);
 
   const { createAnalyzer, LANE_COUNT } = await importModule('src/analysis.mjs');
   const analyzer = createAnalyzer();
