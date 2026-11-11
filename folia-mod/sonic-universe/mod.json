@@ -2,9 +2,9 @@
   "folium": 1,
   "id": "sonic-universe",
   "name": "声波宇宙",
-  "version": "1.1.0",
+  "version": "1.0.0",
   "author": "Hgb-2005",
-  "description": "让 Folia 正在播放的音乐成为星空。四套带暗尘裂缝和断续亮脊的体积星云随音乐呼吸。",
+  "description": "让 Folia 正在播放的音乐成为星空。四种宇宙场景随低音、中频与高音呼吸。",
   "client": "client.mjs",
   "preview": "preview.png",
   "permissions": []

@@ -14,28 +14,6 @@
   <script type="module">
     const params = new URLSearchParams(location.search);
     const scene = params.get('scene') || 'ring';
-    const themeName = params.get('theme') || 'purple';
-    const themes = {
-      purple: {
-        backgroundColor: '#050817',
-        primaryColor: '#765bda',
-        accentColor: '#c399ff',
-        secondaryColor: '#3668d1',
-      },
-      blue: {
-        backgroundColor: '#030b1b',
-        primaryColor: '#398ae8',
-        accentColor: '#a8e8ff',
-        secondaryColor: '#2154d4',
-      },
-      gold: {
-        backgroundColor: '#120a04',
-        primaryColor: '#e7a84b',
-        accentColor: '#ffe0a0',
-        secondaryColor: '#c66d2d',
-      },
-    };
-    const activeTheme = themes[themeName] || themes.purple;
     let definition;
     globalThis.folium = {
       registries: {
@@ -92,7 +70,10 @@
       isPaused: () => params.get('paused') === '1',
       getTheme: () => ({
         name: 'sonic-universe',
-        ...activeTheme,
+        backgroundColor: '#050817',
+        primaryColor: '#765bda',
+        accentColor: '#c399ff',
+        secondaryColor: '#3668d1',
         isDaylight: false,
       }),
       getSettings: () => ({

@@ -43,8 +43,6 @@ jobs:
           node --check outputs/flight.js
           node --check folia-mod/sonic-universe/client.mjs
           node --check folia-mod/sonic-universe/src/analysis.mjs
-          node --check folia-mod/sonic-universe/src/nebula.mjs
-          node --check folia-mod/sonic-universe/src/nebula-assets.mjs
           node --check folia-mod/sonic-universe/src/palette.mjs
           node --check folia-mod/sonic-universe/src/random.mjs
           node --check folia-mod/sonic-universe/src/renderer.mjs
