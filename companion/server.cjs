@@ -29,11 +29,18 @@ const MIME = {
 };
 
 function corsHeaders(origin, port) {
-  const allowed = [`http://127.0.0.1:${port}`, `http://localhost:${port}`];
+  const allowed = [
+    `http://127.0.0.1:${port}`,
+    `http://localhost:${port}`,
+    'https://hgb-2005.github.io',
+  ];
   return origin && allowed.includes(origin) ? {
     'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, Range',
+    'Access-Control-Expose-Headers': 'Accept-Ranges, Content-Length, Content-Range',
+    'Access-Control-Allow-Private-Network': 'true',
+    'Cross-Origin-Resource-Policy': 'cross-origin',
     'Vary': 'Origin',
   } : {};
 }
@@ -118,7 +125,7 @@ function createMediaCache(provider, options = {}) {
   };
 }
 
-async function proxyMedia(request, response, entry) {
+async function proxyMedia(request, response, entry, extraHeaders = {}) {
   const headers = { 'Accept': 'audio/*,application/octet-stream' };
   if (request.headers.range) headers.Range = request.headers.range;
   const upstream = await fetch(entry.mediaUrl, { headers, redirect: 'follow' });
@@ -129,6 +136,7 @@ async function proxyMedia(request, response, entry) {
     'Accept-Ranges': upstream.headers.get('accept-ranges') || 'bytes',
     'Cache-Control': 'private, no-store',
     'X-Content-Type-Options': 'nosniff',
+    ...extraHeaders,
   };
   if (Number.isFinite(length)) finalHeaders['Content-Length'] = String(length);
   if (upstream.headers.get('content-range')) finalHeaders['Content-Range'] = upstream.headers.get('content-range');
@@ -195,7 +203,7 @@ function createAppServer(options = {}) {
         media ||= createMediaCache(qishui);
         const entry = media.get(url.pathname.slice('/media/'.length));
         if (!entry) return sendJson(response, 404, { error: 'Media token expired' }, cors);
-        return proxyMedia(request, response, entry);
+        return proxyMedia(request, response, entry, cors);
       }
       if (url.pathname === '/api/qishui/login-status' && request.method === 'GET') return sendJson(response, 200, await qishui.authStatus(), cors);
       if (url.pathname === '/api/qishui/login/start' && request.method === 'POST') return sendJson(response, 200, await qishui.loginStart(), cors);

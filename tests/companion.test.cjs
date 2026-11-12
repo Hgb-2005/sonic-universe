@@ -47,7 +47,11 @@ test('normalizes playlist fields and parses range headers', () => {
   assert.deepEqual(parseRange('bytes=20-30', 20), { invalid: true });
 });
 
-test('allows only the local origin for cross-origin requests', () => {
+test('allows only the local app and published site for cross-origin requests', () => {
   assert.equal(corsHeaders('http://127.0.0.1:8765', 8765)['Access-Control-Allow-Origin'], 'http://127.0.0.1:8765');
+  const published = corsHeaders('https://hgb-2005.github.io', 8765);
+  assert.equal(published['Access-Control-Allow-Origin'], 'https://hgb-2005.github.io');
+  assert.equal(published['Access-Control-Allow-Private-Network'], 'true');
+  assert.match(published['Access-Control-Allow-Headers'], /Range/);
   assert.deepEqual(corsHeaders('https://example.com', 8765), {});
 });

@@ -46,3 +46,14 @@ test('parses LRC and resolves the active lyric', () => {
   assert.equal(lines.length, 3);
   assert.equal(online.activeLyric(lines, 4).text, '第二句');
 });
+
+test('prefers the local companion first from the public page', () => {
+  assert.deepEqual(
+    online.companionBaseUrls({ protocol: 'https:', hostname: 'hgb-2005.github.io' }),
+    ['http://127.0.0.1:8765', '']
+  );
+  assert.deepEqual(
+    online.companionBaseUrls({ protocol: 'http:', hostname: '127.0.0.1' }),
+    ['']
+  );
+});

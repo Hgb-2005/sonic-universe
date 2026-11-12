@@ -116,53 +116,103 @@
     return active || lines[0];
   }
 
-  function createClient(options = {}) {
-    let baseUrl = String(options.baseUrl || '');
-    let available = null;
+  function companionBaseUrls(locationLike = {}, configuredBaseUrl = '') {
+    const requested = typeof configuredBaseUrl === 'string' ? configuredBaseUrl.trim().replace(/\/+$/, '') : '';
+    const protocol = String(locationLike.protocol || '');
+    const hostname = String(locationLike.hostname || '').toLowerCase();
+    const localPage = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]';
+    if (requested || localPage || !/^https?:$/.test(protocol)) return [requested];
+    return ['http://127.0.0.1:8765', ''];
+  }
 
-    async function request(path, payload) {
+  function createClient(options = {}) {
+    const candidates = Array.from(new Set(
+      (Array.isArray(options.baseUrls) ? options.baseUrls : [String(options.baseUrl || '')])
+        .map(value => String(value || '').trim().replace(/\/+$/, ''))
+    ));
+    let baseUrl = candidates[0] || '';
+    let available = null;
+    const timeoutMs = Number.isFinite(Number(options.timeoutMs)) ? Math.max(1500, Number(options.timeoutMs)) : 10000;
+
+    async function requestFrom(origin, path, payload, requestTimeout = timeoutMs) {
       const method = payload === undefined ? 'GET' : 'POST';
-      const response = await fetch(`${baseUrl}${path}`, {
-        method,
-        headers: payload === undefined ? undefined : { 'Content-Type': 'application/json' },
-        body: payload === undefined ? undefined : JSON.stringify(payload),
-        cache: 'no-store',
-        credentials: 'omit',
-      });
-      let data = {};
-      try { data = await response.json(); } catch {}
-      if (!response.ok) {
-        const error = new Error(data.error || '音乐入口暂时没有响应');
-        error.code = data.code || 'unavailable';
-        error.status = response.status;
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), requestTimeout);
+      try {
+        const response = await fetch(`${origin}${path}`, {
+          method,
+          headers: payload === undefined ? undefined : { 'Content-Type': 'application/json' },
+          body: payload === undefined ? undefined : JSON.stringify(payload),
+          cache: 'no-store',
+          credentials: 'omit',
+          signal: controller.signal,
+        });
+        let data = {};
+        try { data = await response.json(); } catch {}
+        if (!response.ok) {
+          const error = new Error(data.error || '音乐入口暂时没有响应');
+          error.code = data.code || 'unavailable';
+          error.status = response.status;
+          throw error;
+        }
+        return data;
+      } catch (error) {
+        if (controller.signal.aborted) {
+          const timeout = new Error('本机音乐入口响应超时，请确认启动窗口仍然打开。');
+          timeout.code = 'timeout';
+          throw timeout;
+        }
         throw error;
+      } finally {
+        clearTimeout(timer);
       }
-      return data;
+    }
+
+    async function request(path, payload, requestTimeout = timeoutMs) {
+      return requestFrom(baseUrl, path, payload, requestTimeout);
+    }
+
+    function resolveUrl(path) {
+      const value = String(path || '');
+      if (!value.startsWith('/')) return '';
+      const pageBase = baseUrl || globalThis.location?.href || 'http://127.0.0.1:8765/';
+      try {
+        return new URL(value, pageBase).toString();
+      } catch {
+        return '';
+      }
     }
 
     return {
       get available() { return available; },
+      get baseUrl() { return baseUrl; },
       async detect() {
-        try {
-          const data = await request('/health');
-          available = data?.ok === true && data?.companion === true;
-        } catch {
-          available = false;
+        for (const candidate of candidates) {
+          try {
+            const data = await requestFrom(candidate, '/health', undefined, Math.min(timeoutMs, 5000));
+            if (data?.ok === true && data?.companion === true) {
+              baseUrl = candidate;
+              available = true;
+              return true;
+            }
+          } catch {}
         }
-        return available;
+        available = false;
+        return false;
       },
-      loginStatus: () => request('/api/qishui/login-status'),
-      loginStart: () => request('/api/qishui/login/start', {}),
-      loginCheck: sessionId => request('/api/qishui/login/check', { sessionId }),
-      logout: () => request('/api/qishui/logout', {}),
-      search: query => request('/api/qishui/search', { query, limit: 30, offset: 0 }),
-      liked: () => request('/api/qishui/library/liked?limit=50&offset=0'),
-      playlists: () => request('/api/qishui/library/playlists?limit=50&offset=0'),
-      playlist: id => request(`/api/qishui/playlists/${encodeURIComponent(id)}?limit=100&offset=0`),
-      lyrics: id => request(`/api/qishui/songs/${encodeURIComponent(id)}/lyrics`),
-      audio: mediaId => request(`/api/qishui/tracks/${encodeURIComponent(mediaId)}/audio`, {}),
-      like: (mediaId, liked) => request('/api/qishui/like', { id: mediaId, liked }),
-      playlistEdit: (operation, id, ids) => request(`/api/qishui/playlist/${operation}`, { id, ids }),
+      loginStatus: () => request('/api/qishui/login-status', undefined, 7000),
+      loginStart: () => request('/api/qishui/login/start', {}, 15000),
+      loginCheck: sessionId => request('/api/qishui/login/check', { sessionId }, 7000),
+      logout: () => request('/api/qishui/logout', {}, 7000),
+      search: query => request('/api/qishui/search', { query, limit: 30, offset: 0 }, 12000),
+      liked: () => request('/api/qishui/library/liked?limit=50&offset=0', undefined, 12000),
+      playlists: () => request('/api/qishui/library/playlists?limit=50&offset=0', undefined, 12000),
+      playlist: id => request(`/api/qishui/playlists/${encodeURIComponent(id)}?limit=100&offset=0`, undefined, 12000),
+      lyrics: id => request(`/api/qishui/songs/${encodeURIComponent(id)}/lyrics`, undefined, 10000),
+      audio: mediaId => request(`/api/qishui/tracks/${encodeURIComponent(mediaId)}/audio`, {}, 15000),
+      like: (mediaId, liked) => request('/api/qishui/like', { id: mediaId, liked }, 12000),
+      playlistEdit: (operation, id, ids) => request(`/api/qishui/playlist/${operation}`, { id, ids }, 12000),
+      resolveUrl,
     };
   }
 
@@ -174,6 +224,7 @@
     persistentTrack,
     parseLrc,
     activeLyric,
+    companionBaseUrls,
     createClient,
     safeHttpsUrl,
   };
