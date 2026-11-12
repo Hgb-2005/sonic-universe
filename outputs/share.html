@@ -1,16 +1,24 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>声波宇宙 · 分享作品</title><style>html,body{margin:0;background:#080911;color:#eee;font:15px system-ui,sans-serif;height:100%;overflow:hidden}iframe{border:0;width:100%;height:100%;display:block}aside{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#100e1bdc;border:1px solid #ffffff30;border-radius:18px;padding:14px 20px;text-align:center;min-width:260px;box-shadow:0 10px 50px #0009}button{background:#d5c3ff;color:#201333;border:0;border-radius:8px;padding:10px 20px;cursor:pointer;font:inherit}p{margin:8px 0 0;color:#c1b8d1;font-size:12px}</style></head><body><iframe id="view" title="分享的声波宇宙" sandbox="allow-scripts" allow="autoplay"></iframe><aside><button id="play" disabled>正在准备星空…</button><p>当前仅支持示例音乐</p><p id="status" role="status">只读作品 · 不读取或修改你的曲库</p></aside><script>
-const frame=document.getElementById('view'),button=document.getElementById('play'),status=document.getElementById('status');
+const frame=document.getElementById('view'),button=document.getElementById('play'),status=document.getElementById('status');let sharePort=null,readyTimer=null;
 const sharedAssets=new Set(['./assets/nebula-ring.webp','./assets/nebula-galaxy.webp','./assets/nebula-landscape.webp','./assets/nebula-blackhole.webp','./interstellar-drift.mp3']);
 const assetCache=new Map();
-window.addEventListener('message',async event=>{
-  if(event.source!==frame.contentWindow||event.data?.type!=='sonic-share-asset')return;
-  const {id,path}=event.data;if(!Number.isSafeInteger(id)||!sharedAssets.has(path))return;
-  try{
-    if(!assetCache.has(path))assetCache.set(path,fetch(path).then(r=>{if(!r.ok)throw Error('asset');return r.blob()}).then(blob=>new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(blob)})));
-    const url=await assetCache.get(path);frame.contentWindow.postMessage({type:'sonic-share-asset-result',id,url},'*');
-  }catch{assetCache.delete(path);frame.contentWindow.postMessage({type:'sonic-share-asset-result',id,url:null},'*')}
+async function handleShareMessage(message){
+  const data=message||{};
+  if(data.type==='sonic-share-asset'){
+    const {id,path}=data;if(!Number.isSafeInteger(id)||!sharedAssets.has(path)||!sharePort)return;
+    try{
+      if(!assetCache.has(path))assetCache.set(path,fetch(path).then(r=>{if(!r.ok)throw Error('asset');return r.blob()}).then(blob=>new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(blob)})));
+      const url=await assetCache.get(path);sharePort.postMessage({type:'sonic-share-asset-result',id,url});
+    }catch{assetCache.delete(path);sharePort.postMessage({type:'sonic-share-asset-result',id,url:null})}
+  }else if(data.type==='sonic-share-ready'){clearTimeout(readyTimer);button.disabled=false;button.textContent='播放作品';status.textContent='点击播放示例音乐 · 只读，不修改你的曲库'}
+  else if(data.type==='sonic-share-state'){button.textContent=data.playing?'暂停':'播放作品';status.textContent=data.playing?'正在播放 · 只读作品':'播放未开始或已暂停，请点击重试。'}
+  else if(data.type==='sonic-share-error'){clearTimeout(readyTimer);button.disabled=true;button.textContent='作品无法打开';status.textContent=String(data.message||'链接无效')+'，请向分享者重新获取链接。'}
+}
+window.addEventListener('message',event=>{
+  if(event.source!==frame.contentWindow||event.origin!=='null'||sharePort||event.data?.type!=='sonic-share-connect'||event.ports.length!==1)return;
+  sharePort=event.ports[0];sharePort.addEventListener('message',event=>{void handleShareMessage(event.data)});sharePort.start?.();
 });
 window.addEventListener('hashchange',()=>location.reload());
-const hash=location.hash.slice(1);if(!hash||hash.length>8000||!/^[A-Za-z0-9_-]+$/.test(hash)){button.textContent='链接无效';status.textContent='请向分享者重新获取链接。'}else{frame.src='./index.html?sharedViewer=1#'+hash;const timer=setTimeout(()=>{if(button.disabled){button.textContent='加载超时';status.textContent='请检查网络后刷新重试。'}},30000);window.addEventListener('message',event=>{if(event.source!==frame.contentWindow)return;if(event.data?.type==='sonic-share-ready'){clearTimeout(timer);button.disabled=false;button.textContent='播放作品';status.textContent='点击播放示例音乐 · 只读，不修改你的曲库'}else if(event.data?.type==='sonic-share-state'){button.textContent=event.data.playing?'暂停':'播放作品';status.textContent=event.data.playing?'正在播放 · 只读作品':'播放未开始或已暂停，请点击重试。'}else if(event.data?.type==='sonic-share-error'){clearTimeout(timer);button.disabled=true;button.textContent='作品无法打开';status.textContent=String(event.data.message||'链接无效')+'，请向分享者重新获取链接。'}});button.onclick=()=>frame.contentWindow.postMessage({type:'sonic-share-toggle'},'*')}
+const hash=location.hash.slice(1);if(!hash||hash.length>8000||!/^[A-Za-z0-9_-]+$/.test(hash)){button.textContent='链接无效';status.textContent='请向分享者重新获取链接。'}else{frame.src='./index.html?sharedViewer=1#'+hash;readyTimer=setTimeout(()=>{if(button.disabled){button.textContent='加载超时';status.textContent='请检查网络后刷新重试。'}},30000);button.onclick=()=>{if(sharePort)sharePort.postMessage({type:'sonic-share-toggle'})}}
 </script></body></html>
