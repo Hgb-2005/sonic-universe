@@ -152,6 +152,8 @@
 .cue-timeline{margin:18px 0 7px;user-select:none}.cue-timeline-scale{display:flex;justify-content:space-between;color:var(--muted);font-size:10px;font-variant-numeric:tabular-nums;margin-bottom:8px}.cue-timeline-track{position:relative;height:64px;border-radius:9px;background:linear-gradient(180deg,rgba(var(--accent-rgb),.10),rgba(var(--accent-rgb),.035));border:1px solid rgba(var(--accent-rgb),.19);touch-action:none;cursor:crosshair}.cue-timeline-track::before{content:"";position:absolute;left:0;right:0;top:31px;height:1px;background:rgba(var(--accent-rgb),.25);pointer-events:none}.cue-marker{position:absolute;top:10px;bottom:10px;width:20px;padding:0;transform:translateX(-50%);background:transparent;border:0;touch-action:none;cursor:ew-resize;z-index:2}.cue-marker::before{content:"";position:absolute;left:7px;top:6px;bottom:6px;width:6px;border-radius:4px;background:var(--accent);opacity:.65;box-shadow:0 0 12px rgba(var(--accent-rgb),.3)}.cue-marker[aria-pressed=true]::before{opacity:1;background:#fff1d7;box-shadow:0 0 16px rgba(var(--accent-rgb),.8)}.cue-marker[aria-pressed=true]{z-index:3}.cue-playhead{position:absolute;left:0;top:0;bottom:0;width:1px;background:rgba(255,255,255,.8);pointer-events:none;z-index:4}.cue-playhead::before{content:"";position:absolute;top:0;left:-3px;width:7px;height:5px;background:rgba(255,255,255,.8)}.cue-row[data-selected=true]{background:rgba(var(--accent-rgb),.08)}.cue-row time{cursor:pointer}.recovery-save[role=button]{cursor:pointer}.recovery-save[role=button]:focus-visible{outline:2px solid var(--accent);outline-offset:4px}.cue-timeline[data-disabled=true]{opacity:.45;pointer-events:none}@media(pointer:coarse){.cue-marker{width:28px;top:0;bottom:0}.cue-marker::before{left:11px;top:15px;bottom:15px}.cue-timeline-track{height:72px}}
 /* V32 · an independent, lightweight listening stage */
 #shareLookInput[hidden]{display:none}
+/* Folder import progress and per-file errors */
+#importProgress{width:100%;height:8px;accent-color:var(--accent)}#importFailures{margin:10px 0;font-size:11px;line-height:1.8;color:#e8b796}#importFailureList{padding-left:22px;overflow-wrap:anywhere}
 .visual-fatal{position:absolute;top:190px;left:66%;transform:translateX(-50%);z-index:2;width:min(440px,90vw);padding:24px;background:linear-gradient(145deg,#151222eb,#090b17f5);border-color:rgba(var(--accent-rgb),.2)}.fallback-cover{height:180px;position:relative;overflow:hidden;border-radius:12px;background:radial-gradient(ellipse at 58% 45%,rgba(var(--accent-rgb),.42),transparent 48%),radial-gradient(ellipse at 38% 65%,rgba(var(--accent-rgb),.18),transparent 58%),#080b16;margin-bottom:20px}.fallback-cover:before{content:"";position:absolute;inset:0;background-image:radial-gradient(circle at 20% 30%,#fff 0 1px,transparent 1.8px),radial-gradient(circle at 70% 60%,var(--accent) 0 1px,transparent 2px),radial-gradient(circle at 50% 20%,#e8eaff 0 .7px,transparent 1.5px);background-size:89px 73px,127px 107px,53px 61px;opacity:.65}.fallback-bars{position:absolute;inset:40px 35px;display:flex;align-items:center;justify-content:center;gap:8px}.fallback-bars i{display:block;width:6px;height:45%;border-radius:5px;background:linear-gradient(var(--accent),rgba(var(--accent-rgb),.15));transform:scaleY(.25);animation:fallbackBeat 1.7s ease-in-out infinite alternate;animation-delay:calc(var(--i)*-.19s)}.fallback-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}.visual-fatal p{overflow-wrap:anywhere}.visual-fatal h2{font-size:16px}.fallback-hint{margin-top:14px!important;font-size:10px!important}.energy-control{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;color:var(--muted);font-size:11px}.energy-control label{display:flex;align-items:center;gap:7px}.energy-control input{accent-color:var(--accent)}button:disabled{cursor:not-allowed}@keyframes fallbackBeat{to{transform:scaleY(1)}}@media(max-width:760px){.visual-fatal{top:440px;left:50%;width:calc(100vw - 42px)}.fallback-cover{height:130px}}@media(prefers-reduced-motion:reduce){.fallback-bars i{animation:none;transform:scaleY(.5)}}
 </style>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%278%27 fill=%27%23100d1a%27/%3E%3Cellipse cx=%2716%27 cy=%2716%27 rx=%2713%27 ry=%277%27 transform=%27rotate(-30 16 16)%27 fill=%27none%27 stroke=%27%23c7afff%27/%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%272%27 fill=%27%23c7afff%27/%3E%3C/svg%3E">
@@ -348,7 +350,7 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
 <input type="file" id="fileInput" multiple accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac,.opus,.webm" hidden>
 <audio id="audio" preload="metadata"></audio>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<div class="drop-overlay" id="dropOverlay"><div class="drop-content"><svg viewBox="0 0 48 48"><path d="M24 32V6M14 16 24 6l10 10M8 30v12h32V30"/></svg><p>把音乐，放进宇宙</p><small>可一次拖入多首音乐 · 仅在本机播放与保存</small></div></div>
+<div class="drop-overlay" id="dropOverlay"><div class="drop-content"><svg viewBox="0 0 48 48"><path d="M24 32V6M14 16 24 6l10 10M8 30v12h32V30"/></svg><p>把音乐，放进宇宙</p><small>可拖入整个文件夹（含子文件夹）或多首音乐 · 仅在本机播放与保存</small></div></div>
 <dialog class="help-dialog" id="helpDialog"><h2>欢迎来到声波宇宙</h2><p>播放内置音景，导入多首音乐或整个音乐文件夹，也能点击「外部联动」，让星空响应其他播放器共享的声音。在星环、银河、山峰和黑洞之间切换，音乐会继续流动。</p><p class="help-detail">低音推开星云，中频留下短暂星轨，高音点亮细碎星闪；安静与暂停后自然收静。打开音乐库搜索、收藏、建立歌单或随机播放。歌单中的歌曲按该歌单播放，搜索只筛选显示；在「布置空间」里选择背景、每首歌的封面和空间文字。音乐、图片与设置会自动保存在当前浏览器，重新打开后从暂停的位置继续。</p><dl><dt><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd></dt><dd>切换四种宇宙形态</dd><dt><kbd>Space</kbd></dt><dd>播放 / 暂停</dd><dt><kbd>←</kbd> <kbd>→</kbd></dt><dd>后退 / 前进 5 秒</dd><dt><kbd>M</kbd></dt><dd>静音 / 恢复音量</dd><dt><kbd>H</kbd></dt><dd>进入 / 退出沉浸</dd><dt><kbd>F</kbd></dt><dd>进入 / 退出全屏</dd><dt><kbd>C</kbd> / <kbd>0</kbd></dt><dd>漫游中定格 / 重置视角</dd><dt><kbd>+</kbd> / <kbd>−</kbd></dt><dd>漫游中拉近 / 拉远</dd></dl><p>点击「进入宇宙」，在右上角「选星空」边听边换景、调整光的回应。轻触唤醒按钮，拖动视角、滚轮或双指缩放；停止操作后按钮会淡出，选景面板打开时保持可见。音乐剧情按歌曲进度和音频能量编排四个篇章；「定格星空」可以加上歌名、署名和心情，保存 PNG 明信片。推荐 MP3、WAV、M4A；其他格式取决于浏览器支持。内置音景由本作品合成，支持循环播放。</p><div class="dialog-actions"><button class="secondary-btn" id="demoBtn">返回内置音景</button><button class="primary-btn" id="closeHelpBtn">开始探索</button></div></dialog>
 <input type="file" id="backgroundInput" accept="image/jpeg,image/png,image/webp" hidden>
 <input type="file" id="coverInput" accept="image/jpeg,image/png,image/webp" hidden>
@@ -3356,46 +3358,89 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
     selectTrack(songs[next].id,playing);
   }
 
-  async function importFiles(selection,scanErrors=[]){if(instrumentOpen){showToast("请先关闭乐器台，再导入音乐。");return}
-    if(clipLocked()){showToast('请先结束短片录制，再导入音乐。');return}
-    const files=Array.from(selection||[]);if(!files.length&&!scanErrors.length)return;
-    if(!libraryReady)await libraryPromise;if(importing){showToast('这一批音乐正在读取，请稍候再添加。');return}
-    importing=true;for(const id of ['uploadBtn','queueImportBtn','folderImportBtn'])$(id).disabled=true;
-    $('importStatus').classList.remove('error');
-    const added=[],failed=scanErrors.slice(),duplicates=[],other=[],targetPlaylist=playlists.find(p=>p.id===libraryView);
-    const progress=$('importProgress');progress.hidden=false;progress.max=Math.max(1,files.length);progress.value=0;
-    $('importFailures').hidden=true;$('importFailureList').replaceChildren();
-    const signatures=new Map(tracks.filter(t=>t.signature).map(t=>[t.signature,t.id])),importedIds=[];
+  function isImportAudio(file){return file.type.startsWith('audio/')||['mp3','wav','ogg','m4a','aac','flac','opus','webm','aif','aiff','mp4'].includes(file.name.split('.').pop().toLowerCase())}
+  function importFilePath(file){return folderPaths.get(file)||file.webkitRelativePath||file.name}
+  function refreshImportBusy(){
+    const busy=importing||folderScanning;
+    for(const id of ['uploadBtn','queueImportBtn','folderImportBtn'])$(id).disabled=busy;
+    $('queueDialog').setAttribute('aria-busy',String(busy));
+  }
+  function importBlockedReason(fromScan=false){
+    if(instrumentOpen)return '请先关闭乐器台，再导入音乐。';
+    if(clipLocked())return '请先结束短片录制，再导入音乐。';
+    if(importing||folderScanning&&!fromScan)return '这一批音乐正在读取，请稍候再添加。';
+    return '';
+  }
+  function showImportFailure(item){
+    const li=document.createElement('li');li.textContent=item.path+'：'+item.reason;$('importFailureList').append(li);
+    $('importFailures').hidden=false;$('importFailures').open=true;
+  }
+  function probeImportedAudio(file){
+    return new Promise((resolve,reject)=>{
+      const probe=new Audio();let url=null,settled=false;
+      const timer=setTimeout(()=>finish(new Error('音频读取超时（12 秒），请检查文件是否能在本机播放后重试。')),12000);
+      function finish(error){
+        if(settled)return;settled=true;clearTimeout(timer);
+        const length=probe.duration;probe.onloadedmetadata=null;probe.onerror=null;probe.removeAttribute('src');probe.load();
+        if(url)URL.revokeObjectURL(url);
+        if(error)reject(error);else resolve(length);
+      }
+      probe.preload='metadata';
+      probe.onloadedmetadata=()=>finish(Number.isFinite(probe.duration)&&probe.duration>0?null:new Error('音频没有有效时长，可能已损坏或不是完整的音频文件。'));
+      probe.onerror=()=>{
+        const code=probe.error?.code;
+        const reasons={1:'音频读取被中断，请重新导入。',2:'无法读取音频数据，请检查文件访问权限后重试。',3:'音频解码失败，文件可能已损坏。',4:'无法解码：文件可能已损坏，或当前浏览器不支持其音频编码。'};
+        finish(new Error(reasons[code]||'浏览器未能读取这首音频，请确认文件完整且编码受支持。'));
+      };
+      try{url=URL.createObjectURL(file);probe.src=url;probe.load()}catch(error){finish(new Error('无法读取文件：'+(error.message||'请检查访问权限')))}
+    });
+  }
+  async function importFiles(selection,scanErrors=[],fromScan=false){
+    const blocked=importBlockedReason(fromScan);
+    if(blocked){if(fromScan){$('importStatus').textContent=blocked;$('importProgress').hidden=true}showToast(blocked);return false}
+    const selected=Array.from(selection||[]);if(!selected.length&&!scanErrors.length)return false;
+    importing=true;refreshImportBusy();
+    const files=selected.filter(isImportAudio),other=selected.filter(file=>!isImportAudio(file)),added=[],failed=scanErrors.slice(),duplicates=[],importedIds=[];
+    const progress=$('importProgress');progress.hidden=!files.length;progress.max=Math.max(1,files.length);progress.value=0;
+    $('importStatus').classList.remove('error');$('importStatus').textContent='准备导入 · 共 '+files.length+' 首音频';
+    $('importFailures').hidden=true;$('importFailures').open=false;$('importFailureList').replaceChildren();
+    for(const item of failed)showImportFailure(item);
+    for(const file of other)showImportFailure({path:importFilePath(file),reason:'不是受支持的音频格式，已跳过。'});
     try{
+      if(!libraryReady)await libraryPromise;
+      const targetPlaylist=playlists.find(p=>p.id===libraryView),signatures=new Map(tracks.filter(t=>t.signature).map(t=>[t.signature,t.id]));
       for(let i=0;i<files.length;i++){
-        const file=files[i],ext=file.name.split('.').pop().toLowerCase();
-        const filePath=folderPaths.get(file)||file.webkitRelativePath||file.name;
-        $('importStatus').textContent='正在读取 '+(i+1)+' / '+files.length+' · '+filePath;
-        progress.value=i;
-        if(!file.type.startsWith('audio/')&&!['mp3','wav','ogg','m4a','aac','flac','opus','webm','aif','aiff','mp4'].includes(ext)){other.push(filePath);continue}
-        if(!file.size){failed.push({path:filePath,reason:'文件为空'});continue}
-        const signature=file.name+'|'+file.size+'|'+file.lastModified;
-        if(signatures.has(signature)){duplicates.push(file.name);importedIds.push(signatures.get(signature));continue}
-        const url=URL.createObjectURL(file),probe=new Audio();probe.preload='metadata';
+        const file=files[i],filePath=importFilePath(file);
+        $('importStatus').textContent='正在导入第 '+(i+1)+' / '+files.length+' 首 · '+filePath;
         try{
-          const length=await waitForMetadata(probe,url,12000),id=newId('track');
-          added.push({id,kind:'file',name:file.name.replace(/\.[^.]+$/,'')||file.name,duration:length,cover:null,blob:file,stored:false,favorite:false,signature,sourcePath:filePath});signatures.set(signature,id);importedIds.push(id);
-        }catch(error){failed.push({path:filePath,reason:error.message||'音频读取失败'})}finally{probe.removeAttribute('src');probe.load();URL.revokeObjectURL(url)}
+          if(!file.size)throw new Error('文件为空（0 字节），无法读取音频。');
+          const signature=file.name+'|'+file.size+'|'+file.lastModified;
+          if(signatures.has(signature)){duplicates.push(filePath);importedIds.push(signatures.get(signature))}
+          else{
+            const length=await probeImportedAudio(file),id=newId('track');
+            added.push({id,kind:'file',name:file.name.replace(/\.[^.]+$/,'')||file.name,duration:length,cover:null,blob:file,stored:false,favorite:false,signature,sourcePath:filePath});signatures.set(signature,id);importedIds.push(id);
+          }
+        }catch(error){const failure={path:filePath,reason:error.message||'音频读取失败，请检查文件。'};failed.push(failure);showImportFailure(failure)}
+        finally{
+          progress.value=i+1;
+          // Yield between files so progress and failures remain visible even for duplicates or empty files.
+          await new Promise(resolve=>setTimeout(resolve,0));
+        }
       }
       const previous=currentTrack(),shouldSelect=added.length&&(!previous||previous.kind==='demo')&&!externalStream&&!externalPending;
       tracks.push(...added);
       let memberships=0;
       if(targetPlaylist&&playlists.includes(targetPlaylist))for(const id of importedIds)if(!targetPlaylist.trackIds.includes(id)){targetPlaylist.trackIds.push(id);memberships++}
       if(shouldSelect)playbackScope=targetPlaylist&&playlists.includes(targetPlaylist)?targetPlaylist.id:'all';
-      if(added.length||memberships){resetShuffle();persistLibrary()}renderPlaylist();
+      if(added.length||memberships){resetShuffle();await persistLibrary()}renderPlaylist();
       if(shouldSelect)await selectTrack(added[0].id,true);
       const skipped=failed.length+other.length;
-      const message=(added.length?'已添加 '+added.length+' 首音乐':'没有添加新音乐')+(skipped?'；跳过 '+skipped+' 个文件，请查看原因':'')+(duplicates.length?'；略过 '+duplicates.length+' 个重复文件':'')+(memberships?'；'+memberships+' 首加入歌单':'')+'。';
-      for(const item of [...failed,...other.map(path=>({path,reason:'不是受支持的音频格式'}))]){const li=document.createElement('li');li.textContent=item.path+'：'+item.reason;$('importFailureList').append(li)}
-      $('importFailures').hidden=!skipped;progress.value=progress.max;
+      const message='已处理 '+files.length+' / '+files.length+' 首音频；'+(added.length?'已添加 '+added.length+' 首音乐':'没有添加新音乐')+(skipped?'；跳过 '+skipped+' 个文件，请查看原因':'')+(duplicates.length?'；略过 '+duplicates.length+' 个重复文件':'')+(memberships?'；'+memberships+' 首加入歌单':'')+'。';
+      progress.value=progress.max;
       $('importStatus').textContent=message;$('importStatus').classList.toggle('error',failed.length>0);showToast(message,!added.length&&!duplicates.length&&failed.length>0);
-    }catch(error){$('importStatus').textContent=error.message||'导入中断，请重试。';showToast('音乐导入中断，请重试。',true)}
-    finally{importing=false;for(const id of ['uploadBtn','queueImportBtn','folderImportBtn'])$(id).disabled=false}
+      return true;
+    }catch(error){$('importStatus').textContent='导入中断：'+(error.message||'请重试');$('importStatus').classList.add('error');progress.hidden=true;showToast('音乐导入中断，请重试。',true);return false}
+    finally{importing=false;refreshImportBusy()}
   }
 
   async function addDemo(autoplay=false){
@@ -3543,19 +3588,29 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
   $('fileInput').addEventListener('change',()=>{const files=Array.from($('fileInput').files);$('fileInput').value='';importFiles(files)});
   const folderPaths=new WeakMap();
   let folderScanning=false;
-  async function collectDroppedEntries(entries,fallback){
-    const files=[],errors=[];
+  async function collectDroppedEntries(items,fallback){
+    const files=[],errors=[];let audioCount=0;
+    function found(file,path){
+      if(path)folderPaths.set(file,path);files.push(file);if(isImportAudio(file))audioCount++;
+      $('importStatus').textContent='正在扫描文件夹 · 已找到 '+audioCount+' 首音频、'+(files.length-audioCount)+' 个其他文件';
+    }
+    function readEntry(request,timeoutMessage){
+      return new Promise((resolve,reject)=>{
+        const timer=setTimeout(()=>reject(new Error(timeoutMessage)),15000);
+        try{request(value=>{clearTimeout(timer);resolve(value)},error=>{clearTimeout(timer);reject(error)})}catch(error){clearTimeout(timer);reject(error)}
+      });
+    }
     async function walk(entry){
       const path=(entry.fullPath||entry.name||'未知文件').replace(/^\//,'');
-      if(entry.isFile){try{const file=await new Promise((resolve,reject)=>entry.file(resolve,reject));folderPaths.set(file,path);files.push(file);$('importStatus').textContent='正在扫描文件夹 · 已找到 '+files.length+' 个文件'}
+      if(entry.isFile){try{found(await readEntry((resolve,reject)=>entry.file(resolve,reject),'读取文件超时（15 秒）'),path)}
         catch(error){errors.push({path,reason:'无法读取文件：'+(error?.message||'请检查访问权限')})}}
       else if(entry.isDirectory){let reader;try{reader=entry.createReader()}catch(error){errors.push({path,reason:'无法打开文件夹：'+(error?.message||'请检查访问权限')});return}
-        while(true){let batch;try{batch=await new Promise((resolve,reject)=>reader.readEntries(resolve,reject))}catch(error){errors.push({path,reason:'无法读取文件夹：'+(error?.message||'请检查访问权限')});break}
+        while(true){let batch;try{batch=await readEntry((resolve,reject)=>reader.readEntries(resolve,reject),'读取文件夹超时（15 秒）')}catch(error){errors.push({path,reason:'无法读取文件夹：'+(error?.message||'请检查访问权限')});break}
           if(!batch.length)break;for(const child of batch)await walk(child)}
       }
     }
-    if(entries.some(Boolean)){for(let i=0;i<entries.length;i++){if(entries[i])await walk(entries[i]);else if(fallback[i])files.push(fallback[i])}}
-    else files.push(...fallback);
+    if(items.length){for(const item of items){if(item.entry)await walk(item.entry);else if(item.file)found(item.file);else errors.push({path:'拖入的项目',reason:'浏览器未提供可读取的文件或文件夹，请使用「导入文件夹」重试。'})}}
+    else for(const file of fallback)found(file);
     return {files,errors};
   }
   function isFileDrag(e){return Array.from(e.dataTransfer?.types||[]).includes('Files')}
@@ -3564,15 +3619,18 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
   document.addEventListener('dragleave',e=>{if(isFileDrag(e)){dragDepth=Math.max(0,dragDepth-1);if(!dragDepth)$('dropOverlay').classList.remove('visible')}});
   document.addEventListener('drop',async e=>{if(isFileDrag(e)){
     e.preventDefault();dragDepth=0;$('dropOverlay').classList.remove('visible');
-    if(importing||folderScanning){showToast('这一批音乐正在读取，请稍候再添加。');return}
+    const blocked=importBlockedReason();if(blocked){showToast(blocked);return}
     const fallback=Array.from(e.dataTransfer.files||[]);
-    const entries=Array.from(e.dataTransfer.items||[]).filter(item=>item.kind==='file').map(item=>{try{return item.webkitGetAsEntry?.()||null}catch{return null}});
-    folderScanning=true;
-    try{if(!$('queueDialog').open)openSpaceDialog('queueDialog');$('importStatus').textContent='正在扫描文件夹…';$('importProgress').hidden=false;$('importProgress').removeAttribute('value');$('importFailures').hidden=true;
-      const result=await collectDroppedEntries(entries,fallback);await importFiles(result.files,result.errors);
+    // Capture entry/file handles synchronously while the drop data store is readable.
+    const items=Array.from(e.dataTransfer.items||[]).filter(item=>item.kind==='file').map(item=>{
+      let entry=null,file=null;try{entry=item.webkitGetAsEntry?.()||null}catch{}try{file=item.getAsFile()}catch{}return {entry,file};
+    });
+    folderScanning=true;refreshImportBusy();
+    try{if(!$('queueDialog').open)openSpaceDialog('queueDialog');$('importStatus').classList.remove('error');$('importStatus').textContent='正在扫描文件夹…';$('importProgress').hidden=false;$('importProgress').removeAttribute('value');$('importFailures').hidden=true;$('importFailureList').replaceChildren();
+      const result=await collectDroppedEntries(items,fallback);await importFiles(result.files,result.errors,true);
       if(!result.files.length&&!result.errors.length){$('importStatus').textContent='文件夹里没有可导入的文件。';$('importProgress').hidden=true}
-    }catch(error){$('importStatus').textContent='文件夹读取失败：'+(error.message||'请重试');$('importProgress').hidden=true}
-    finally{folderScanning=false}
+    }catch(error){$('importStatus').textContent='文件夹读取失败：'+(error.message||'请重试');$('importStatus').classList.add('error');$('importProgress').hidden=true}
+    finally{folderScanning=false;refreshImportBusy()}
   }});
   window.addEventListener('blur',()=>{dragDepth=0;$('dropOverlay').classList.remove('visible')});
   $('demoBtn').addEventListener('click',()=>{$('helpDialog').close();addDemo(true)});
