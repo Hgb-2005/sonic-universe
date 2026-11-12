@@ -19,6 +19,7 @@
     trail: 0.55,
     response: "balanced",
     beat: false,
+    energySaver: false,
     storyEnabled: true,
     journeyAuto: true,
   });
@@ -47,6 +48,7 @@
       trail: clamp(finite(input.trail, fallback.trail), 0, 1),
       response: RESPONSES.includes(input.response) ? input.response : fallback.response,
       beat: typeof input.beat === "boolean" ? input.beat : fallback.beat,
+      energySaver: typeof input.energySaver === "boolean" ? input.energySaver : fallback.energySaver,
       storyEnabled: typeof input.storyEnabled === "boolean" ? input.storyEnabled : fallback.storyEnabled,
       journeyAuto: typeof input.journeyAuto === "boolean" ? input.journeyAuto : fallback.journeyAuto,
     };
@@ -66,6 +68,7 @@
       maxParticles: mobile ? 1700 : low ? 3600 : 6000,
       maxTrail: mobile ? 0.73 : low ? 0.86 : 1,
       pixelRatio: mobile ? Math.min(finite(input.dpr, 1), 1.35) : Math.min(finite(input.dpr, 1), 2),
+      recommendEnergySaver: mobile || low,
     };
   }
 
@@ -74,8 +77,9 @@
     const tier = profile || performanceProfile({});
     return {
       ...normalized,
-      effectiveParticleCount: Math.min(normalized.particleCount, tier.maxParticles),
-      effectiveTrail: Math.min(normalized.trail, tier.maxTrail),
+      effectiveParticleCount: Math.min(normalized.particleCount, tier.maxParticles, normalized.energySaver ? 1000 : Infinity),
+      effectiveTrail: Math.min(normalized.trail, tier.maxTrail, normalized.energySaver ? 0.28 : 1),
+      glow: normalized.energySaver ? Math.min(normalized.glow, 0.35) : normalized.glow,
     };
   }
 
@@ -102,6 +106,9 @@
     });
     assign("response", value => RESPONSES.includes(value) ? value : undefined);
     assign("beat", value => value === "1" ? true : value === "0" ? false : undefined);
+    assign("energySaver", value => value === "1" ? true : value === "0" ? false : undefined);
+    assign("storyEnabled", value => value === "1" ? true : value === "0" ? false : undefined);
+    assign("journeyAuto", value => value === "1" ? true : value === "0" ? false : undefined);
     assign("depth", value => {
       const number = Number(value);
       return value.trim() !== "" && Number.isFinite(number) && number >= 0 && number <= 100 ? number / 100 : undefined;
@@ -130,10 +137,13 @@
     url.searchParams.set("particleCount", String(normalized.particleCount));
     url.searchParams.set("response", normalized.response);
     url.searchParams.set("beat", normalized.beat ? "1" : "0");
+    url.searchParams.set("energySaver", normalized.energySaver ? "1" : "0");
+    url.searchParams.set("storyEnabled", normalized.storyEnabled ? "1" : "0");
+    url.searchParams.set("journeyAuto", normalized.journeyAuto ? "1" : "0");
     url.searchParams.set("depth", String(Math.round(normalized.depth * 100)));
     url.searchParams.set("glow", String(Math.round(normalized.glow * 100)));
     url.searchParams.set("motionSpeed", String(Math.round(normalized.motionSpeed * 100)));
-    url.searchParams.set("v", "26");
+    url.searchParams.set("v", "32");
     return url.toString();
   }
 

@@ -139,14 +139,37 @@
     ));
     let baseUrl = candidates[0] || '';
     let available = null;
-    const timeoutMs = Number.isFinite(Number(options.timeoutMs)) ? Math.max(1500, Number(options.timeoutMs)) : 10000;
+    let detectionState = 'pending', detectionGeneration = 0, detectionController = null;
+    const timeoutMs = Number.isFinite(Number(options.timeoutMs)) ? Math.max(1500, Number(options.timeoutMs)) : 8000;
 
-    async function requestFrom(origin, path, payload, requestTimeout = timeoutMs) {
+    async function requestFrom(origin, path, payload, requestTimeout = timeoutMs, parentSignal = null) {
       const method = payload === undefined ? 'GET' : 'POST';
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), requestTimeout);
+      let timedOut = false, timer, rejectAbort;
+      const cancel = () => controller.abort();
+      parentSignal?.addEventListener('abort', cancel, { once: true });
+      if (parentSignal?.aborted) cancel();
+      const cancellation = new Promise((_, reject) => {
+        rejectAbort = () => {
+          const error = new Error('这次连接检查已取消。');
+          error.name = 'AbortError';
+          reject(error);
+        };
+        controller.signal.addEventListener('abort', rejectAbort, { once: true });
+        if (controller.signal.aborted) rejectAbort();
+      });
+      const deadline = new Promise((_, reject) => {
+        timer = setTimeout(() => {
+          timedOut = true;
+          controller.abort();
+          const error = new Error('连不上本机音乐入口，点「重新连接」再试。');
+          error.code = 'timeout';
+          reject(error);
+        }, Math.min(timeoutMs, requestTimeout));
+      });
       try {
-        const response = await fetch(`${origin}${path}`, {
+        return await Promise.race([deadline, cancellation, (async () => {
+          const response = await fetch(`${origin}${path}`, {
           method,
           headers: payload === undefined ? undefined : { 'Content-Type': 'application/json' },
           body: payload === undefined ? undefined : JSON.stringify(payload),
@@ -162,16 +185,19 @@
           error.status = response.status;
           throw error;
         }
-        return data;
+          return data;
+        })()]);
       } catch (error) {
-        if (controller.signal.aborted) {
-          const timeout = new Error('本机音乐入口响应超时，请确认启动窗口仍然打开。');
+        if (timedOut) {
+          const timeout = new Error('连不上本机音乐入口，点「重新连接」再试。');
           timeout.code = 'timeout';
           throw timeout;
         }
         throw error;
       } finally {
         clearTimeout(timer);
+        parentSignal?.removeEventListener('abort', cancel);
+        controller.signal.removeEventListener('abort', rejectAbort);
       }
     }
 
@@ -200,19 +226,37 @@
     return {
       get available() { return available; },
       get baseUrl() { return baseUrl; },
+      get detectionState() { return detectionState; },
       async detect() {
-        for (const candidate of candidates) {
-          try {
-            const data = await requestFrom(candidate, '/health', undefined, Math.min(timeoutMs, 5000));
-            if (data?.ok === true && data?.companion === true) {
-              baseUrl = candidate;
-              available = true;
-              return true;
+        const generation = ++detectionGeneration;
+        detectionController?.abort();
+        const controller = new AbortController();
+        detectionController = controller;
+        detectionState = 'pending';
+        try {
+          const candidate = await Promise.any(candidates.map(async origin => {
+            const data = await requestFrom(origin, '/health', undefined, Math.min(timeoutMs, 6500), controller.signal);
+            if (data?.ok !== true || data?.companion !== true) {
+              const error = new Error('这个网址不是本机音乐入口。');
+              error.code = 'offline';
+              throw error;
             }
-          } catch {}
+            return origin;
+          }));
+          if (generation !== detectionGeneration) return false;
+          baseUrl = candidate;
+          available = true;
+          detectionState = 'ready';
+          return true;
+        } catch (error) {
+          if (generation !== detectionGeneration) return false;
+          available = false;
+          detectionState = error.errors?.some(item => item.code === 'timeout') ? 'timeout' : 'offline';
+          return false;
+        } finally {
+          controller.abort();
+          if (generation === detectionGeneration) detectionController = null;
         }
-        available = false;
-        return false;
       },
       loginStatus: () => request('/api/qishui/login-status', undefined, 7000),
       loginStart: () => request('/api/qishui/login/start', {}, 15000),

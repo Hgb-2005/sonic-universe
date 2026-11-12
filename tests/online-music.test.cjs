@@ -70,3 +70,63 @@ test('prefers the local companion first from the public page', () => {
     ['']
   );
 });
+
+test('detect probes candidates together and stops a hanging probe after another succeeds', async t => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  const calls = [];
+  let hangingSignal;
+  globalThis.fetch = (url, options) => {
+    calls.push(url);
+    if (url.startsWith('http://slow')) {
+      hangingSignal = options.signal;
+      return new Promise(() => {});
+    }
+    return Promise.resolve({ ok: true, json: async () => ({ ok: true, companion: true }) });
+  };
+  const client = online.createClient({ baseUrls: ['http://slow', 'http://ready'], timeoutMs: 1500 });
+  assert.equal(await client.detect(), true);
+  assert.equal(calls.length, 2);
+  assert.equal(client.baseUrl, 'http://ready');
+  assert.equal(client.detectionState, 'ready');
+  assert.equal(hangingSignal.aborted, true);
+});
+
+test('an older detection cannot override a newer successful retry', async t => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  let firstResolve, count = 0;
+  globalThis.fetch = () => ++count === 1
+    ? new Promise(resolve => { firstResolve = resolve; })
+    : Promise.resolve({ ok: true, json: async () => ({ ok: true, companion: true }) });
+  const client = online.createClient({ baseUrls: ['http://local'], timeoutMs: 1500 });
+  const oldAttempt = client.detect();
+  assert.equal(await client.detect(), true);
+  firstResolve({ ok: false, status: 500, json: async () => ({}) });
+  assert.equal(await oldAttempt, false);
+  assert.equal(client.available, true);
+  assert.equal(client.detectionState, 'ready');
+});
+
+test('a response with a stalled body reaches a timeout and can then reconnect', async t => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  globalThis.fetch = async () => ({ ok: true, json: () => new Promise(() => {}) });
+  const client = online.createClient({ baseUrls: ['http://local'], timeoutMs: 1500 });
+  const began = Date.now();
+  assert.equal(await client.detect(), false);
+  assert.ok(Date.now() - began < 2400);
+  assert.equal(client.available, false);
+  assert.equal(client.detectionState, 'timeout');
+  globalThis.fetch = async () => ({ ok: true, json: async () => ({ ok: true, companion: true }) });
+  assert.equal(await client.detect(), true);
+  assert.equal(client.detectionState, 'ready');
+});
+
+test('a normal request ends with an actionable timeout instead of remaining busy', async t => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  globalThis.fetch = () => new Promise(() => {});
+  const client = online.createClient({ timeoutMs: 1500 });
+  await assert.rejects(client.search('test'), error => error.code === 'timeout' && /重新连接/.test(error.message));
+});

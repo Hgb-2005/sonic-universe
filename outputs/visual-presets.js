@@ -5,6 +5,9 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
   return Object.freeze([
+    { id: "deep-cinema", name: "深空电影", note: "完整银河与柔和光脉，一键开始创作", look: { theme: "nebula", visualMode: "galaxy", motionSpeed: .65, particleCount: 3200, intensity: .72, depth: .85, glow: .58, trail: .6, response: "balanced", beat: false, energySaver: false, storyEnabled: false, journeyAuto: false } },
+    { id: "gold-softlight", name: "金色柔光", note: "温暖星云环，适合安静聆听与人声", look: { theme: "solar", visualMode: "ring", motionSpeed: .5, particleCount: 2400, intensity: .62, depth: .55, glow: .5, trail: .45, response: "soft", beat: false, energySaver: false, storyEnabled: false, journeyAuto: false } },
+    { id: "eco-stardust", name: "省电星尘", note: "更少星尘、更短拖尾，轻松播放更久", look: { theme: "galaxy", visualMode: "galaxy", motionSpeed: .5, particleCount: 800, intensity: .62, depth: .45, glow: .28, trail: .2, response: "soft", beat: false, energySaver: true, storyEnabled: false, journeyAuto: false } },
     { id: "violet-orbit", name: "紫雾星环", note: "轻柔的呼吸，让旋律缓缓铺开", look: { theme: "nebula", visualMode: "ring", motionSpeed: .75, particleCount: 3200, intensity: .65, depth: .55, glow: .55, trail: .62, response: "soft", beat: false } },
     { id: "blue-drift", name: "深蓝漫游", note: "流动的旋臂，适合氛围与电子音乐", look: { theme: "galaxy", visualMode: "galaxy", motionSpeed: 1, particleCount: 4400, intensity: .8, depth: .9, glow: .65, trail: .72, response: "balanced", beat: true } },
     { id: "gold-horizon", name: "日冕引力", note: "金色吸积盘，低音让引力边界呼吸", look: { theme: "solar", visualMode: "blackhole", motionSpeed: .85, particleCount: 4000, intensity: .85, depth: .8, glow: .85, trail: .82, response: "strong", beat: true } },

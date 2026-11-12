@@ -36,6 +36,9 @@ test("share links round-trip visual state without private content", () => {
     particleCount: 2400,
     response: "strong",
     beat: true,
+    energySaver: true,
+    storyEnabled: false,
+    journeyAuto: false,
     depth: 0.72,
     glow: 0.64,
     motionSpeed: 1.25,
@@ -62,6 +65,21 @@ test("mobile performance caps display values without rewriting the request", () 
   assert.ok(effective.effectiveTrail <= 0.73);
   assert.equal(look.particleCount, 6000);
   assert.equal(look.trail, 1);
+});
+
+test("energy saver caps actual drawing budgets while keeping export settings intact", () => {
+  const look = visual.normalizeLook({ particleCount: 6000, trail: 1, glow: .9, energySaver: true });
+  const effective = visual.effectiveLook(look, visual.performanceProfile({ width: 1440 }));
+  assert.equal(effective.effectiveParticleCount, 1000);
+  assert.equal(effective.effectiveTrail, .28);
+  assert.equal(effective.glow, .35);
+  assert.equal(look.particleCount, 6000);
+  assert.equal(look.glow, .9);
+  const exportLook = visual.effectiveLook({ ...look, energySaver: false }, visual.performanceProfile({ width: 1280 }));
+  assert.equal(exportLook.effectiveParticleCount, 6000);
+  assert.equal(exportLook.effectiveTrail, 1);
+  assert.equal(visual.performanceProfile({ width: 390 }).recommendEnergySaver, true);
+  assert.equal(visual.parseShare('?energySaver=invalid').hasVisualState, false);
 });
 
 test("automatic journey continuously covers all four scenes", () => {

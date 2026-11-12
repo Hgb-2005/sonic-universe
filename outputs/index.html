@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#080811">
-<title>声波宇宙 31 · 让汽水音乐成为星空</title>
+<title>声波宇宙 32 · 稳定播放与时间点创作</title>
 <style>.help-btn{text-decoration:none}.footer-links{flex-wrap:wrap}</style>
 <meta name="description" content="搜索汽水音乐、同步喜欢与歌单，并用可公开播放的歌曲实时驱动声波宇宙。">
 <meta property="og:type" content="website">
@@ -147,6 +147,11 @@
 @media(max-width:760px){.roam-top{left:16px;right:16px;gap:10px}.roam-top-actions{gap:6px}.roam-look-toggle{font-size:9px;padding:9px 10px;gap:5px}.quiet .quiet-exit{font-size:9px;padding:9px 10px;white-space:nowrap}.quiet .roam-kicker{font-size:6px;letter-spacing:.6px}.roam-look-panel{top:50px;padding:15px;width:334px;max-height:calc(100dvh - 104px)}.roam-look-heading h2{font-size:14px}.roam-look-art{height:56px}.roam-look-art svg{height:56px}.roam-look-card strong,.roam-look-card small{margin-inline:9px}}
 @media(max-width:760px) and (max-height:560px){.roam-look-panel{max-height:calc(100dvh - 215px)}}
 @media(prefers-reduced-motion:reduce){.roam-look-card{transition:none}.roam-look-panel{backdrop-filter:none}}
+/* V32 cue editor */
+.cue-timeline{margin:18px 0 7px;user-select:none}.cue-timeline-scale{display:flex;justify-content:space-between;color:var(--muted);font-size:10px;font-variant-numeric:tabular-nums;margin-bottom:8px}.cue-timeline-track{position:relative;height:64px;border-radius:9px;background:linear-gradient(180deg,rgba(var(--accent-rgb),.10),rgba(var(--accent-rgb),.035));border:1px solid rgba(var(--accent-rgb),.19);touch-action:none;cursor:crosshair}.cue-timeline-track::before{content:"";position:absolute;left:0;right:0;top:31px;height:1px;background:rgba(var(--accent-rgb),.25);pointer-events:none}.cue-marker{position:absolute;top:10px;bottom:10px;width:20px;padding:0;transform:translateX(-50%);background:transparent;border:0;touch-action:none;cursor:ew-resize;z-index:2}.cue-marker::before{content:"";position:absolute;left:7px;top:6px;bottom:6px;width:6px;border-radius:4px;background:var(--accent);opacity:.65;box-shadow:0 0 12px rgba(var(--accent-rgb),.3)}.cue-marker[aria-pressed=true]::before{opacity:1;background:#fff1d7;box-shadow:0 0 16px rgba(var(--accent-rgb),.8)}.cue-marker[aria-pressed=true]{z-index:3}.cue-playhead{position:absolute;left:0;top:0;bottom:0;width:1px;background:rgba(255,255,255,.8);pointer-events:none;z-index:4}.cue-playhead::before{content:"";position:absolute;top:0;left:-3px;width:7px;height:5px;background:rgba(255,255,255,.8)}.cue-row[data-selected=true]{background:rgba(var(--accent-rgb),.08)}.cue-row time{cursor:pointer}.recovery-save[role=button]{cursor:pointer}.recovery-save[role=button]:focus-visible{outline:2px solid var(--accent);outline-offset:4px}.cue-timeline[data-disabled=true]{opacity:.45;pointer-events:none}@media(pointer:coarse){.cue-marker{width:28px;top:0;bottom:0}.cue-marker::before{left:11px;top:15px;bottom:15px}.cue-timeline-track{height:72px}}
+/* V32 · an independent, lightweight listening stage */
+#shareLookInput[hidden]{display:none}
+.visual-fatal{position:absolute;top:190px;left:66%;transform:translateX(-50%);z-index:2;width:min(440px,90vw);padding:24px;background:linear-gradient(145deg,#151222eb,#090b17f5);border-color:rgba(var(--accent-rgb),.2)}.fallback-cover{height:180px;position:relative;overflow:hidden;border-radius:12px;background:radial-gradient(ellipse at 58% 45%,rgba(var(--accent-rgb),.42),transparent 48%),radial-gradient(ellipse at 38% 65%,rgba(var(--accent-rgb),.18),transparent 58%),#080b16;margin-bottom:20px}.fallback-cover:before{content:"";position:absolute;inset:0;background-image:radial-gradient(circle at 20% 30%,#fff 0 1px,transparent 1.8px),radial-gradient(circle at 70% 60%,var(--accent) 0 1px,transparent 2px),radial-gradient(circle at 50% 20%,#e8eaff 0 .7px,transparent 1.5px);background-size:89px 73px,127px 107px,53px 61px;opacity:.65}.fallback-bars{position:absolute;inset:40px 35px;display:flex;align-items:center;justify-content:center;gap:8px}.fallback-bars i{display:block;width:6px;height:45%;border-radius:5px;background:linear-gradient(var(--accent),rgba(var(--accent-rgb),.15));transform:scaleY(.25);animation:fallbackBeat 1.7s ease-in-out infinite alternate;animation-delay:calc(var(--i)*-.19s)}.fallback-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}.visual-fatal p{overflow-wrap:anywhere}.visual-fatal h2{font-size:16px}.fallback-hint{margin-top:14px!important;font-size:10px!important}.energy-control{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;color:var(--muted);font-size:11px}.energy-control label{display:flex;align-items:center;gap:7px}.energy-control input{accent-color:var(--accent)}button:disabled{cursor:not-allowed}@keyframes fallbackBeat{to{transform:scaleY(1)}}@media(max-width:760px){.visual-fatal{top:440px;left:50%;width:calc(100vw - 42px)}.fallback-cover{height:130px}}@media(prefers-reduced-motion:reduce){.fallback-bars i{animation:none;transform:scaleY(.5)}}
 </style>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%278%27 fill=%27%23100d1a%27/%3E%3Cellipse cx=%2716%27 cy=%2716%27 rx=%2713%27 ry=%277%27 transform=%27rotate(-30 16 16)%27 fill=%27none%27 stroke=%27%23c7afff%27/%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%272%27 fill=%27%23c7afff%27/%3E%3C/svg%3E">
 <style>.project-note{font-size:12px;line-height:1.9;color:#b5a8c2}.project-steps{padding-left:24px;display:grid;gap:16px}.project-steps button{background:transparent;color:#e3d3ff;padding:6px 0;font-size:14px;text-align:left}.project-steps small{display:block;color:#a99abb;line-height:1.8}.project-actions{display:flex;gap:10px;flex-wrap:wrap}#projectDialog{max-height:86svh;overflow:auto}#projectDialog hr{border:0;border-top:1px solid #ffffff20;margin:24px 0}#projectDialog h3{font-size:15px;font-weight:500}#backupPreview{margin-top:18px;padding:14px;background:#ffffff08;border-radius:10px}#projectDialog button:disabled{opacity:.5;cursor:wait}.quiet #projectDialog{pointer-events:auto}</style>
@@ -227,15 +232,28 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
 </head>
 <body>
 <div class="visual-loading" id="visualLoading" role="status" aria-live="polite"><div class="visual-loading-card"><div class="visual-loading-orbit" aria-hidden="true"></div><strong>正在汇聚星光</strong><p id="visualLoadingText">准备流动星云、音频分析与分享设置…</p></div></div>
-<div class="visual-fatal" id="visualFatal" role="alert" hidden><h2>这片宇宙暂时没有亮起</h2><p id="visualFatalText">浏览器没有完成所需能力检测。请使用最新版 Chrome、Edge 或 Safari 重试。</p><button type="button" onclick="location.reload()">重新载入</button></div>
+<div class="visual-fatal" id="visualFatal" role="status" aria-live="polite" hidden><div class="fallback-cover" aria-label="轻量星光封面与律动音频条"><div class="fallback-bars" aria-hidden="true"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i><i style="--i:6"></i><i style="--i:7"></i><i style="--i:8"></i><i style="--i:9"></i><i style="--i:10"></i><i style="--i:11"></i></div></div><h2>轻量星光，音乐继续</h2><p id="visualFatalText">完整效果暂未就绪，先用轻量画面听音乐。</p><div class="fallback-actions"><button type="button" id="fallbackPlayBtn">播放示例</button><button type="button" id="fallbackRetryBtn">重试完整效果</button></div><p class="fallback-hint" id="fallbackAudioStatus">无需高性能显卡，也能听见星空。</p></div>
 <script>
-(()=>{const finish=()=>{const el=document.getElementById('visualLoading');if(!el)return;el.classList.add('ready');clearTimeout(window.__visualLoaderTimer);setTimeout(()=>{el.hidden=true},620)};window.finishVisualLoading=finish;window.__visualLoaderTimer=setTimeout(finish,5200);if(document.readyState!=='loading')setTimeout(finish,4200);else document.addEventListener('DOMContentLoaded',()=>setTimeout(finish,4200),{once:true});window.reportVisualFatal=text=>{finish();const panel=document.getElementById('visualFatal'),message=document.getElementById('visualFatalText');if(panel&&message){message.textContent=text;panel.hidden=false}}})();
+(()=>{
+  const el=id=>document.getElementById(id);let retryTimer=0,fallbackAudio=null;
+  const finish=()=>{const loader=el('visualLoading');clearTimeout(window.__visualLoaderTimer);if(loader){loader.classList.add('ready');loader.hidden=true}};
+  window.finishVisualLoading=finish;
+  window.activateVisualFallback=reason=>{finish();el('visualFatal').hidden=false;el('visualFatalText').textContent=reason||'完整效果暂未就绪，已切换轻量画面。音乐仍可播放。';const app=el('app');if(app){app.dataset.visualFallback='active';app.dataset.visualFallbackReason=String(reason||'startup').slice(0,180)}if(el('performanceStatus'))el('performanceStatus').textContent='轻量播放模式 · 无需显卡加速';el('fallbackRetryBtn').disabled=false;clearTimeout(retryTimer)};
+  window.deactivateVisualFallback=()=>{finish();el('visualFatal').hidden=true;clearTimeout(retryTimer);el('fallbackRetryBtn').disabled=false;if(el('app'))el('app').dataset.visualFallback='hidden';fallbackAudio?.pause()};
+  window.reportVisualFatal=window.activateVisualFallback;
+  window.retryVisualExperience=()=>{const button=el('fallbackRetryBtn');button.disabled=true;el('visualFatalText').textContent='正在重试，最多等待 3 秒…';retryTimer=setTimeout(()=>window.activateVisualFallback('完整效果暂时无法运行。可继续播放示例，或稍后再次重试。'),3000);if(window.__retryVisualEngine){try{window.__retryVisualEngine()}catch(error){console.error(error);window.activateVisualFallback('完整效果重试失败，轻量音乐画面仍可使用。')}}else{const url=new URL(location.href);url.searchParams.set('energySaver','1');location.replace(url.href)}};
+  el('fallbackRetryBtn').onclick=window.retryVisualExperience;
+  el('fallbackPlayBtn').onclick=async()=>{const button=el('fallbackPlayBtn'),status=el('fallbackAudioStatus');if(fallbackAudio&&!fallbackAudio.paused){fallbackAudio.pause();button.textContent='播放示例';status.textContent='示例已暂停';return}try{if(window.__playFallbackDemo){await window.__playFallbackDemo();return}fallbackAudio??=new Audio('./interstellar-drift.mp3');button.disabled=true;status.textContent='正在准备示例…';let timer;await Promise.race([fallbackAudio.play(),new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('示例加载超时，请重试')),5000)})]).finally(()=>clearTimeout(timer));button.textContent='暂停示例';status.textContent='正在播放 · 星际漫游';fallbackAudio.onended=()=>{button.textContent='播放示例';status.textContent='示例播放结束'};}catch(error){fallbackAudio?.pause();status.textContent=(error.message||'无法播放示例')+'，点播放可重试。'}finally{button.disabled=false}};
+  window.__visualLoaderTimer=setTimeout(()=>window.activateVisualFallback('完整画面加载较慢，先用轻量星光听音乐。'),2600);
+  window.addEventListener('error',event=>{console.error('启动或资源异常',event.message||event.target?.src||'');if(!el('app')?.dataset.visualReady)window.activateVisualFallback('完整画面未能载入，已启用轻量星光。')},true);
+  window.addEventListener('unhandledrejection',event=>{console.error(event.reason);if(!el('app')?.dataset.visualReady)window.activateVisualFallback('画面启动未完成，轻量音乐画面仍可使用。')});
+})();
 </script>
 <div class="app" id="app">
   <canvas id="universe" role="img" aria-label="一片随音乐频率起伏的星空，低音推开星云，中频留下星轨，高音点亮星闪">你的浏览器暂不支持星空画布。</canvas>
   <div class="grain" aria-hidden="true"></div>
   <header class="header">
-    <div class="brand"><div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M7 17v-2m4 8V9m5 17V6m5 16V10m4 8v-4"/></svg></div><div><div class="brand-name">声波宇宙<span class="version">VOL.31</span></div><div class="brand-en">SONIC UNIVERSE</div></div></div>
+    <div class="brand"><div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M7 17v-2m4 8V9m5 17V6m5 16V10m4 8v-4"/></svg></div><div><div class="brand-name">声波宇宙<span class="version">VOL.32</span></div><div class="brand-en">SONIC UNIVERSE</div></div></div>
     <div class="header-right"><button class="header-action external-action" id="externalBtn" aria-label="外部音乐联动" title="外部音乐联动"><svg viewBox="0 0 24 24"><path d="M3 10v4m4-7v10m5-14v18m5-14v10m4-7v4"/></svg><span class="action-label">外部联动</span></button><button class="header-action studio-action" id="studioBtn" aria-label="布置我的音乐空间" title="布置空间"><svg viewBox="0 0 24 24"><path d="m12 3 2.3 6.7L21 12l-6.7 2.3L12 21l-2.3-6.7L3 12l6.7-2.3Z"/></svg><span class="action-label">布置空间</span></button><button class="header-action" id="queueBtn" aria-label="打开播放列表" title="播放列表"><svg viewBox="0 0 24 24"><path d="M4 5h16M4 10h16M4 15h9m4-1v7m-3-3h6"/></svg><span class="action-label">音乐库</span><span class="queue-count" id="queueCount">01</span></button><button class="upload-btn" id="uploadBtn" aria-label="导入多首音乐" title="可同时选择多首音乐"><svg viewBox="0 0 24 24"><path d="M12 16V3m-5 5 5-5 5 5M4 15v5h16v-5"/></svg><span>导入音乐</span></button><button class="icon-btn" id="fullscreenBtn" aria-label="进入全屏" title="全屏 · F"><svg viewBox="0 0 24 24"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg></button></div>
   </header>
   <main class="stage" id="stage">
@@ -305,9 +323,9 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
     </section>
     <span class="keyboard-hint">SPACE 播放 / 暂停</span>
   </div>
-  <footer class="footer"><span class="footer-brand"><b>EDITION 31</b> SOUND & STARDUST</span><div class="footer-links footer-center"><button class="help-btn" id="projectBtn">创作与备份 ↗</button><span aria-hidden="true">·</span><button class="help-btn" id="helpBtn">使用指南 ↗</button><span aria-hidden="true">·</span><button class="help-btn" id="flightBtn" title="可选的独立节奏小游戏">星际航行小实验 ↗</button></div><span>你的音乐 · 在本机与汽水音乐之间流动</span></footer>
+  <footer class="footer"><span class="footer-brand"><b>EDITION 32</b> SOUND & STARDUST</span><div class="footer-links footer-center"><button class="help-btn" id="projectBtn">创作与备份 ↗</button><span aria-hidden="true">·</span><button class="help-btn" id="helpBtn">使用指南 ↗</button><span aria-hidden="true">·</span><button class="help-btn" id="flightBtn" title="可选的独立节奏小游戏">星际航行小实验 ↗</button></div><span>你的音乐 · 在本机与汽水音乐之间流动</span></footer>
   <div class="roam-surface" id="roamSurface" tabindex="0" role="region" aria-label="星空漫游：轻触唤醒按钮，拖动旋转视角，滚轮或双指缩放，加减键调整距离，0 重置，C 定格，右上角选星空，H 或 Escape 返回"></div>
-  <div class="roam-ui roam-top"><div class="roam-identity"><div class="roam-kicker">SONIC JOURNEY · VOL.31</div><p id="roamTrack">星际漫游</p><button class="roam-export" id="roamClipBtn">生成星空短片 ↗</button><button class="roam-export roam-atelier" id="roamAtelierBtn">心情 · 歌词 · 收藏 ↗</button><button class="roam-export roam-atelier" id="roamInstrumentBtn">弹出星空 ↗</button></div><div class="roam-top-actions"><button class="roam-look-toggle" id="roamLookBtn" aria-expanded="false" aria-controls="roamLookPanel" aria-label="选择星空氛围"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.3 6.7L21 12l-6.7 2.3L12 21l-2.3-6.7L3 12l6.7-2.3Z"/></svg>选星空</button><button class="quiet-exit" id="quietExit"><svg viewBox="0 0 24 24"><path d="m14 5-7 7 7 7M7 12h13"/></svg>返回空间 · Esc</button></div>
+  <div class="roam-ui roam-top"><div class="roam-identity"><div class="roam-kicker">SONIC JOURNEY · VOL.32</div><p id="roamTrack">星际漫游</p><button class="roam-export" id="roamClipBtn">生成星空短片 ↗</button><button class="roam-export roam-atelier" id="roamAtelierBtn">心情 · 歌词 · 收藏 ↗</button><button class="roam-export roam-atelier" id="roamInstrumentBtn">弹出星空 ↗</button></div><div class="roam-top-actions"><button class="roam-look-toggle" id="roamLookBtn" aria-expanded="false" aria-controls="roamLookPanel" aria-label="选择星空氛围"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.3 6.7L21 12l-6.7 2.3L12 21l-2.3-6.7L3 12l6.7-2.3Z"/></svg>选星空</button><button class="quiet-exit" id="quietExit"><svg viewBox="0 0 24 24"><path d="m14 5-7 7 7 7M7 12h13"/></svg>返回空间 · Esc</button></div>
     <section class="roam-look-panel" id="roamLookPanel" hidden aria-labelledby="roamLookTitle">
       <div class="roam-look-heading"><div><h2 id="roamLookTitle">此刻，想听见哪片星空</h2><span class="roam-look-current" id="roamLookCurrent"></span></div><button class="icon-btn" id="roamLookClose" aria-label="关闭星空氛围">×</button></div>
       <div class="roam-look-grid" id="roamLookGrid" role="group" aria-label="沉浸星空氛围"></div>
@@ -345,7 +363,8 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
       <div class="online-service-row">
         <div class="online-service-state"><i class="online-service-dot" aria-hidden="true"></i><div class="online-service-copy"><strong id="onlineServiceTitle">正在连接本机音乐入口</strong><small id="onlineServiceStatus">检查汽水音乐 Companion 是否启动…</small></div></div>
         <div class="online-account" id="onlineAccount" hidden><img id="onlineAvatar" alt="" hidden><span id="onlineUserName"></span></div>
-        <button class="secondary-btn" id="onlineLoginBtn" type="button">扫码登录</button>
+        <button class="secondary-btn" id="onlineReconnectBtn" type="button">重新连接</button>
+        <button class="secondary-btn" id="onlineLoginBtn" type="button" disabled>扫码登录</button>
         <button class="text-btn" id="onlineLogoutBtn" type="button" hidden>退出账号</button>
       </div>
       <div class="online-login-card" id="onlineLoginCard" hidden>
@@ -358,10 +377,10 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
       </div>
       <div class="online-onboarding">
         <form class="online-search" id="onlineSearchForm" role="search">
-          <input class="text-input" id="onlineSearchInput" type="search" maxlength="100" placeholder="搜索歌曲、歌手或专辑…" aria-label="搜索汽水音乐" autocomplete="off">
-          <button class="primary-btn" id="onlineSearchBtn" type="submit">搜索汽水音乐</button>
+          <input class="text-input" id="onlineSearchInput" type="search" maxlength="100" placeholder="连接本机入口后搜索歌曲、歌手或专辑…" aria-label="搜索汽水音乐" autocomplete="off" disabled>
+          <button class="primary-btn" id="onlineSearchBtn" type="submit" disabled>搜索汽水音乐</button>
         </form>
-        <div class="online-actions"><button class="text-btn" id="onlineLikedBtn" type="button">读取我的收藏</button><button class="text-btn" id="onlinePlaylistsBtn" type="button">读取我的歌单</button></div>
+        <div class="online-actions"><button class="text-btn" id="onlineLikedBtn" type="button" disabled>读取我的收藏</button><button class="text-btn" id="onlinePlaylistsBtn" type="button" disabled>读取我的歌单</button></div>
         <div class="online-playlists" id="onlinePlaylists" aria-label="汽水音乐歌单"></div>
         <p class="import-status" id="onlineResultStatus" role="status" aria-live="polite">未登录也可以搜索公开歌曲；登录后可读取收藏和歌单。</p>
         <div class="online-results" id="onlineResults"><div class="online-empty">输入歌名或歌手，找到想让它变成星空的那首歌。</div></div>
@@ -512,7 +531,9 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
       <div class="atelier-section-title cue-title"><h3>在某一秒，换一个镜头。</h3><button class="text-btn" id="cueNowBtn">填入此刻</button></div>
       <div class="atelier-selects"><label>出现时间 / 秒<input class="text-input" id="cueTime" type="number" min="0" step="0.1" value="0"></label><label>此时的文字 / 5 秒<input class="text-input" id="cueText" maxlength="60" placeholder="比如：和星光一起出发"></label></div>
       <div class="atelier-checks"><label><input type="checkbox" id="cueBurst" checked> 到达时绽放星尘</label></div>
-      <div class="atelier-inline-actions"><button class="secondary-btn" id="addCueBtn">＋ 记下当前配色与视角</button></div><p class="atelier-hint">先在「氛围」调好画面，或在沉浸中转好镜头，再记下时间点。拖动进度也会还原该段编排；每首歌最多 30 个时间点。</p>
+      <div class="atelier-inline-actions"><button class="secondary-btn" id="addCueBtn">＋ 记下当前配色与视角</button><button class="text-btn" id="cueNewBtn">新建时间点</button><button class="text-btn" id="cueDeleteBtn" disabled>删除选中</button></div>
+      <div class="cue-timeline" id="cueTimeline" aria-label="可拖动时间点编辑器"><div class="cue-timeline-scale" id="cueTimelineScale" aria-hidden="true"></div><div class="cue-timeline-track" id="cueTimelineTrack"><span class="cue-playhead" id="cuePlayhead" aria-hidden="true"></span></div></div>
+      <p class="atelier-hint" id="cueEditorStatus" role="status">点击轨道添加时间点，拖动标记调整时间；选中后可编辑文字和绽放。方向键微调 0.1 秒，Shift + 方向键调 1 秒；每首歌最多 60 个。</p>
       <ol class="cue-list" id="cueList" aria-label="演出时间点"></ol>
     </section>
   </div><aside class="atelier-side"><div class="atelier-monitor"><canvas id="atelierPreview" width="640" height="400" aria-label="当前星空实时预览"></canvas><span>LIVE CANVAS · 实时星空</span></div><div class="atelier-transport"><button class="secondary-btn" id="atelierPlayBtn">播放 / 暂停</button><span id="atelierTime">00:00 / 01:36</span></div><div class="atelier-poem"><span>声音有了形状。<br>这一刻，有了坐标。</span><small id="atelierCurrentLyric">移动留下星尘，轻点泛起涟漪。<br>停留长按，让一颗小星球慢慢聚拢。</small></div></aside></div>
@@ -540,26 +561,26 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
   <div class="instrument-footer"><div><span class="storage-status" role="status">旋律与设置仅保存在本机</span><small>录制一层前数 4 拍，循环播放时可继续录下一层。最多 6 层；关闭乐器台会停止演奏。</small></div><button class="primary-btn" id="instrumentFilmBtn">把演奏录成短片 ↗</button></div>
 </dialog>
 
-  <script src="./project-pack.js?v=31"></script>
-  <script src="./music-motion.js?v=31"></script>
-  <script src="./visual-presets.js?v=31"></script>
-  <script src="./visual-system.js?v=31"></script>
-  <script src="./film-story.js?v=31"></script>
-  <script src="./soda-library.js?v=31"></script>
-  <script src="./online-music.js?v=31.1"></script>
+  <script src="./project-pack.js?v=32"></script>
+  <script src="./music-motion.js?v=32"></script>
+  <script src="./visual-presets.js?v=32"></script>
+  <script src="./visual-system.js?v=32"></script>
+  <script src="./film-story.js?v=32"></script>
+  <script src="./soda-library.js?v=32"></script>
+  <script src="./online-music.js?v=32"></script>
 <script>
 (() => {
   'use strict';
   try {
     if (!window.SonicProjectPack || !window.SonicMusicMotion || !window.SonicVisualPresets || !window.SonicVisualSystem || !window.SonicFilmStory) throw new Error('视觉系统脚本未能载入。');
   } catch (error) {
-    window.reportVisualFatal?.('作品组件没有完整载入。请刷新页面；如果问题持续，请确认站点文件完整。');
+    window.reportVisualFatal?.('完整画面没有载入，已切换轻量星光。可以播放示例，或点「重试完整效果」。');
     console.error(error);
     return;
   }
   const $ = id => document.getElementById(id);
   const app = $('app'), canvas = $('universe');let ctx = canvas && canvas.getContext('2d', { alpha:false });
-  if (!ctx) { window.reportVisualFatal?.('当前浏览器无法创建 2D 星空画布。请开启硬件加速或更换新版浏览器。'); return; }
+  if (!ctx) { window.reportVisualFatal?.('当前浏览器暂时无法显示完整画面，已启用轻量星光。可播放示例或重试。'); return; }
   const NEBULA_ASSET_REVISION='27';
   const nebulaAssetSources=Object.freeze({ring:'./assets/nebula-ring.webp',galaxy:'./assets/nebula-galaxy.webp',peaks:'./assets/nebula-landscape.webp',blackhole:'./assets/nebula-blackhole.webp'});
   const nebulaImages={},nebulaRecolored=new Map();
@@ -581,8 +602,8 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
     return nebulaAssetsState;
   }
   function maybeFinishVisualLoading(){
-    if(!visualFirstFrameReady||!nebulaAssetsSettled)return;
-    window.finishVisualLoading?.();
+    if(!visualFirstFrameReady)return;
+    app.dataset.visualReady='true';window.deactivateVisualFallback?.();
   }
   function loadNebulaAssets(){
     const entries=Object.entries(nebulaAssetSources);
@@ -622,7 +643,7 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
       setTimeout(()=>{
         if(settled)return;
         settled=true;timedOut=true;failed++;completed++;publishState();resolve(false);
-      },10000);
+      },3000);
       const assetUrl=new URL(source,location.href);assetUrl.searchParams.set('v',NEBULA_ASSET_REVISION);image.src=assetUrl.href;
     });
     return loadOne(ordered[0]).then(()=>{
@@ -652,6 +673,7 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
   const cloudTextures={};let cloudBlend=1,previousTheme='nebula',mistOrigins=[];
   let w=0,h=0,dpr=1,centerX=0,centerY=0,baseR=190,stars=[],dust=[],ring=[],shooting=[];
   let renderProfile=SonicVisualSystem.performanceProfile({width:innerWidth,dpr:devicePixelRatio||1,deviceMemory:navigator.deviceMemory,hardwareConcurrency:navigator.hardwareConcurrency,coarsePointer:matchMedia('(pointer: coarse)').matches});
+  let energySaver=renderProfile.recommendEnergySaver,effectiveParticleCount=0,rafId=0,animationRunning=false,energyUserChoice=false,slowFrameCount=0,overloadFrames=0,exportParticleCache=null;
   let frame=0,lastFrame=0,sceneTime=0,drawTime=0,mouse={x:0,y:0,tx:0,ty:0};
   let bass=0,mid=0,high=0,power=0,intensity=.7,pausedVisualTime=0;
   const musicResponse=SonicMusicMotion.create(),music=musicResponse.state;
@@ -686,10 +708,11 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
   }
   function updateStorageStatus(){
     const problem=storageIssues.size>0;
-    const message=!libraryReady?'正在读取本机收藏…':savingCount?'正在保存在本机…':problem?'保存未完成：浏览器存储不可用或容量不足。请保留此页面。':'已保存在本机 · 下次打开继续使用';
-    document.querySelectorAll('.storage-status').forEach(el=>el.textContent=message);
+    const saving=savingCount||app.dataset.draftState==='saving';
+    const message=!libraryReady?'正在读取本机收藏…':problem?'保存失败，点这里重试':saving?'正在保存在本机…':'已保存在本机';
+    document.querySelectorAll('.storage-status').forEach(el=>{el.textContent=message;el.setAttribute('role',problem?'button':'status');if(problem){el.tabIndex=0;el.title='重试保存；请保留当前页面'}else{el.removeAttribute('tabindex');el.removeAttribute('title')}});
     document.querySelectorAll('.space-dialog').forEach(el=>el.classList.toggle('storage-problem',problem));
-    app.dataset.saveState=!libraryReady?'loading':savingCount?'saving':problem?'error':'saved';
+    app.dataset.saveState=!libraryReady?'loading':problem?'error':saving?'saving':'saved';if(app.dataset.recoveryReady==='true')updateRecoveryButtons();
   }
   let backupRestoring=false;
   function saveSession(){
@@ -1133,7 +1156,7 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
     }finally{ctx=saved.ctx;w=saved.w;h=saved.h;dpr=saved.dpr;centerX=saved.centerX;centerY=saved.centerY;baseR=saved.baseR;backgroundLayer=saved.backgroundLayer;exportRendering=false}
     const portrait=shape==='portrait',margin=portrait?58:78,font='"Microsoft YaHei UI","Microsoft YaHei",sans-serif',meta=clipSession||{song:$('clipSong').value,author:$('clipAuthor').value,mood:$('clipMood').value};
     const shade=g.createLinearGradient(0,height*.63,0,height);shade.addColorStop(0,'rgba(8,9,17,0)');shade.addColorStop(1,'rgba(8,9,17,.89)');g.fillStyle=shade;g.fillRect(0,height*.63,width,height*.37);
-    g.textAlign='left';g.textBaseline='top';g.font='13px '+font;g.fillStyle=rgba(palette.core,.72);g.fillText('SONIC UNIVERSE  /  27',margin,portrait?58:42);
+    g.textAlign='left';g.textBaseline='top';g.font='13px '+font;g.fillStyle=rgba(palette.core,.72);g.fillText('SONIC UNIVERSE  /  32',margin,portrait?58:42);
     const activeTimeline=clipSession?.storyTimeline||(filmCurrentAnalysis()?.timeline),filmFrame=activeTimeline&&!clipSession?.instrument?SonicFilmStory.chapterAt(activeTimeline,getLocalPosition(),true):null;
     if(filmFrame){
       g.font='600 12px '+font;g.fillStyle=rgba(palette.hot,.82);
@@ -1274,12 +1297,13 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
   function finite(v,fallback,lo,hi){return Number.isFinite(v)?clamp(v,lo,hi):fallback}
   function validLook(v){
     if(!v||typeof v!=='object')return null;
-    return {mood:Object.hasOwn(moodPresets,v.mood)?v.mood:null,theme:Object.hasOwn(themes,v.theme)?v.theme:'nebula',visualMode:Object.hasOwn(visualModes,v.visualMode)?v.visualMode:'ring',motionSpeed:finite(v.motionSpeed,1,.25,2),particleCount:Math.round(finite(v.particleCount,2400,400,6000)/200)*200,intensity:finite(v.intensity,.7,.2,1),sensitivity:finite(v.sensitivity,1,.4,2.4),journeyAuto:typeof v.journeyAuto==='boolean'?v.journeyAuto:true,storyEnabled:typeof v.storyEnabled==='boolean'?v.storyEnabled:true,depth:finite(v.depth,.65,0,1),glow:finite(v.glow,.6,0,1),trail:finite(v.trail,.55,0,1),response:['soft','balanced','strong'].includes(v.response)?v.response:'balanced',beat:v.beat===true};
+    return {mood:Object.hasOwn(moodPresets,v.mood)?v.mood:null,theme:Object.hasOwn(themes,v.theme)?v.theme:'nebula',visualMode:Object.hasOwn(visualModes,v.visualMode)?v.visualMode:'ring',motionSpeed:finite(v.motionSpeed,1,.25,2),particleCount:Math.round(finite(v.particleCount,2400,400,6000)/200)*200,intensity:finite(v.intensity,.7,.2,1),energySaver:typeof v.energySaver==='boolean'?v.energySaver:energySaver,sensitivity:finite(v.sensitivity,1,.4,2.4),journeyAuto:typeof v.journeyAuto==='boolean'?v.journeyAuto:true,storyEnabled:typeof v.storyEnabled==='boolean'?v.storyEnabled:true,depth:finite(v.depth,.65,0,1),glow:finite(v.glow,.6,0,1),trail:finite(v.trail,.55,0,1),response:['soft','balanced','strong'].includes(v.response)?v.response:'balanced',beat:v.beat===true};
   }
-  function captureLook(){return{mood:moodSlot,theme:themeKey,visualMode,motionSpeed,particleCount,intensity,sensitivity:atelier.settings.sensitivity,journeyAuto,storyEnabled,...visualEffects}}
+  function captureLook(){return{mood:moodSlot,theme:themeKey,visualMode,motionSpeed,particleCount,intensity,energySaver,sensitivity:atelier.settings.sensitivity,journeyAuto,storyEnabled,...visualEffects}}
   function moodCameraActive(){return Boolean(moodSlot&&!journeyAuto&&!externalStream&&!instrumentOpen)}
   function applyLook(raw,save=false){
     const look=validLook(raw);if(!look)return;
+    if(energySaver!==look.energySaver){energySaver=look.energySaver;resize()}
     visualEffects={depth:look.depth,glow:look.glow,trail:look.trail,response:look.response,beat:look.beat};syncEffects();moodSlot=look.mood;atelier.settings.mood=moodSlot;setTheme(look.theme,false);setVisualMode(look.visualMode,false);motionSpeed=look.motionSpeed;intensity=look.intensity;refinement.profile=look.response;
     if(particleCount!==look.particleCount){particleCount=look.particleCount;rebuildParticles()}
     atelier.settings.sensitivity=look.sensitivity;journeyAuto=typeof look.journeyAuto==='boolean'?look.journeyAuto:journeyAuto;storyEnabled=typeof look.storyEnabled==='boolean'?look.storyEnabled:storyEnabled;
@@ -1308,7 +1332,7 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
           const result={};if(song.look)result.look=validLook(song.look);
           if(song.lyrics&&typeof song.lyrics.raw==='string')result.lyrics={raw:song.lyrics.raw.slice(0,160000),offset:finite(song.lyrics.offset,0,-30,30),size:['small','medium','large'].includes(song.lyrics.size)?song.lyrics.size:'medium',only:song.lyrics.only!==false,enabled:song.lyrics.enabled!==false};
           if(song.segment)result.segment={a:finite(song.segment.a,0,0,86400),b:finite(song.segment.b,15,0,86400),loop:song.segment.loop===true};
-          result.cuesEnabled=song.cuesEnabled!==false;result.base=validCue(song.base);result.cues=Array.isArray(song.cues)?song.cues.map(validCue).filter(Boolean).slice(0,30).sort((a,b)=>a.time-b.time):[];atelier.songs[id]=result;
+          result.cuesEnabled=song.cuesEnabled!==false;result.base=validCue(song.base);result.cues=Array.isArray(song.cues)?song.cues.map(validCue).filter(Boolean).slice(0,60).sort((a,b)=>a.time-b.time):[];atelier.songs[id]=result;
         }
         atelier.memories=Array.isArray(v.memories)?v.memories.filter(m=>m&&typeof m.id==='string'&&typeof m.trackId==='string'&&Number.isFinite(m.position)&&validLook(m.look)).slice(0,50).map(m=>({...m,note:String(m.note||'').slice(0,100),name:String(m.name||'未命名音乐').slice(0,160),thumb:typeof m.thumb==='string'&&m.thumb.startsWith('data:image/')?m.thumb:null,look:validLook(m.look)})):[];
       }
@@ -1432,10 +1456,48 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
     pause();seekTo(clipSegment.start);cueTrack=null;cuePosition=-1;cueActive=null;segmentPreview=false;
   }
   function atelierLoopAtEnd(){const s=songArt()?.segment;if(!externalStream&&!clipLocked()&&s&&s.b>=duration-.12&&s.b-s.a>=1){if(s.loop){seekTo(s.a);play();return true}if(segmentPreview){segmentPreview=false;updatePlaying();updateTimeline();saveSession();return true}}return false}
+  let selectedCueId='',selectedCueTrack='',cueDrag=null;
+  function selectedCue(){return selectedCueTrack===activeId?(songArt()?.cues||[]).find(c=>c.id===selectedCueId):null}
+  function cueEditable(){return Boolean(activeId&&currentTrack()&&!externalStream&&!externalPending&&!pendingFile&&!busy&&!clipLocked())}
+  function cueEditorMessage(text,error=false){$('cueEditorStatus').textContent=text;$('cueEditorStatus').classList.toggle('error',error)}
+  function updateCuePlayhead(){const el=$('cuePlayhead');if(el)el.style.left=(clamp(getLocalPosition()/Math.max(.1,duration),0,1)*100)+'%'}
+  function selectCue(id,preview=true){
+    selectedCueTrack=activeId;selectedCueId=id||'';const c=selectedCue();
+    if(c){$('cueTime').value=c.time.toFixed(1);$('cueText').value=c.text;$('cueBurst').checked=c.burst;cueEditorMessage('已选中 '+c.time.toFixed(1)+' 秒 · 拖动、方向键或输入秒数调整；修改会自动保存。');if(preview&&cueEditable()){pause();seekTo(c.time);cueTrack=null;cuePosition=-1;updateCues(c.time)}}
+    else{selectedCueId='';$('cueTime').value=getLocalPosition().toFixed(1);$('cueText').value='';$('cueBurst').checked=true;cueEditorMessage('点击轨道或「记下当前配色与视角」添加时间点。')}
+    app.dataset.selectedCueId=selectedCueId;renderCues();
+  }
+  function finishCueEdit(gesture=null){const art=songArt();if(art?.cues)art.cues.sort((a,b)=>a.time-b.time);cueTrack=null;cuePosition=-1;persistAtelier();captureSongDraft();scheduleDraftSave();commitRecovery('atelier',gesture);renderCues()}
+  function addCueAt(time){
+    if(!cueEditable())return;const art=songArt(true);if(!Number.isFinite(time)||time<0||time>duration){cueEditorMessage('时间点需要在这首歌的长度内。',true);return}
+    art.cues||=[];if(art.cues.length>=60){cueEditorMessage('已添加 60 个时间点，请先移除一些。',true);return}
+    historyFor('atelier');if(!art.base)art.base={...saveView(),id:'base',time:0,text:'',burst:false};
+    const c={...saveView(),id:newId('cue'),time:Math.round(time*10)/10,text:$('cueText').value.trim().slice(0,60),burst:$('cueBurst').checked};art.cues.push(c);selectedCueTrack=activeId;selectedCueId=c.id;selectCue(c.id,false);finishCueEdit();cueEditorMessage('已添加 '+c.time.toFixed(1)+' 秒的画面、视角和文字，可撤销。');
+  }
+  function removeCue(id=selectedCueId){if(!cueEditable()||!(songArt()?.cues||[]).some(c=>c.id===id))return;historyFor('atelier');songArt().cues=songArt().cues.filter(c=>c.id!==id);if(selectedCueId===id)selectedCueId='';finishCueEdit();cueEditorMessage('已删除时间点，可撤销恢复。')}
   function renderCues(){
-    const list=$('cueList');list.replaceChildren();const cues=songArt()?.cues||[];
-    if(!cues.length){const li=document.createElement('li');li.className='memory-empty';li.textContent='还没有编排时间点，星空会按当前设置流动。';list.append(li);return}
-    for(const c of cues){const li=document.createElement('li');li.className='cue-row';const time=document.createElement('time'),body=document.createElement('span'),small=document.createElement('small'),back=document.createElement('button'),remove=document.createElement('button');time.textContent=formatTime(c.time);body.textContent=c.text||'一次镜头变换';small.textContent=themes[c.look.theme].name+' · '+visualModes[c.look.visualMode].name+(c.burst?' · 星尘绽放':'');back.textContent='↗';back.setAttribute('aria-label','预览 '+formatTime(c.time)+' 的时间点');back.addEventListener('click',()=>{if(externalStream||clipLocked())return;pause();seekTo(c.time);cueTrack=null;cuePosition=-1;updateCues(c.time)});remove.textContent='×';remove.setAttribute('aria-label','移除此时间点');remove.addEventListener('click',()=>{songArt().cues=songArt().cues.filter(v=>v.id!==c.id);cueTrack=null;persistAtelier();renderCues()});body.append(small);li.append(time,body,back,remove);list.append(li)}
+    const list=$('cueList'),track=$('cueTimelineTrack');if(!list||!track)return;list.replaceChildren();track.querySelectorAll('.cue-marker').forEach(el=>el.remove());const cues=songArt()?.cues||[];
+    if(selectedCueTrack!==activeId||!cues.some(c=>c.id===selectedCueId)){selectedCueId='';selectedCueTrack=activeId}app.dataset.selectedCueId=selectedCueId;app.dataset.cueCount=String(cues.length);
+    $('cueDeleteBtn').disabled=!selectedCueId||!cueEditable();$('cueNewBtn').disabled=!cueEditable();$('cueTimeline').dataset.disabled=String(!cueEditable());
+    $('cueTimelineScale').replaceChildren(...[0,.25,.5,.75,1].map(part=>{const el=document.createElement('span');el.textContent=formatTime(duration*part);return el}));updateCuePlayhead();
+    if(!cues.length){const li=document.createElement('li');li.className='memory-empty';li.textContent='点击上方轨道，给星空添加第一个时间点。';list.append(li)}
+    for(const c of cues){
+      const marker=document.createElement('button');marker.type='button';marker.className='cue-marker';marker.dataset.cueId=c.id;marker.style.left=(clamp(c.time/Math.max(.1,duration),0,1)*100)+'%';marker.setAttribute('aria-label',c.time.toFixed(1)+' 秒，'+(c.text||'镜头变换')+'；方向键微调，Delete 删除');marker.setAttribute('aria-pressed',String(c.id===selectedCueId));marker.disabled=!cueEditable();track.append(marker);
+      const li=document.createElement('li');li.className='cue-row';li.dataset.selected=String(c.id===selectedCueId);const time=document.createElement('time'),body=document.createElement('span'),small=document.createElement('small'),back=document.createElement('button'),remove=document.createElement('button');time.textContent=c.time.toFixed(1)+'s';body.textContent=c.text||'一次镜头变换';small.textContent=themes[c.look.theme].name+' · '+visualModes[c.look.visualMode].name+(c.burst?' · 星尘绽放':'');back.textContent='↗';back.setAttribute('aria-label','选择并预览 '+formatTime(c.time)+' 的时间点');back.addEventListener('click',()=>selectCue(c.id));time.addEventListener('click',()=>selectCue(c.id));remove.textContent='×';remove.setAttribute('aria-label','移除此时间点');remove.addEventListener('click',()=>removeCue(c.id));back.disabled=remove.disabled=!cueEditable();body.append(small);li.append(time,body,back,remove);list.append(li);
+    }
+  }
+  function setupCueTimeline(){
+    const track=$('cueTimelineTrack');let suppressClick=false;
+    const markerFor=id=>Array.from(track.querySelectorAll('.cue-marker')).find(el=>el.dataset.cueId===id);
+    const timeAt=e=>Math.round(clamp((e.clientX-track.getBoundingClientRect().left)/Math.max(1,track.getBoundingClientRect().width),0,1)*duration*10)/10;
+    track.addEventListener('pointerdown',e=>{const marker=e.target.closest('.cue-marker');if(!marker||!cueEditable()||e.button!==0)return;e.preventDefault();selectCue(marker.dataset.cueId);historyFor('atelier');cueDrag={id:selectedCueId,pointer:e.pointerId,startX:e.clientX,startTime:selectedCue().time,moved:false};track.setPointerCapture(e.pointerId)});
+    track.addEventListener('pointermove',e=>{if(!cueDrag||cueDrag.pointer!==e.pointerId)return;if(Math.abs(e.clientX-cueDrag.startX)>2)cueDrag.moved=true;if(!cueDrag.moved)return;const c=selectedCue();if(!c)return;c.time=timeAt(e);$('cueTime').value=c.time.toFixed(1);const marker=markerFor(c.id);if(marker)marker.style.left=(c.time/Math.max(.1,duration)*100)+'%';cueEditorMessage('移动到 '+c.time.toFixed(1)+' 秒 · 松开后自动保存。')});
+    const finish=e=>{if(!cueDrag||cueDrag.pointer!==e.pointerId)return;const moved=cueDrag.moved;cueDrag=null;suppressClick=true;setTimeout(()=>suppressClick=false,0);if(track.hasPointerCapture(e.pointerId))track.releasePointerCapture(e.pointerId);if(moved){finishCueEdit();cueEditorMessage('时间已更新，可撤销。')}markerFor(selectedCueId)?.focus()};
+    track.addEventListener('pointerup',finish);track.addEventListener('pointercancel',finish);track.addEventListener('lostpointercapture',finish);
+    track.addEventListener('click',e=>{if(suppressClick)return;const marker=e.target.closest('.cue-marker');if(marker)selectCue(marker.dataset.cueId);else addCueAt(timeAt(e))});
+    track.addEventListener('keydown',e=>{const marker=e.target.closest('.cue-marker');if(!marker||!cueEditable())return;if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();selectedCueId=marker.dataset.cueId;selectedCueTrack=activeId;const c=selectedCue();historyFor('atelier');c.time=Math.round(clamp(c.time+(['ArrowLeft','ArrowDown'].includes(e.key)?-1:1)*(e.shiftKey?1:.1),0,duration)*10)/10;$('cueTime').value=c.time.toFixed(1);finishCueEdit('cue-key:'+c.id);markerFor(c.id)?.focus();cueEditorMessage('时间已调整到 '+c.time.toFixed(1)+' 秒。')}else if(e.key==='Delete'||e.key==='Backspace'){e.preventDefault();removeCue(marker.dataset.cueId)}});
+    $('cueNewBtn').addEventListener('click',()=>selectCue(''));$('cueDeleteBtn').addEventListener('click',()=>removeCue());
+    for(const id of ['cueTime','cueText','cueBurst'])$(id).addEventListener(id==='cueBurst'?'change':'input',()=>{if(!cueEditable())return;const c=selectedCue();historyFor('atelier');if(!c){captureSongDraft();scheduleDraftSave();commitRecovery('atelier','cue-new-field:'+id);return}const time=Number($('cueTime').value);if(id==='cueTime'&&(!Number.isFinite(time)||time<0||time>duration)){cueEditorMessage('时间点需要在 0 到 '+duration.toFixed(1)+' 秒之间。',true);return}c.time=Math.round(time*10)/10;c.text=$('cueText').value.slice(0,60);c.burst=$('cueBurst').checked;finishCueEdit('cue-field:'+c.id+':'+id)});
   }
   function updateCues(pos){if(instrumentOpen){cueText="";return}
     if(memoryHold&&!playing)return;
@@ -1473,7 +1535,7 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
     lifeMotion+=((active?1:0)-lifeMotion)*(1-Math.exp(-dt*(active?2.8:2.1)));if(lifeMotion<.002)lifeMotion=0;
     if(seekVisualTarget!==null){sceneTime+=(seekVisualTarget-sceneTime)*(1-Math.exp(-dt*6));seekVisualLeft-=dt;if(seekVisualLeft<=0){sceneTime=seekVisualTarget;seekVisualTarget=null}}
     if(trackTravelAge<1.5){trackTravelAge+=dt;trackTravel=Math.sin(Math.PI*clamp(trackTravelAge/1.5,0,1))}else trackTravel=0;
-    const pos=getLocalPosition(),lyrics=currentLyrics();if(lyrics&&!externalStream){let index=-1;const adjusted=pos-(lyrics.offset||0);for(let i=0;i<lyrics.lines.length;i++){if(lyrics.lines[i].time<=adjusted)index=i;else break}if(index!==lyricIndex||lyricTrack!==activeId){if(lyrics.enabled&&playing&&lyricTrack===activeId&&Math.abs(pos-lyricPosition)<.5)dissolveLyric(lyrics.lines[lyricIndex]?.text);lyricIndex=index;lyricTrack=activeId}lyricPosition=pos}
+    const pos=getLocalPosition(),lyrics=currentLyrics();if($('atelierDialog').open)updateCuePlayhead();if(lyrics&&!externalStream){let index=-1;const adjusted=pos-(lyrics.offset||0);for(let i=0;i<lyrics.lines.length;i++){if(lyrics.lines[i].time<=adjusted)index=i;else break}if(index!==lyricIndex||lyricTrack!==activeId){if(lyrics.enabled&&playing&&lyricTrack===activeId&&Math.abs(pos-lyricPosition)<.5)dissolveLyric(lyrics.lines[lyricIndex]?.text);lyricIndex=index;lyricTrack=activeId}lyricPosition=pos}
     for(const p of lyricDust){p.age+=dt}lyricDust=lyricDust.filter(p=>p.age<p.life);if(reduced)lyricDust=[];
     for(const p of touchDust){p.age+=dt;p.x+=p.vx*dt;p.y+=p.vy*dt}touchDust=touchDust.filter(p=>p.age<p.life);for(const p of touchRipples)p.age+=dt;touchRipples=touchRipples.filter(p=>p.age<p.life);
     if(touchHold){touchHold.age+=dt;if(touchHold.age>.48)touchPlanet=Math.min(1,touchPlanet+dt*1.8)}if(reduced){touchDust=[];touchPlanet=0}
@@ -1498,8 +1560,8 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
     function saveLyrics(){if(externalStream||!activeId)return;const raw=$('lyricSource').value,lines=parseLRC(raw);if(!lines.length){$('lyricStatus').textContent='没有找到有效时间点，请使用 [00:03.00] 歌词内容。';$('lyricStatus').classList.add('error');return}songArt(true).lyrics={raw,offset:finite(Number($('lyricOffset').value),0,-30,30),size:$('lyricSize').value,only:$('lyricOnly').checked,enabled:$('lyricEnabled').checked};lyricCache=null;lyricIndex=-1;lyricTrack=null;lyricDust=[];persistAtelier();$('lyricStatus').classList.remove('error');$('lyricStatus').textContent=lines.length+' 个时间点 · 已应用并保存在本机。';captureSongDraft();scheduleDraftSave();commitRecovery('atelier')}
     $('saveLyricBtn').addEventListener('click',saveLyrics);$('clearLyricBtn').addEventListener('click',()=>{delete songArt(true).lyrics;lyricCache=null;lyricIndex=-1;lyricDust=[];persistAtelier();syncResetFields(songDraftFields.filter(id=>id.startsWith('lyric')))});for(const id of ['lyricOffset','lyricSize','lyricOnly','lyricEnabled'])$(id).addEventListener('change',()=>{if(songArt()?.lyrics){const s=songArt().lyrics;s.offset=finite(Number($('lyricOffset').value),0,-30,30);s.size=$('lyricSize').value;s.only=$('lyricOnly').checked;s.enabled=$('lyricEnabled').checked;lyricDust=[];persistAtelier()}});
     $('saveMemoryBtn').addEventListener('click',saveMemory);for(const id of ['segmentA','segmentB','segmentLoop'])$(id).addEventListener('change',saveSegment);$('markABtn').addEventListener('click',()=>{$('segmentA').value=getLocalPosition().toFixed(1);saveSegment()});$('markBBtn').addEventListener('click',()=>{$('segmentB').value=getLocalPosition().toFixed(1);saveSegment()});$('previewSegmentBtn').addEventListener('click',()=>previewSegment());$('recordSegmentBtn').addEventListener('click',()=>previewSegment(true));
-    $('cuesEnabled').addEventListener('change',()=>{songArt(true).cuesEnabled=$('cuesEnabled').checked;cueTrack=null;cueText='';persistAtelier()});$('cueNowBtn').addEventListener('click',()=>{$('cueTime').value=getLocalPosition().toFixed(1)});
-    $('addCueBtn').addEventListener('click',()=>{if(externalStream||!activeId)return;const time=Number($('cueTime').value),art=songArt(true);if(!Number.isFinite(time)||time<0||time>duration){$('segmentStatus').textContent='时间点需要在这首歌的长度内。';return}art.cues||=[];if(art.cues.length>=30){$('segmentStatus').textContent='已添加 30 个时间点，请先移除一些。';return}if(!art.base)art.base={...saveView(),id:'base',time:0,text:'',burst:false};const c={...saveView(),id:newId('cue'),time,text:$('cueText').value.trim().slice(0,60),burst:$('cueBurst').checked};art.cues=art.cues.filter(v=>Math.abs(v.time-time)>.05);art.cues.push(c);art.cues.sort((a,b)=>a.time-b.time);cueTrack=null;persistAtelier();renderCues();$('cueText').value='';$('segmentStatus').textContent='已记下 '+formatTime(time)+' 的画面、视角与文字。'});
+    $('cuesEnabled').addEventListener('change',()=>{songArt(true).cuesEnabled=$('cuesEnabled').checked;cueTrack=null;cueText='';persistAtelier()});$('cueNowBtn').addEventListener('click',()=>{$('cueTime').value=getLocalPosition().toFixed(1);$('cueTime').dispatchEvent(new Event('input',{bubbles:true}))});
+    $('addCueBtn').addEventListener('click',()=>addCueAt(Number($('cueTime').value)));setupCueTimeline();
     app.addEventListener('pointermove',e=>{if(!pointerAllowed(e))return;const point=pointerPoint(e),now=performance.now();if(touchHold&&touchHold.id===e.pointerId){if(Math.hypot((point.x-touchHold.x)*w,(point.y-touchHold.y)*h)>14)releaseTouch(true)}if(now-touchLastAt>38){touchLastAt=now;addTouchDust(point,Math.ceil(4*atelier.settings.interaction))}});
     app.addEventListener('pointerdown',e=>{if(!pointerAllowed(e)||e.pointerType==='mouse'&&e.button!==0)return;if(touchHold){releaseTouch(true);return}const point=pointerPoint(e);touchHold={...point,id:e.pointerId,age:0};touchRipples.push({...point,age:0,life:1.15});if(touchRipples.length>6)touchRipples.shift()});window.addEventListener('pointerup',e=>{if(touchHold?.id===e.pointerId)releaseTouch()});window.addEventListener('pointercancel',()=>releaseTouch(true));window.addEventListener('blur',()=>releaseTouch(true));document.addEventListener('visibilitychange',()=>{if(document.hidden)releaseTouch(true)});
     atelierPromise=loadAtelier();
@@ -1697,17 +1759,32 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
   function readFields(ids){const v={};for(const id of ids){const el=$(id);v[id]=el.type==='checkbox'?el.checked:el.value}return v}
   function writeFields(values,ids){if(!values||typeof values!=='object')return;for(const id of ids){const el=$(id),v=values[id];if(el.type==='checkbox'){if(typeof v==='boolean')el.checked=v}else if(typeof v==='string')el.value=v.slice(0,id==='lyricSource'?160000:1000)}}
   function filmDraftId(){return clipInstrumentMode?'instrument':'song:'+activeId}
-  function captureSongDraft(){if(!polishReady||!draftOwner)return;drafts.songs[draftOwner]=readFields(songDraftFields);drafts.tab=atelierTab}
+  function captureSongDraft(){if(!polishReady||!draftOwner)return;drafts.songs[draftOwner]=readFields(songDraftFields);drafts.tab=atelierTab;if(atelierReady&&!restoring&&draftOwner===activeId){drafts.creations||={};drafts.creations[draftOwner]=clone(songArt()||{})}}
   function captureFilmDraft(){if(!polishReady||!filmOwner)return;drafts.films[filmOwner]={fields:readFields(filmDraftFields),shape:clipShape,length:clipLength}}
   function saveDrafts(){if(backupRestoring)return;clearTimeout(draftTimer);captureSongDraft();captureFilmDraft();try{localStorage.setItem(draftKey,JSON.stringify(drafts));storageIssues.delete('drafts');app.dataset.draftState='saved'}catch{storageIssues.add('drafts');app.dataset.draftState='error'}updateStorageStatus();updateRecoveryButtons()}
-  function scheduleDraftSave(){app.dataset.draftState='saving';clearTimeout(draftTimer);draftTimer=setTimeout(saveDrafts,240)}
+  function scheduleDraftSave(){app.dataset.draftState='saving';clearTimeout(draftTimer);draftTimer=setTimeout(saveDrafts,240);updateStorageStatus()}
+  function restoreCreativeDrafts(){
+    if(!drafts.creations||typeof drafts.creations!=='object')return;
+    for(const [id,raw] of Object.entries(drafts.creations)){
+      if(!raw||typeof raw!=='object'||!tracks.some(t=>t.id===id))continue;const art={};
+      if(raw.look)art.look=validLook(raw.look);if(raw.lyrics&&typeof raw.lyrics.raw==='string')art.lyrics={raw:raw.lyrics.raw.slice(0,160000),offset:finite(raw.lyrics.offset,0,-30,30),size:['small','medium','large'].includes(raw.lyrics.size)?raw.lyrics.size:'medium',only:raw.lyrics.only!==false,enabled:raw.lyrics.enabled!==false};
+      if(raw.segment)art.segment={a:finite(raw.segment.a,0,0,86400),b:finite(raw.segment.b,15,0,86400),loop:raw.segment.loop===true};art.cuesEnabled=raw.cuesEnabled!==false;art.base=validCue(raw.base);art.cues=Array.isArray(raw.cues)?raw.cues.map(validCue).filter(Boolean).slice(0,60).sort((a,b)=>a.time-b.time):[];atelier.songs[id]=art;
+    }
+    lyricCache=null;cueTrack=null;cuePosition=-1;persistAtelier();
+  }
+  async function retryPendingSaves(){
+    if(backupRestoring)return;app.dataset.draftState='saving';updateStorageStatus();saveDrafts();savePreferences();saveSession();saveInstrument();persistRefinement();persistVisualPresets();
+    if(storageIssues.has('particle-engine'))try{localStorage.setItem('sonic-universe-particle-engine',particleEngine);storageIssues.delete('particle-engine')}catch{}
+    await Promise.all([persistLibrary(),persistAtelier(),persistBackground()]);updateStorageStatus();updateRecoveryButtons();
+  }
+  function flushCreativeChanges(){if(!polishReady||backupRestoring)return;if(cueDrag){cueDrag=null;finishCueEdit()}saveDrafts();savePreferences();saveSession();saveInstrument();persistAtelier()}
   function restoreSongDraft(keep=true){if(!polishReady)return;const changed=draftOwner!==activeId;if(changed){$('memoryNote').value='';$('cueTime').value='0';$('cueText').value='';$('cueBurst').checked=false}draftOwner=activeId;if(keep)writeFields(drafts.songs[activeId],songDraftFields);else drafts.songs[activeId]=readFields(songDraftFields);const note=$('draftRestored');if(note)note.textContent=drafts.songs[activeId]?'已恢复这首歌的草稿 · 应用歌词后才会显示到星空':'未应用的文字也会自动保存，下次继续。';if(changed||!histories.has(historyKey('atelier')))primeHistory('atelier')}
   function restoreFilmDraft(){if(!polishReady)return;filmOwner=filmDraftId();const v=drafts.films[filmOwner];if(v){writeFields(v.fields,filmDraftFields);if(['landscape','portrait'].includes(v.shape))clipShape=v.shape;if([0,15,30].includes(v.length))clipLength=v.length}primeHistory('clip');clipUpdateControls()}
   function recoveryScope(el){const d=el.closest('dialog');return d?.id==='atelierDialog'?'atelier':d?.id==='studioDialog'?'studio':d?.id==='instrumentDialog'?'instrument':d?.id==='clipDialog'?'clip':el.closest('.themes,#roamLookPanel')?'visual':null}
   function historyKey(scope){return scope+(scope==='atelier'?':'+activeId:scope==='clip'?':'+filmDraftId():'')}
   function recoverySnapshot(scope){
     if(scope==='visual')return{look:captureLook(),profile:clone(refinement)};
-    if(scope==='atelier')return{look:captureLook(),settings:clone(atelier.settings),custom:clone(atelier.custom),art:clone(songArt()||{}),memories:clone(atelier.memories),fields:readFields(songDraftFields),profile:clone(refinement)};
+    if(scope==='atelier')return{look:captureLook(),settings:clone(atelier.settings),custom:clone(atelier.custom),art:clone(songArt()||{}),memories:clone(atelier.memories),fields:readFields(songDraftFields),profile:clone(refinement),cueSelection:selectedCueTrack===activeId?selectedCueId:''};
     if(scope==='studio')return{space:clone(space),look:captureLook()};
     if(scope==='instrument')return{project:clone(instrumentProject),title:$('instrumentTitle').value};
     return{fields:readFields(filmDraftFields),shape:clipShape,length:clipLength};
@@ -1717,7 +1794,7 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
   function commitRecovery(scope,gesture=null){if(!polishReady||recoveryApplying)return;const h=historyFor(scope),next=recoverySnapshot(scope);if(JSON.stringify(next)===JSON.stringify(h.last))return;const now=performance.now();if(!gesture||gesture!==h.gesture||now-h.at>850){h.past.push(h.last);if(h.past.length>16)h.past.shift()}h.future=[];h.last=next;h.gesture=gesture;h.at=now;updateRecoveryButtons()}
   function restoreRecovery(scope,s){recoveryApplying=true;try{
     if(scope==='visual'){refinement=clone(s.profile);applyLook(s.look,true);persistRefinement()}
-    if(scope==='atelier'){Object.assign(atelier.settings,s.settings);atelier.custom=clone(s.custom);atelier.songs[activeId]=clone(s.art);atelier.memories=clone(s.memories);refinement=clone(s.profile);applyLook(s.look,true);lyricCache=null;lyricTrack=null;cueTrack=null;cuePosition=-1;cueText='';syncSongControls(false);writeFields(s.fields,songDraftFields);renderMemories();persistAtelier();persistRefinement();captureSongDraft()}
+    if(scope==='atelier'){Object.assign(atelier.settings,s.settings);atelier.custom=clone(s.custom);atelier.songs[activeId]=clone(s.art);atelier.memories=clone(s.memories);refinement=clone(s.profile);applyLook(s.look,true);lyricCache=null;lyricTrack=null;cueTrack=null;cuePosition=-1;cueText='';syncSongControls(false);writeFields(s.fields,songDraftFields);selectedCueTrack=activeId;selectedCueId=s.cueSelection||'';renderCues();renderMemories();persistAtelier();persistRefinement();captureSongDraft()}
     if(scope==='studio'){space=clone(s.space);applySpace(true);applyLook(s.look,true);savePreferences();rebuildBackground()}
     if(scope==='instrument'){stopInstrumentLoop('',true);instrumentProject=clone(s.project);instrumentProject.title=s.title;syncInstrumentFields();instrumentUndo=null;saveInstrument();renderInstrumentLayers();renderInstrumentBeat();updateInstrumentControls()}
     if(scope==='clip'){writeFields(s.fields,filmDraftFields);clipShape=s.shape;clipLength=s.length;clipSaveSettings();clipUpdateControls();renderClipFrame(true)}
@@ -1739,7 +1816,7 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
     if(scope==='instrument'){const layers=instrumentProject.layers,bars=instrumentProject.bars;instrumentProject={version:1,title:'我的星际即兴',tone:'bell',octave:0,tempo:96,bars:layers.length?bars:2,quantize:true,metronome:true,volume:.7,layers};syncInstrumentFields();saveInstrument();renderInstrumentBeat();updateInstrumentControls()}
     if(scope==='clip'){clipShape='portrait';clipLength=30;invalidateFilmAnalysis('已恢复短片默认设置，按当前歌曲重新分析后可录制。');$('clipSong').value=clipInstrumentMode?instrumentProject.title:currentTrack()?.name||'';$('clipAuthor').value='';$('clipMood').value='';clipSaveSettings();clipUpdateControls();renderClipFrame(true)}
   }finally{recoveryApplying=false}syncEffects();if($('presetDialog')?.open)renderVisualPresets();commitRecovery(scope);saveDrafts();showToast('已恢复当前栏目默认，可撤销。')}
-  function updateRecoveryButtons(){if(!polishReady)return;document.querySelectorAll('.edit-recovery').forEach(box=>{const scope=box.dataset.scope,h=historyFor(scope),locked=recoveryLocked(scope);box.querySelector('[data-edit-undo]').disabled=locked||!h.past.length;box.querySelector('[data-edit-redo]').disabled=locked||!h.future.length;box.querySelector('[data-edit-reset]').disabled=locked;const el=box.querySelector('.recovery-save'),bad=storageIssues.size>0;el.classList.toggle('error',bad);el.textContent=bad?'本机保存未完成':app.dataset.draftState==='saving'||savingCount?'正在保存草稿…':'草稿已保存在本机';box.dataset.undoCount=h.past.length})}
+  function updateRecoveryButtons(){if(!polishReady)return;document.querySelectorAll('.edit-recovery').forEach(box=>{const scope=box.dataset.scope,h=historyFor(scope),locked=recoveryLocked(scope);box.querySelector('[data-edit-undo]').disabled=locked||!h.past.length;box.querySelector('[data-edit-redo]').disabled=locked||!h.future.length;box.querySelector('[data-edit-reset]').disabled=locked;const el=box.querySelector('.recovery-save'),bad=storageIssues.size>0;el.classList.toggle('error',bad);el.textContent=bad?'保存失败，点这里重试':app.dataset.draftState==='saving'||savingCount?'正在保存在本机…':'已保存在本机';el.setAttribute('role',bad?'button':'status');if(bad){el.tabIndex=0;el.title='重试未完成的本机保存'}else{el.removeAttribute('tabindex');el.removeAttribute('title')}box.dataset.undoCount=h.past.length})}
   function addRecoveryToolbar(scope,id,description){const box=document.createElement('div');box.className='edit-recovery';box.dataset.scope=scope;box.innerHTML='<button type="button" data-edit-undo>撤销 ↶</button><button type="button" data-edit-redo>重做 ↷</button><button type="button" data-edit-reset>恢复默认</button><span class="recovery-save" role="status"></span><small></small>';box.querySelector('small').textContent=description;$(id).querySelector('.dialog-heading').after(box);box.querySelector('[data-edit-undo]').addEventListener('click',()=>undoRecovery(scope));box.querySelector('[data-edit-redo]').addEventListener('click',()=>undoRecovery(scope,true));box.querySelector('[data-edit-reset]').addEventListener('click',()=>resetRecovery(scope))}
   function setupPolish(){
     document.querySelector('.themes').append(responsePanel());document.querySelector('[data-atelier-panel="mood"]').append(responsePanel());$('externalStatus').before(responsePanel());
@@ -1750,12 +1827,13 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
     addRecoveryToolbar('atelier','atelierDialog','撤销与默认作用于当前歌曲和栏目；关闭面板保留未应用的文字。');addRecoveryToolbar('studio','studioDialog','恢复默认会重置空间文字与画面设置，保留音乐、封面和背景图片。');addRecoveryToolbar('instrument','instrumentDialog','设置与旋律可撤销；恢复默认保留录好的层，播放需由你重新开始。');addRecoveryToolbar('clip','clipDialog','短片文字按歌曲／演奏分别保存；恢复默认保留上次录好的短片。');
     const mainTools=document.createElement('div');mainTools.className='edit-recovery visual-recovery';mainTools.dataset.scope='visual';mainTools.innerHTML='<button type="button" data-edit-undo>撤销 ↶</button><button type="button" data-edit-redo>重做 ↷</button><button type="button" data-edit-reset>恢复默认</button><span class="recovery-save"></span>';document.querySelector('.themes').append(mainTools);mainTools.querySelector('[data-edit-undo]').addEventListener('click',()=>undoRecovery('visual'));mainTools.querySelector('[data-edit-redo]').addEventListener('click',()=>undoRecovery('visual',true));mainTools.querySelector('[data-edit-reset]').addEventListener('click',()=>resetRecovery('visual'));
     const note=document.createElement('p');note.id='draftRestored';note.className='draft-restored';$('atelierDialog').querySelector('.atelier-tabs').after(note);
-    polishReady=true;atelierTab=['mood','lyrics','memories','rehearsal'].includes(drafts.tab)?drafts.tab:'mood';syncResponseControls();setExternalHealth('waiting');
+    polishReady=true;app.dataset.recoveryReady='true';atelierTab=['mood','lyrics','memories','rehearsal'].includes(drafts.tab)?drafts.tab:'mood';syncResponseControls();setExternalHealth('waiting');
     for(const id of ['atelierDialog','studioDialog','clipDialog','instrumentDialog'])$(id).addEventListener('close',()=>{saveDrafts();primeHistory('visual')});
     $('instrumentTitle').addEventListener('input',()=>{instrumentProject.title=$('instrumentTitle').value;saveInstrument()});
-    for(const event of ['input','change','click'])document.addEventListener(event,e=>{const scope=recoveryScope(e.target);if(!scope||e.target.closest('.edit-recovery')||e.target.closest('[data-note-pad]')||e.target.matches('input[type=file]'))return;historyFor(scope);const gesture=event==='input'?scope+':'+e.target.id:null;setTimeout(()=>{commitRecovery(scope,gesture);captureSongDraft();captureFilmDraft();scheduleDraftSave()},0)},true);
-    window.addEventListener('pagehide',saveDrafts);document.addEventListener('visibilitychange',()=>{if(document.hidden)saveDrafts()});
-    Promise.all([atelierPromise,libraryPromise]).then(()=>{syncSongControls();restoreSongDraft();primeHistory('studio');primeHistory('instrument');updateRecoveryButtons()});
+    for(const event of ['input','change','click'])document.addEventListener(event,e=>{const scope=recoveryScope(e.target);if(!scope||e.target.closest('.edit-recovery,.cue-timeline,#cueList')||e.target.closest('[data-note-pad]')||e.target.matches('input[type=file],#cueTime,#cueText,#cueBurst,#addCueBtn,#cueNewBtn,#cueDeleteBtn'))return;historyFor(scope);const gesture=event==='input'?scope+':'+e.target.id:null;setTimeout(()=>{commitRecovery(scope,gesture);captureSongDraft();captureFilmDraft();scheduleDraftSave()},0)},true);
+    document.addEventListener('click',e=>{if(e.target.closest('.recovery-save[role=button],.storage-status[role=button]'))retryPendingSaves()});document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('.recovery-save[role=button],.storage-status[role=button]')){e.preventDefault();retryPendingSaves()}});
+    window.addEventListener('pagehide',flushCreativeChanges);document.addEventListener('visibilitychange',()=>{if(document.hidden)flushCreativeChanges()});
+    Promise.all([atelierPromise,libraryPromise]).then(()=>{restoreCreativeDrafts();syncSongControls();restoreSongDraft();primeHistory('studio');primeHistory('instrument');updateRecoveryButtons()});
     const localPreview=['localhost','127.0.0.1','[::1]'].includes(location.hostname);
     const connection=document.createElement('div');connection.className='preview-connection';connection.hidden=true;connection.setAttribute('role','status');
     connection.textContent=localPreview?'本机预览服务已断开 · 请双击项目文件夹里的「打开声波宇宙.cmd」，再刷新页面。':'暂时无法连接网站 · 请检查网络后重试；页面中的音乐仍可继续使用。';
@@ -1860,6 +1938,7 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
     },true);
   }
   function syncEffects(){
+    if($('energySaver'))$('energySaver').checked=energySaver;
     for(const key of ['depth','glow']){const el=$('effect'+key);if(el){el.value=Math.round(visualEffects[key]*100);$('effect'+key+'Value').value=el.value+'%';setFill(el)}}
     for(const id of ['trail','atelierTrail']){const el=$(id);if(el){el.value=Math.round(visualEffects.trail*100);const out=$(id+'Value');if(out)out.value=Math.round(visualEffects.trail*100)+'%';setFill(el)}}
     for(const id of ['beatTrigger','atelierBeat']){const el=$(id);if(el)el.checked=visualEffects.beat}
@@ -1872,6 +1951,7 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
   function strictPresetLook(v){
     if(!v||typeof v!=='object'||Array.isArray(v)||!Object.hasOwn(themes,v.theme)||!Object.hasOwn(visualModes,v.visualMode))throw new Error('预设中的色彩或形态不受支持。');
     for(const [key,lo,hi] of [['motionSpeed',.25,2],['particleCount',400,6000],['intensity',.2,1],['sensitivity',.4,2.4],['depth',0,1],['glow',0,1],['trail',0,1]]){if(v[key]!==undefined&&(!Number.isFinite(v[key])||v[key]<lo||v[key]>hi))throw new Error('预设中的画面参数超出范围。')}
+    if(v.energySaver!==undefined&&typeof v.energySaver!=='boolean')throw new Error('预设中的省电设置无效。');
     if(typeof v.storyEnabled!=='boolean'||typeof v.journeyAuto!=='boolean')throw new Error('预设中的剧情设置不完整。');return validLook(v);
   }
   function readPresetFile(data){if(!data||data.format!=='sonic-universe-presets'||data.version!==1||!Array.isArray(data.presets)||data.presets.length<1||data.presets.length>24)throw new Error('请选择声波宇宙导出的第 1 版预设文件（最多 24 个）。');return data.presets.map(p=>{if(!p||typeof p.name!=='string'||!p.name.trim()||p.name.length>32)throw new Error('预设名称应为 1–32 个字符。');return{name:p.name.trim(),look:strictPresetLook(p.look)}})}
@@ -1881,6 +1961,8 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
     const signature=presetSignature(captureLook());for(const [id,list,custom] of [['builtinPresets',builtinVisualPresets,false],['customPresets',customVisualPresets,true]]){const box=$(id);if(!box)continue;box.replaceChildren();list.forEach((preset,index)=>{const card=document.createElement('div');card.className='preset-card';card.dataset.current=String(presetSignature(preset.look)===signature);const button=document.createElement('button');button.className='preset-apply';button.type='button';button.dataset.preset=custom?'custom-'+index:preset.id;const tag=document.createElement('em'),name=document.createElement('strong'),note=document.createElement('small');tag.textContent=custom?'MY UNIVERSE':'0'+(index+1)+' / '+visualModes[preset.look.visualMode].english;name.textContent=preset.name;note.textContent=preset.note||themes[preset.look.theme].name+' · '+visualModes[preset.look.visualMode].name;button.append(tag,name,note);button.addEventListener('click',()=>{if(clipLocked())return;historyFor('visual');applyLook(preset.look,true);commitRecovery('visual');syncSongControls();renderVisualPresets();presetStatus('已应用「'+preset.name+'」，可撤销；按下播放，让旋律点亮它。')});card.append(button);if(custom){const remove=document.createElement('button');remove.className='preset-remove';remove.textContent='×';remove.setAttribute('aria-label','删除预设 '+preset.name);remove.addEventListener('click',()=>{if(clipLocked())return;customVisualPresets.splice(index,1);const saved=persistVisualPresets();renderVisualPresets();presetStatus(saved?'已删除这个本机预设。':'删除仅在本次页面生效，本机存储未完成。',!saved)});card.append(remove)}box.append(card)});if(custom&&!list.length){const empty=document.createElement('p');empty.className='preset-intro';empty.textContent='还没有收藏。调好画面后，给这片宇宙起个名字。';box.append(empty)}}app.dataset.visualPresetCount=String(customVisualPresets.length);app.dataset.builtinVisualPresetCount=String(builtinVisualPresets.length);
   }
   function setupVisualPresets(){
+    const energyControl=document.createElement('div');energyControl.className='energy-control';energyControl.innerHTML='<label><input type="checkbox" id="energySaver">省电模式</label><span>减少星尘 · 30 帧预览</span>';document.querySelector('.visual-share').before(energyControl);
+    $('energySaver').checked=energySaver;$('energySaver').addEventListener('change',()=>{if(clipLocked()){syncEffects();return}historyFor('visual');energyUserChoice=true;energySaver=$('energySaver').checked;slowFrameCount=0;resize();savePreferences();rememberLook();commitRecovery('visual');syncEffects();renderVisualPresets()});
     for(const preset of builtinVisualPresets)preset.look=validLook({...preset.look,sensitivity:1});
     const dialog=document.createElement('dialog');dialog.id='presetDialog';dialog.className='preset-dialog';dialog.setAttribute('aria-labelledby','presetTitle');dialog.innerHTML='<div class="dialog-heading"><div><div class="preset-eyebrow">A UNIVERSE FOR EVERY MOOD</div><h2 id="presetTitle">收藏一种星空</h2></div><button id="presetCloseBtn" class="icon-btn" aria-label="关闭视觉预设">×</button></div><p class="preset-intro">从一种氛围出发，调节空间与光晕。形态、色彩、粒子和灵敏度都能存进你的预设。</p><div id="builtinPresets" class="preset-grid"></div><div class="preset-controls"><label>空间纵深<output id="effectdepthValue"></output><input id="effectdepth" class="range" type="range" min="0" max="100" step="5"></label><label>星尘光晕<output id="effectglowValue"></output><input id="effectglow" class="range" type="range" min="0" max="100" step="5"></label></div><div class="preset-save"><input id="presetName" maxlength="32" aria-label="预设名称" placeholder="为这片宇宙起个名字"><button id="saveVisualPreset">保存当前画面</button></div><div class="preset-transfer"><button id="exportVisualPresets">导出我的预设</button><button id="importVisualPresets">导入预设</button><label>星尘绘制<select id="particleEngine"><option value="auto">自动 · 优先 GPU</option><option value="canvas">兼容模式</option></select></label></div><input id="presetFile" type="file" accept=".json,application/json" hidden><p id="presetStatus" class="preset-status" role="status"></p><div class="preset-library-label">MY UNIVERSES / 我的收藏</div><div id="customPresets" class="preset-grid"></div>';app.append(dialog);
     try{const raw=localStorage.getItem(presetStorageKey);if(raw){const parsed=JSON.parse(raw);if(parsed?.format==='sonic-universe-presets'&&parsed.version===1&&Array.isArray(parsed.presets)&&!parsed.presets.length)customVisualPresets=[];else customVisualPresets=readPresetFile(parsed)}}catch{presetStorageError=true;storageIssues.add('presets')}
@@ -1991,7 +2073,7 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
     g.strokeStyle=line;g.lineWidth=1;g.strokeRect(29.5,29.5,1741,1291);
     g.fillStyle=muted;g.font='16px ui-monospace,Consolas,monospace';
     g.fillText('SONIC UNIVERSE  /  A POSTCARD FROM THE STARS',69,78);
-    g.textAlign='right';g.fillText('VOL.31',1731,78);g.textAlign='left';
+    g.textAlign='right';g.fillText('VOL.32',1731,78);g.textAlign='left';
     const art={x:69,y:109,w:1662,h:842},source=capturedScene,aspect=art.w/art.h;
     let sw,sh;
     if(capturedMoment.quiet){sw=source.width;sh=sw/aspect;if(sh>source.height){sh=source.height;sw=sh*aspect}}
@@ -2250,6 +2332,7 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
     setupSodaLibrary();
   }
 
+  let onlineConnectAttempt=0;
   function setOnlineResultStatus(message,error=false){
     const status=$('onlineResultStatus');status.textContent=message;status.classList.toggle('error',error);
   }
@@ -2258,27 +2341,46 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
     return host==='127.0.0.1'||host==='localhost'||host==='[::1]';
   }
   function localOnlineEntryUrl(){
-    return 'http://127.0.0.1:8765/?v=31';
+    return 'http://127.0.0.1:8765/?v=32';
   }
   function showOnlineUnavailable(message='本机音乐入口没有连接。'){
-    setOnlineResultStatus(message+' 公开网页只展示星空；搜索、扫码登录和歌词需要本机完整入口。',true);
-    $('onlineLocalCallout').hidden=isLocalOnlinePage();
+    setOnlineResultStatus(message+' 星空和本地音乐仍可使用；搜索、扫码登录需要运行本机 Companion。点「重新连接」再试。',true);
+    $('onlineLocalCallout').hidden=false;
   }
   function syncOnlineControls(){
-    const ready=onlineReady;
-    $('onlineSearchInput').disabled=false;$('onlineSearchBtn').disabled=false;
-    $('onlineLoginBtn').disabled=false;$('onlineLoginBtn').hidden=onlineLoggedIn;
-    $('onlineLogoutBtn').disabled=!ready;$('onlineLogoutBtn').hidden=!onlineLoggedIn;
-    $('onlineLikedBtn').disabled=!ready||!onlineLoggedIn;$('onlinePlaylistsBtn').disabled=!ready||!onlineLoggedIn;
-    $('onlineLocalCallout').hidden=ready||isLocalOnlinePage();
+    const ready=onlineReady&&$('onlineService').dataset.state==='ready',busy=el=>el.getAttribute('aria-busy')==='true';
+    $('onlineSearchInput').disabled=!ready;$('onlineSearchBtn').disabled=!ready||busy($('onlineSearchBtn'));
+    $('onlineSearchInput').placeholder=ready?'搜索歌曲、歌手或专辑…':'先连接本机音乐入口，再搜索歌曲';
+    $('onlineLoginBtn').disabled=!ready||busy($('onlineLoginBtn'));$('onlineLoginBtn').hidden=onlineLoggedIn;
+    $('onlineLogoutBtn').disabled=!ready||busy($('onlineLogoutBtn'));$('onlineLogoutBtn').hidden=!onlineLoggedIn;
+    $('onlineLikedBtn').disabled=!ready||!onlineLoggedIn||busy($('onlineLikedBtn'));$('onlinePlaylistsBtn').disabled=!ready||!onlineLoggedIn||busy($('onlinePlaylistsBtn'));
+    $('onlineLocalCallout').hidden=ready||$('onlineService').dataset.state==='pending';
+    $('onlineReconnectBtn').disabled=$('onlineService').dataset.state==='pending';
+    document.querySelectorAll('[data-online-playlist-id]').forEach(el=>el.disabled=!ready||!onlineLoggedIn||busy(el));
+    document.querySelectorAll('[data-online-action]').forEach(el=>{const remote=['play','like','remote-add','remote-remove'].includes(el.dataset.onlineAction);if(remote)el.disabled=!ready||busy(el)||(['like','remote-add','remote-remove'].includes(el.dataset.onlineAction)&&!onlineLoggedIn)});
   }
   function setOnlineServiceState(state,title,status){
     onlineReady=state==='ready';
     $('onlineService').dataset.state=state;$('onlineServiceTitle').textContent=title;$('onlineServiceStatus').textContent=status;
     app.dataset.onlineMusic=state;syncOnlineControls();
   }
-  function setOnlineLoginStatus(title,status){
+  function onlineRequestFailure(error,attempt=onlineConnectAttempt){
+    const message=onlineErrorMessage(error);
+    if(attempt!==onlineConnectAttempt)return message;
+    if(error?.status===401||error?.code==='auth-required'){
+      setOnlineAccount(null);app.dataset.onlineLogin='expired';
+      setOnlineResultStatus('登录已失效，请重新扫码登录。',true);
+      return message;
+    }
+    if(error?.code==='timeout'||error instanceof TypeError||error?.code==='unavailable'||error?.status>=500){
+      const state=error?.code==='timeout'?'timeout':error instanceof TypeError?'offline':'error';
+      setOnlineServiceState(state,'连不上本机音乐入口','星空和本地音乐仍可使用。确认 Companion 已启动，点「重新连接」再试。');
+    }
+    setOnlineResultStatus(message+' 可点「重新连接」后重试。',true);return message;
+  }
+  function setOnlineLoginStatus(title,status,state='waiting'){
     $('onlineLoginTitle').textContent=title;$('onlineLoginStatus').textContent=status;
+    $('onlineLoginCard').dataset.state=state;app.dataset.onlineLogin=state;
   }
   function setOnlineAccount(user=null){
     onlineLoggedIn=Boolean(user);
@@ -2297,21 +2399,26 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
   }
   function hideOnlineLoginCard(){
     stopOnlineLoginPolling();$('onlineLoginCard').hidden=true;$('onlineQrImage').removeAttribute('src');
+    $('onlineLoginBtn').removeAttribute('aria-busy');$('onlineLoginBtn').textContent='扫码登录';
   }
   async function refreshOnlineAccount(preferredUser=null){
     if(!onlineReady||!onlineClient){setOnlineAccount(null);return null}
+    const attempt=onlineConnectAttempt;
     try{
       const data=await onlineClient.loginStatus();
+      if(attempt!==onlineConnectAttempt||!onlineReady)return null;
       if(data?.authenticated&&data.user){setOnlineAccount(data.user);return data.user}
       setOnlineAccount(null);return null;
     }catch(error){
+      if(attempt!==onlineConnectAttempt)return null;
       if(preferredUser){setOnlineAccount(preferredUser);return preferredUser}
       if(error?.status===401||error?.code==='auth-required')setOnlineAccount(null);
-      else setOnlineResultStatus(onlineErrorMessage(error),true);
+      else onlineRequestFailure(error);
       return null;
     }
   }
   function requireOnlineLogin(message='请先扫码登录汽水音乐，再使用收藏和歌单。'){
+    if(!onlineReady){showOnlineUnavailable();return false}
     if(onlineLoggedIn)return true;
     setOnlineResultStatus(message,true);showToast(message,true);return false;
   }
@@ -2369,33 +2476,35 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
       });
       like.addEventListener('click',async()=>{
         if(!requireOnlineLogin())return;
-        const next=!Boolean(track.liked);like.disabled=true;
+        const attempt=onlineConnectAttempt,next=!Boolean(track.liked);like.disabled=true;like.setAttribute('aria-busy','true');
         try{
           await onlineClient.like(track.mediaId,next);
+          if(attempt!==onlineConnectAttempt)return;
           const local=mergeOnlineTrack({...track,liked:next});
           if(local){local.liked=next;persistLibrary();renderPlaylist()}
           track.liked=next;like.textContent=next?'取消汽水收藏':'汽水收藏';like.setAttribute('aria-pressed',String(next));
           setOnlineResultStatus(next?'已收藏到汽水音乐「我的收藏」。':'已从汽水音乐「我的收藏」移除。');
-        }catch(error){setOnlineResultStatus(onlineErrorMessage(error),true);showToast(onlineErrorMessage(error),true)}
-        finally{like.disabled=false}
+        }catch(error){if(attempt===onlineConnectAttempt)showToast(onlineRequestFailure(error,attempt),true)}
+        finally{like.removeAttribute('aria-busy');syncOnlineControls()}
       });
       if(onlineCurrentPlaylistId){
         tools.querySelector('[data-online-action="remote-add"]').addEventListener('click',async event=>{
-          if(!requireOnlineLogin())return;const button=event.currentTarget;button.disabled=true;
-          try{await onlineClient.playlistEdit('add',onlineCurrentPlaylistId,[track.mediaId]);setOnlineResultStatus('已将「'+track.name+'」加入当前汽水歌单。');button.textContent='已加入当前歌单'}
-          catch(error){setOnlineResultStatus(onlineErrorMessage(error),true);showToast(onlineErrorMessage(error),true)}
-          finally{button.disabled=false}
+          if(!requireOnlineLogin())return;const attempt=onlineConnectAttempt,button=event.currentTarget;button.disabled=true;button.setAttribute('aria-busy','true');
+          try{await onlineClient.playlistEdit('add',onlineCurrentPlaylistId,[track.mediaId]);if(attempt!==onlineConnectAttempt)return;setOnlineResultStatus('已将「'+track.name+'」加入当前汽水歌单。');button.textContent='已加入当前歌单'}
+          catch(error){if(attempt===onlineConnectAttempt)showToast(onlineRequestFailure(error,attempt),true)}
+          finally{button.removeAttribute('aria-busy');syncOnlineControls()}
         });
         tools.querySelector('[data-online-action="remote-remove"]').addEventListener('click',async event=>{
-          if(!requireOnlineLogin())return;const button=event.currentTarget;button.disabled=true;
-          try{await onlineClient.playlistEdit('remove',onlineCurrentPlaylistId,[track.mediaId]);setOnlineResultStatus('已将「'+track.name+'」从当前汽水歌单移除。');button.textContent='已移除'}
-          catch(error){setOnlineResultStatus(onlineErrorMessage(error),true);showToast(onlineErrorMessage(error),true)}
-          finally{button.disabled=false}
+          if(!requireOnlineLogin())return;const attempt=onlineConnectAttempt,button=event.currentTarget;button.disabled=true;button.setAttribute('aria-busy','true');
+          try{await onlineClient.playlistEdit('remove',onlineCurrentPlaylistId,[track.mediaId]);if(attempt!==onlineConnectAttempt)return;setOnlineResultStatus('已将「'+track.name+'」从当前汽水歌单移除。');button.textContent='已移除'}
+          catch(error){if(attempt===onlineConnectAttempt)showToast(onlineRequestFailure(error,attempt),true)}
+          finally{button.removeAttribute('aria-busy');syncOnlineControls()}
         });
       }
       open.addEventListener('click',()=>openSodaUrl(track.externalUrl));
       card.append(copy,tools);root.append(card);
     });
+    syncOnlineControls();
   }
   function renderOnlinePlaylists(items=[]){
     onlinePlaylistCache=Array.isArray(items)?items.filter(item=>item&&/^\d{1,30}$/.test(String(item.id||''))):[];
@@ -2408,46 +2517,50 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
       button.addEventListener('click',()=>void loadOnlinePlaylist(String(item.id),button));
       root.append(button);
     });
+    syncOnlineControls();
   }
   async function loadOnlinePlaylist(id,button=null){
     if(!requireOnlineLogin())return;
-    const old=button?.textContent||'读取歌单';
-    if(button){button.disabled=true;button.textContent='正在读取…'}
+    const attempt=onlineConnectAttempt,old=button?.textContent||'读取歌单';
+    if(button){button.disabled=true;button.setAttribute('aria-busy','true');button.textContent='正在读取…'}
     setOnlineResultStatus('正在读取汽水歌单…');
     try{
       const data=await onlineClient.playlist(id);
+      if(attempt!==onlineConnectAttempt)return;
       onlineCurrentPlaylistId=id;renderOnlinePlaylists(onlinePlaylistCache);
       renderOnlineResults(data?.items,'这个歌单暂时没有可读取的歌曲。');
       setOnlineResultStatus('已读取「'+(data?.playlist?.name||'汽水歌单')+'」中的 '+(Array.isArray(data?.items)?data.items.length:0)+' 首歌曲。');
-    }catch(error){setOnlineResultStatus(onlineErrorMessage(error),true);showToast(onlineErrorMessage(error),true)}
-    finally{if(button){button.disabled=false;button.textContent=old}}
+    }catch(error){if(attempt===onlineConnectAttempt)showToast(onlineRequestFailure(error,attempt),true)}
+    finally{if(button){button.removeAttribute('aria-busy');button.textContent=old}syncOnlineControls()}
   }
   async function loadOnlineLiked(){
     if(!requireOnlineLogin('请先扫码登录汽水音乐，再读取你的收藏。'))return;
-    const button=$('onlineLikedBtn'),old=button.textContent;button.disabled=true;button.textContent='正在读取收藏…';
+    const attempt=onlineConnectAttempt,button=$('onlineLikedBtn'),old=button.textContent;button.disabled=true;button.setAttribute('aria-busy','true');button.textContent='正在读取收藏…';
     onlineCurrentPlaylistId='';renderOnlinePlaylists([]);setOnlineResultStatus('正在读取汽水音乐收藏…');
     try{
       const data=await onlineClient.liked();
+      if(attempt!==onlineConnectAttempt)return;
       renderOnlineResults(data?.items,'汽水音乐收藏里暂时没有可读取的歌曲。');
       setOnlineResultStatus('已读取 '+(Array.isArray(data?.items)?data.items.length:0)+' 首收藏歌曲。');
-    }catch(error){setOnlineResultStatus(onlineErrorMessage(error),true);showToast(onlineErrorMessage(error),true)}
-    finally{button.disabled=false;button.textContent=old;syncOnlineControls()}
+    }catch(error){if(attempt===onlineConnectAttempt)showToast(onlineRequestFailure(error,attempt),true)}
+    finally{button.removeAttribute('aria-busy');button.textContent=old;syncOnlineControls()}
   }
   async function loadOnlinePlaylists(){
     if(!requireOnlineLogin('请先扫码登录汽水音乐，再读取你的歌单。'))return;
-    const button=$('onlinePlaylistsBtn'),old=button.textContent;button.disabled=true;button.textContent='正在读取歌单…';
+    const attempt=onlineConnectAttempt,button=$('onlinePlaylistsBtn'),old=button.textContent;button.disabled=true;button.setAttribute('aria-busy','true');button.textContent='正在读取歌单…';
     setOnlineResultStatus('正在读取你的汽水歌单…');
     try{
       const data=await onlineClient.playlists(),items=Array.isArray(data?.items)?data.items:[];
+      if(attempt!==onlineConnectAttempt)return;
       renderOnlinePlaylists(items);
       setOnlineResultStatus(items.length?'已读取 '+items.length+' 个汽水歌单，点歌单名称继续读取歌曲。':'这个汽水账号里暂时没有可读取的歌单。',!items.length);
-    }catch(error){setOnlineResultStatus(onlineErrorMessage(error),true);showToast(onlineErrorMessage(error),true)}
-    finally{button.disabled=false;button.textContent=old;syncOnlineControls()}
+    }catch(error){if(attempt===onlineConnectAttempt)showToast(onlineRequestFailure(error,attempt),true)}
+    finally{button.removeAttribute('aria-busy');button.textContent=old;syncOnlineControls()}
   }
   function onlineLoginStateCopy(state){
     if(state==='scanned')return ['已扫码，请在手机确认','汽水音乐已识别这次登录，请在手机上确认授权。'];
     if(state==='confirmed')return ['登录成功','正在读取汽水音乐账号与歌单…'];
-    if(state==='expired')return ['二维码已过期','请关闭后重新生成二维码。'];
+    if(state==='expired')return ['二维码已过期','点「扫码登录」重新生成二维码。'];
     if(state==='error')return ['登录服务异常','手机端拒绝了授权，或登录服务暂时不可用，请重新生成二维码。'];
     return ['用汽水音乐 App 扫码','等待扫码。二维码只用于本次授权的账号登录。'];
   }
@@ -2455,20 +2568,23 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
     if(!onlineReady||!onlineClient){showOnlineUnavailable('本机音乐入口没有启动，暂时不能扫码登录。');return}
     hideOnlineLoginCard();
     const generation=onlineLoginGeneration;
-    $('onlineLoginCard').hidden=false;$('onlineQrImage').removeAttribute('src');setOnlineLoginStatus('正在生成二维码','请稍候，正在向汽水音乐申请本次登录二维码。');
+    $('onlineLoginCard').hidden=false;$('onlineQrImage').hidden=true;$('onlineQrImage').removeAttribute('src');setOnlineLoginStatus('正在生成二维码','最多等待 8 秒；连接失败后可以直接重试。','pending');
     const button=$('onlineLoginBtn');button.disabled=true;button.setAttribute('aria-busy','true');button.textContent='正在生成…';
     try{
       const data=await onlineClient.loginStart();
       if(generation!==onlineLoginGeneration)return;
       const sessionId=String(data?.sessionId||''),qr=String(data?.qrImage||'');
       if(!sessionId||!qr)throw new Error('登录二维码没有生成，请重试。');
+      const expiresAt=Date.now()+120000;
+      $('onlineQrImage').hidden=false;$('onlineQrImage').onerror=()=>{if(generation!==onlineLoginGeneration)return;stopOnlineLoginPolling();$('onlineQrImage').hidden=true;setOnlineLoginStatus('二维码加载失败','点「扫码登录」重新生成二维码。','error')};
       $('onlineQrImage').src=qr;setOnlineLoginStatus('用汽水音乐 App 扫码','二维码已生成。请打开汽水音乐 App 扫描，并在手机上确认。');
       const poll=async()=>{
         if(generation!==onlineLoginGeneration)return;
+        if(Date.now()>=expiresAt){setOnlineLoginStatus(...onlineLoginStateCopy('expired'),'expired');stopOnlineLoginPolling();return}
         try{
           const result=await onlineClient.loginCheck(sessionId);
           if(generation!==onlineLoginGeneration)return;
-          const state=String(result?.state||'waiting'),[title,status]=onlineLoginStateCopy(state);setOnlineLoginStatus(title,status);
+          const state=String(result?.state||'waiting'),[title,status]=onlineLoginStateCopy(state);setOnlineLoginStatus(title,status,state);
           if(state==='confirmed'){
             onlineLoggedIn=true;onlineLoginGeneration++;
             if(onlineLoginPoll)clearTimeout(onlineLoginPoll);onlineLoginPoll=0;
@@ -2476,58 +2592,70 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
             setTimeout(()=>{if(onlineLoggedIn)$('onlineLoginCard').hidden=true},1200);
             showToast('汽水音乐登录成功，收藏和歌单已经可用。');return;
           }
-          if(state==='expired'||state==='error')return;
+          if(state==='expired'||state==='error'){stopOnlineLoginPolling();return}
         }catch(error){
           if(generation!==onlineLoginGeneration)return;
-          setOnlineLoginStatus('登录服务异常',onlineErrorMessage(error));return;
+          setOnlineLoginStatus('登录连接已中断',onlineRequestFailure(error),'error');stopOnlineLoginPolling();return;
         }
         if(generation===onlineLoginGeneration)onlineLoginPoll=setTimeout(poll,1800);
       };
       onlineLoginPoll=setTimeout(poll,1800);
     }catch(error){
       if(generation===onlineLoginGeneration){
-        setOnlineLoginStatus('二维码生成失败',onlineErrorMessage(error));
+        setOnlineLoginStatus('二维码生成失败',onlineRequestFailure(error),'error');
         if(!onlineReady)showOnlineUnavailable('登录请求没有完成，本机音乐入口可能已经断开。');
       }
     }
-    finally{button.disabled=false;button.removeAttribute('aria-busy');button.textContent='扫码登录';syncOnlineControls()}
+    finally{if(generation===onlineLoginGeneration){button.removeAttribute('aria-busy');button.textContent='扫码登录';syncOnlineControls()}}
   }
   async function connectOnlineMusic(){
-    setOnlineServiceState('pending','正在连接本机音乐入口','检查汽水音乐 Companion 是否启动…');
-    const available=await onlineClient?.detect();
-    if(!available){
-      setOnlineAccount(null);
-      setOnlineServiceState('offline','本机音乐入口未连接','公共在线版只提供视觉体验。搜索、登录、歌词与播放需要本地音乐入口。');
-      showOnlineUnavailable('双击「启动音乐入口.cmd」后再打开本机入口。');
-      return;
+    const attempt=++onlineConnectAttempt;hideOnlineLoginCard();
+    setOnlineServiceState('pending','正在连接本机音乐入口','最多等待 7 秒，星空和本地音乐可以继续使用。');
+    setOnlineResultStatus('正在检查 Companion；连接结果会在 7 秒内显示。');
+    try{
+      const available=await onlineClient?.detect();
+      if(attempt!==onlineConnectAttempt)return;
+      if(!available){
+        setOnlineAccount(null);
+        const state=onlineClient?.detectionState==='timeout'?'timeout':'offline';
+        setOnlineServiceState(state,'连不上，点「重新连接」再试','请先双击「启动音乐入口.cmd」。公开网页的星空和本地音乐仍可使用。');
+        showOnlineUnavailable('本机 Companion 没有响应。');return;
+      }
+      setOnlineServiceState('ready','本机音乐入口已连接','可搜索汽水音乐、扫码登录并读取收藏与歌单。播放能力取决于歌曲版权与会员保护。');
+      setOnlineResultStatus('入口已连接。可不登录搜索公开歌曲；登录后可读取收藏、歌单与歌词。');
+      renderActiveTrack();renderPlaylist();
+      await refreshOnlineAccount();
+    }catch(error){
+      if(attempt!==onlineConnectAttempt)return;
+      setOnlineServiceState('error','连接失败，点「重新连接」再试',onlineErrorMessage(error));
+      showOnlineUnavailable('音乐入口检测没有完成。');
+    }finally{
+      if(attempt===onlineConnectAttempt)syncOnlineControls();
     }
-    setOnlineServiceState('ready','本机音乐入口已连接','可搜索汽水音乐、扫码登录并读取收藏与歌单。播放能力取决于歌曲版权与会员保护。');
-    setOnlineResultStatus('入口已连接。可不登录搜索公开歌曲；登录后可读取收藏、歌单与歌词。');
-    renderActiveTrack();renderPlaylist();
-    await refreshOnlineAccount();
   }
   function setupOnlineMusic(){
     const baseUrls=globalThis.SonicOnlineMusic?.companionBaseUrls(location)||[''];
-    onlineClient=globalThis.SonicOnlineMusic?.createClient({baseUrls})||null;
+    onlineClient=globalThis.SonicOnlineMusic?.createClient({baseUrls,timeoutMs:7500})||null;
+    $('onlineReconnectBtn').addEventListener('click',()=>void connectOnlineMusic());
     $('onlineSearchForm').addEventListener('submit',async event=>{
       event.preventDefault();const query=$('onlineSearchInput').value.trim();if(!query){$('onlineSearchInput').focus();return}
       if(!onlineReady){showOnlineUnavailable('本机音乐入口没有连接，暂时无法搜索。');return}
-      const button=$('onlineSearchBtn');button.disabled=true;button.textContent='正在搜索…';setOnlineResultStatus('正在汽水音乐中搜索「'+query+'」…');
+      const attempt=onlineConnectAttempt,button=$('onlineSearchBtn');button.disabled=true;button.setAttribute('aria-busy','true');button.textContent='正在搜索…';setOnlineResultStatus('正在汽水音乐中搜索「'+query+'」…');
       onlineCurrentPlaylistId='';renderOnlinePlaylists([]);
       try{
-        const data=await onlineClient.search(query);renderOnlineResults(data?.items,'没有找到相关歌曲，换一个歌名或歌手试试。');
+        const data=await onlineClient.search(query);if(attempt!==onlineConnectAttempt)return;renderOnlineResults(data?.items,'没有找到相关歌曲，换一个歌名或歌手试试。');
         setOnlineResultStatus('找到 '+(Array.isArray(data?.items)?data.items.length:0)+' 首与「'+query+'」相关的歌曲。');
-      }catch(error){setOnlineResultStatus(onlineErrorMessage(error),true);showToast(onlineErrorMessage(error),true)}
-      finally{button.disabled=false;button.textContent='搜索汽水音乐';syncOnlineControls()}
+      }catch(error){if(attempt===onlineConnectAttempt)showToast(onlineRequestFailure(error),true)}
+      finally{button.removeAttribute('aria-busy');button.textContent='搜索汽水音乐';syncOnlineControls()}
     });
     $('onlineLoginBtn').addEventListener('click',()=>void startOnlineLogin());
-    $('onlineLoginCancelBtn').addEventListener('click',()=>{hideOnlineLoginCard();setOnlineLoginStatus('用汽水音乐 App 扫码','二维码正在生成，请稍候。');$('onlineLoginBtn').removeAttribute('aria-busy');$('onlineLoginBtn').textContent='扫码登录';setOnlineResultStatus('已取消本次扫码登录，账号状态没有改变。');syncOnlineControls()});
+    $('onlineLoginCancelBtn').addEventListener('click',()=>{hideOnlineLoginCard();setOnlineLoginStatus('已取消扫码登录','需要时点「扫码登录」重新开始。','cancelled');$('onlineLoginBtn').removeAttribute('aria-busy');$('onlineLoginBtn').textContent='扫码登录';setOnlineResultStatus('已取消本次扫码登录，账号状态没有改变。');syncOnlineControls()});
     $('onlineLocalEntryBtn').addEventListener('click',()=>{const url=localOnlineEntryUrl();const opened=window.open(url,'_blank','noopener');if(!opened)location.href=url});
     $('onlineLogoutBtn').addEventListener('click',async()=>{
-      hideOnlineLoginCard();const button=$('onlineLogoutBtn');button.disabled=true;
-      try{await onlineClient.logout();setOnlineAccount(null);onlineCurrentPlaylistId='';renderOnlinePlaylists([]);setOnlineResultStatus('已退出汽水音乐账号，本机曲库不受影响。');showToast('已退出汽水音乐账号。')}
-      catch(error){setOnlineResultStatus(onlineErrorMessage(error),true);showToast(onlineErrorMessage(error),true)}
-      finally{syncOnlineControls()}
+      if(!onlineReady)return;hideOnlineLoginCard();const attempt=onlineConnectAttempt,button=$('onlineLogoutBtn');button.disabled=true;button.setAttribute('aria-busy','true');
+      try{await onlineClient.logout();if(attempt!==onlineConnectAttempt)return;setOnlineAccount(null);onlineCurrentPlaylistId='';renderOnlinePlaylists([]);setOnlineResultStatus('已退出汽水音乐账号，本机曲库不受影响。');showToast('已退出汽水音乐账号。')}
+      catch(error){if(attempt===onlineConnectAttempt)showToast(onlineRequestFailure(error,attempt),true)}
+      finally{button.removeAttribute('aria-busy');syncOnlineControls()}
     });
     $('onlineLikedBtn').addEventListener('click',()=>void loadOnlineLiked());
     $('onlinePlaylistsBtn').addEventListener('click',()=>void loadOnlinePlaylists());
@@ -2612,7 +2740,7 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
   function showToast(message,error=false){clearTimeout(toastTimer);const el=$('toast');el.textContent=message;el.setAttribute('role',error?'alert':'status');el.classList.add('visible');toastTimer=setTimeout(()=>el.classList.remove('visible'),4400)}
   function setFill(el){const v=(el.value-el.min)/(el.max-el.min)*100;el.style.setProperty('--fill',v+'%')}
   function savePreferences(){if(backupRestoring)return;
-    try{localStorage.setItem('sonic-universe-preferences',JSON.stringify({preferencesVersion:2,theme:themeKey,volume,intensity,repeat,visualMode,particleCount,motionSpeed,playbackMode,space,storyEnabled,journeyAuto,postcardAuthor,postcardStyle,visualEffects,refinement:{...refinement}}));storageIssues.delete('preferences')}
+    try{localStorage.setItem('sonic-universe-preferences',JSON.stringify({preferencesVersion:2,theme:themeKey,volume,intensity,repeat,visualMode,particleCount,motionSpeed,energySaver,playbackMode,space,storyEnabled,journeyAuto,postcardAuthor,postcardStyle,visualEffects,refinement:{...refinement}}));storageIssues.delete('preferences')}
     catch{const first=!storageIssues.has('preferences');storageIssues.add('preferences');if(first)showToast('设置未能保存，当前浏览器可能限制了本机存储。',true)}
     updateStorageStatus();
   }
@@ -2645,6 +2773,7 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
   try{const prefs=JSON.parse(localStorage.getItem('sonic-universe-preferences')||'null');if(prefs){if(themes[prefs.theme])setTheme(prefs.theme,false);if(Number.isFinite(prefs.volume))volume=clamp(prefs.volume,0,1);if(Number.isFinite(prefs.intensity))intensity=clamp(prefs.intensity,.2,1);if(typeof prefs.repeat==='boolean')repeat=prefs.repeat}}catch{}
   palette={...targetPalette,core:[...targetPalette.core],second:[...targetPalette.second],shadow:[...targetPalette.shadow],cool:[...targetPalette.cool],hot:[...targetPalette.hot],ui:[...targetPalette.ui]};
   try{const prefs=JSON.parse(localStorage.getItem('sonic-universe-preferences')||'null');if(prefs){if(prefs.visualEffects){const savedResponse=['soft','balanced','strong'].includes(prefs.visualEffects.response)?prefs.visualEffects.response:refinement.profile,legacyTrail=prefs.preferencesVersion!==2&&finite(prefs.visualEffects.trail,-1)===0;visualEffects={depth:finite(prefs.visualEffects.depth,.65,0,1),glow:finite(prefs.visualEffects.glow,.6,0,1),trail:legacyTrail?.55:finite(prefs.visualEffects.trail,.55,0,1),response:savedResponse,beat:prefs.visualEffects.beat===true}}if(visualModes[prefs.visualMode])visualMode=prefs.visualMode;if(Number.isFinite(prefs.particleCount))particleCount=Math.round(clamp(prefs.particleCount,400,6000)/200)*200;if(Number.isFinite(prefs.motionSpeed))motionSpeed=clamp(prefs.motionSpeed,.25,2);if(prefs.preferencesVersion!==2)localStorage.setItem('sonic-universe-preferences',JSON.stringify({...prefs,preferencesVersion:2,visualEffects}))}}catch{}
+  try{const prefs=JSON.parse(localStorage.getItem('sonic-universe-preferences')||'null');if(typeof prefs?.energySaver==='boolean'){energySaver=prefs.energySaver;energyUserChoice=true}const shared=SonicVisualSystem.parseShare(location.search,captureLook());if(new URLSearchParams(location.search).has('energySaver')){energySaver=shared.look.energySaver;energyUserChoice=true}}catch{}
   setVisualMode(visualMode,false);updateVisualControls();loadNebulaAssets();
   $('volume').value=Math.round(volume*100);$('intensity').value=Math.round(intensity*100);$('intensityValue').value=Math.round(intensity*100)+'%';setFill($('volume'));setFill($('intensity'));
 
@@ -3347,19 +3476,32 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
     const intro=document.querySelector('.intro'),mobileExtra=w<=760?Math.max(0,intro.offsetTop+intro.offsetHeight+20-205):0;
     const extraValue=Math.round(mobileExtra)+'px';if(app.style.getPropertyValue('--mobile-extra')!==extraValue)app.style.setProperty('--mobile-extra',extraValue);
     renderProfile=SonicVisualSystem.performanceProfile({width:w,dpr:devicePixelRatio||1,deviceMemory:navigator.deviceMemory,hardwareConcurrency:navigator.hardwareConcurrency,coarsePointer:matchMedia('(pointer: coarse)').matches});
-    h=app.classList.contains('quiet')?app.getBoundingClientRect().height:app.clientHeight;dpr=renderProfile.pixelRatio;canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);
+    h=app.classList.contains('quiet')?app.getBoundingClientRect().height:app.clientHeight;dpr=energySaver?Math.min(1,renderProfile.pixelRatio):renderProfile.pixelRatio;
+    const pixelWidth=Math.round(w*dpr),pixelHeight=Math.round(h*dpr),canvasResized=canvas.width!==pixelWidth||canvas.height!==pixelHeight;
+    if(canvasResized){canvas.width=pixelWidth;canvas.height=pixelHeight}ctx.setTransform(dpr,0,0,dpr,0,0);
     const perfLabel={mobile:'移动端性能模式',balanced:'平衡性能模式',desktop:'完整性能模式'}[renderProfile.tier];
-    $('performanceStatus').textContent=perfLabel+' · 上限 '+renderProfile.maxParticles.toLocaleString('en-US')+' 粒子 · '+Math.round(renderProfile.maxTrail*100)+'% 拖尾';app.dataset.performanceTier=renderProfile.tier;app.dataset.effectiveParticleCap=String(renderProfile.maxParticles);app.dataset.effectiveTrailCap=renderProfile.maxTrail.toFixed(2);
+    $('performanceStatus').textContent=perfLabel+(energySaver?' · 省电 30 帧':' · 流畅预览')+' · 最多 '+Math.min(renderProfile.maxParticles,energySaver?1000:Infinity).toLocaleString('en-US')+' 颗星尘';app.dataset.performanceTier=renderProfile.tier;app.dataset.effectiveParticleCap=String(renderProfile.maxParticles);app.dataset.effectiveTrailCap=String(Math.min(renderProfile.maxTrail,energySaver?.28:1));app.dataset.energySaver=String(energySaver);app.dataset.targetFps=String(reduced?15:energySaver?30:60);
     const mobile=w<=760,quiet=app.classList.contains('quiet');centerX=w*(mobile||quiet?.5:.647);centerY=quiet?h*.5:mobile?406+mobileExtra:Math.min(h*.47,500);baseR=quiet?Math.min(w*.31,h*.31,340):mobile?Math.min(w*.30,152):Math.min(w*.185,h*.225,255);
-    randState=104729;stars=Array.from({length:Math.min(850,Math.round(w*h/1450))},()=>({x:rand(),y:rand(),r:.35+rand()*1.15,alpha:.12+rand()*.64,speed:.2+rand()*.8,phase:rand()*Math.PI*2}));
-    dust=Array.from({length:mobile?210:390},()=>({angle:rand()*Math.PI*2,distance:.65+rand()*2.2,z:rand(),size:.3+rand()*1.5,phase:rand()*6.28}));
+    randState=104729;stars=Array.from({length:Math.min(energySaver?180:850,Math.round(w*h/(energySaver?4000:1450)))},()=>({x:rand(),y:rand(),r:.35+rand()*1.15,alpha:.12+rand()*.64,speed:.2+rand()*.8,phase:rand()*Math.PI*2}));
+    dust=Array.from({length:energySaver?70:mobile?210:390},()=>({angle:rand()*Math.PI*2,distance:.65+rand()*2.2,z:rand(),size:.3+rand()*1.5,phase:rand()*6.28}));app.dataset.backgroundStarCount=String(stars.length);app.dataset.pixelRatio=String(dpr);
     rebuildParticles();rebuildBackground();scheduleOnlineLyricsPosition();
+    // Resizing clears a canvas immediately. Paint it before exposing that clear frame.
+    if(canvasResized&&visualFirstFrameReady)try{draw(sceneTime,1/60)}catch(error){console.error(error);stopAnimation();window.activateVisualFallback('画面尺寸更新失败，已换成轻量星光。可重试完整效果。')}
   }
   function rebuildParticles(){
+    effectiveParticleCount=Math.min(particleCount,renderProfile.maxParticles,energySaver?1000:Infinity);exportParticleCache=null;
     randState=824287;
-    ring=Array.from({length:particleCount},()=>({a:rand()*Math.PI*2,band:(rand()+rand()+rand()-1.5),r:rand()*.95+.25,alpha:rand()*.65+.2,phase:rand()*Math.PI*2,layer:rand()}));
-    galaxyParticles=Array.from({length:particleCount},()=>({radial:Math.pow(rand(),.65),arm:Math.floor(rand()*4),scatter:(rand()+rand()+rand()-1.5),height:(rand()+rand()-1)*.12,size:.35+rand()*1.3,phase:rand()*Math.PI*2,depth:rand()}));
-    gpuDirty=true;app.dataset.particleCount=String(particleCount);
+    ring=Array.from({length:effectiveParticleCount},()=>({a:rand()*Math.PI*2,band:(rand()+rand()+rand()-1.5),r:rand()*.95+.25,alpha:rand()*.65+.2,phase:rand()*Math.PI*2,layer:rand()}));
+    galaxyParticles=Array.from({length:effectiveParticleCount},()=>({radial:Math.pow(rand(),.65),arm:Math.floor(rand()*4),scatter:(rand()+rand()+rand()-1.5),height:(rand()+rand()-1)*.12,size:.35+rand()*1.3,phase:rand()*Math.PI*2,depth:rand()}));
+    gpuDirty=true;app.dataset.particleCount=String(particleCount);app.dataset.effectiveParticleCount=String(effectiveParticleCount);
+  }
+  function exportParticles(){
+    if(exportParticleCache?.count===particleCount)return exportParticleCache;
+    // Build only when exporting; preview quality never changes the saved settings.
+    const saved=randState;randState=824287;
+    const exportRing=Array.from({length:particleCount},()=>({a:rand()*Math.PI*2,band:(rand()+rand()+rand()-1.5),r:rand()*.95+.25,alpha:rand()*.65+.2,phase:rand()*Math.PI*2,layer:rand()}));
+    const exportGalaxy=Array.from({length:particleCount},()=>({radial:Math.pow(rand(),.65),arm:Math.floor(rand()*4),scatter:(rand()+rand()+rand()-1.5),height:(rand()+rand()-1)*.12,size:.35+rand()*1.3,phase:rand()*Math.PI*2,depth:rand()}));
+    randState=saved;exportParticleCache={count:particleCount,ring:exportRing,galaxy:exportGalaxy};return exportParticleCache;
   }
   const resizeObserver=new ResizeObserver(resize);resizeObserver.observe(app);
   window.addEventListener('scroll',scheduleOnlineLyricsPosition,{passive:true});
@@ -3923,11 +4065,12 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
     ctx.closePath();ctx.fill();ctx.restore();
   }
   function drawFluidUniverse(cx,cy,r,t,dt,useAssets=false){
-    const profile=renderProfile,look=SonicVisualSystem.effectiveLook({...captureLook(),trail:visualEffects.trail,response:visualEffects.response,beat:visualEffects.beat},profile);
-    const state=fluidTrailContext(ctx,w,h,Math.max(1,dpr)),g=state.ctx,sprite=fluidSprite(themeKey),count=Math.min(ring.length,look.effectiveParticleCount);
+    const profile=exportRendering?SonicVisualSystem.performanceProfile({width:1280}):renderProfile,look=SonicVisualSystem.effectiveLook({...captureLook(),energySaver:exportRendering?false:energySaver},profile);
+    const particles=exportRendering?exportParticles():{ring,galaxy:galaxyParticles},renderRing=particles.ring,renderGalaxy=particles.galaxy;
+    const state=fluidTrailContext(ctx,w,h,Math.max(1,dpr)),g=state.ctx,sprite=fluidSprite(themeKey),count=Math.min(renderRing.length,look.effectiveParticleCount);
     const assetScenes=['ring','galaxy','peaks','blackhole'],loadedScenes=assetScenes.filter(nebulaAssetAvailable),activeSceneLoaded=Boolean(useAssets&&nebulaAssetAvailable(visualMode)),anySceneLoaded=Boolean(useAssets&&loadedScenes.length);
     g.save();g.setTransform(state.dpr,0,0,state.dpr,0,0);g.globalCompositeOperation='destination-out';g.globalAlpha=SonicVisualSystem.trailAlpha(look.effectiveTrail,Math.max(.012,dt||1/60));g.fillStyle='#000';g.fillRect(0,0,w,h);g.restore();
-    const strength=(anySceneLoaded?.23:.42)+look.intensity*(anySceneLoaded?.38:.72)+visualEffects.glow*(anySceneLoaded?.08:.18),time=t*.16*look.motionSpeed,bassLift=bass*look.intensity,midFlow=mid*.7+music.flow*.22,flow=midFlow*look.motionSpeed;
+    const strength=(anySceneLoaded?.23:.42)+look.intensity*(anySceneLoaded?.38:.72)+look.glow*(anySceneLoaded?.08:.18),time=t*.16*look.motionSpeed,bassLift=bass*look.intensity,midFlow=mid*.7+music.flow*.22,flow=midFlow*look.motionSpeed;
     const overlayCount=anySceneLoaded?Math.max(w<=760?10:14,Math.min(w<=760?24:42,Math.round(count*(w<=760?.012:.018)))):count;
     app.dataset.nebulaAccentCount=String(overlayCount);
     app.dataset.nebulaFramesLoaded=loadedScenes.join(',');
@@ -3939,27 +4082,27 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
     const ringWeight=sceneWeights.ring;
     if(useAssets&&nebulaAssetAvailable('ring'))drawNebulaAsset('ring',cx,cy,r,t,ringWeight,look);
     if(ringWeight>.002)for(let i=0;i<overlayCount;i++){
-      const p=ring[i],wave=SonicVisualSystem.fbm2(i*.031+time*.18,p.layer*2.2-time*.08,3),angle=p.a+time*.035+p.layer*.7+flow*.07,radius=r*(.56+p.r*.52+p.band*.055+wave*.025+bassLift*.025),squash=.83+visualEffects.depth*.06,flash=Math.pow(Math.max(0,Math.sin(p.phase*7+t*.5)),18)*treblePulse;
-      pixel(cx+Math.cos(angle)*radius*1.32,cy+Math.sin(angle)*radius*squash,(anySceneLoaded?.72:1.7)+visualEffects.glow*(anySceneLoaded?.7:2.2)+p.layer*(anySceneLoaded?.55:1.8)+flash*(anySceneLoaded?1.8:4),(anySceneLoaded?.022:.1)+p.alpha*(anySceneLoaded?.08:.28)+flash*(anySceneLoaded?.22:.42),(flash>.08&&(anySceneLoaded?p.layer>.68:p.layer>.4)));
+      const p=renderRing[i],wave=SonicVisualSystem.fbm2(i*.031+time*.18,p.layer*2.2-time*.08,3),angle=p.a+time*.035+p.layer*.7+flow*.07,radius=r*(.56+p.r*.52+p.band*.055+wave*.025+bassLift*.025),squash=.83+visualEffects.depth*.06,flash=Math.pow(Math.max(0,Math.sin(p.phase*7+t*.5)),18)*treblePulse;
+      pixel(cx+Math.cos(angle)*radius*1.32,cy+Math.sin(angle)*radius*squash,(anySceneLoaded?.72:1.7)+look.glow*(anySceneLoaded?.7:2.2)+p.layer*(anySceneLoaded?.55:1.8)+flash*(anySceneLoaded?1.8:4),(anySceneLoaded?.022:.1)+p.alpha*(anySceneLoaded?.08:.28)+flash*(anySceneLoaded?.22:.42),(flash>.08&&(anySceneLoaded?p.layer>.68:p.layer>.4)));
     }
     const galaxyWeight=sceneWeights.galaxy;
     if(useAssets&&nebulaAssetAvailable('galaxy'))drawNebulaAsset('galaxy',cx,cy,r,t,galaxyWeight,look);
     if(galaxyWeight>.002)for(let i=0;i<overlayCount;i++){
-      const p=galaxyParticles[i],noise=SonicVisualSystem.fbm2(i*.027+time*.11,p.phase-time*.035,3),radius=r*(.08+Math.pow(p.radial,.72)*1.3*(1+bassLift*.025)),angle=p.arm*Math.PI*.5+Math.log1p(radius/r)*2.35+time*.032+flow*.11+noise*.08+p.scatter*.12,flash=Math.pow(Math.max(0,Math.sin(p.phase*9+t*.7)),20)*treblePulse;
-      pixel(cx+Math.cos(angle)*radius*1.36,cy+Math.sin(angle)*radius*(.62+visualEffects.depth*.16),(anySceneLoaded?.58:1.2)+visualEffects.glow*(anySceneLoaded?.65:1.8)+p.size*(anySceneLoaded?.44:1)+flash*(anySceneLoaded?1.9:4),(anySceneLoaded?.018:.06)+(1-p.radial)*(anySceneLoaded?.09:.35)+flash*(anySceneLoaded?.24:.45),flash>.06||(p.radial<.1&&(anySceneLoaded?p.depth>.55:true)));
+      const p=renderGalaxy[i],noise=SonicVisualSystem.fbm2(i*.027+time*.11,p.phase-time*.035,3),radius=r*(.08+Math.pow(p.radial,.72)*1.3*(1+bassLift*.025)),angle=p.arm*Math.PI*.5+Math.log1p(radius/r)*2.35+time*.032+flow*.11+noise*.08+p.scatter*.12,flash=Math.pow(Math.max(0,Math.sin(p.phase*9+t*.7)),20)*treblePulse;
+      pixel(cx+Math.cos(angle)*radius*1.36,cy+Math.sin(angle)*radius*(.62+visualEffects.depth*.16),(anySceneLoaded?.58:1.2)+look.glow*(anySceneLoaded?.65:1.8)+p.size*(anySceneLoaded?.44:1)+flash*(anySceneLoaded?1.9:4),(anySceneLoaded?.018:.06)+(1-p.radial)*(anySceneLoaded?.09:.35)+flash*(anySceneLoaded?.24:.45),flash>.06||(p.radial<.1&&(anySceneLoaded?p.depth>.55:true)));
     }
     const peakWeight=sceneWeights.peaks;
     if(useAssets&&nebulaAssetAvailable('peaks'))drawNebulaAsset('peaks',cx,cy,r,t,peakWeight,look);
     if(peakWeight>.002)for(let i=0;i<overlayCount;i++){
       const u=((i*.61803398875)%1)*2-1,phase=(i*.381966)%1,band=terrainBands[Math.min(terrainBands.length-1,Math.floor((u+1)*.5*terrainBands.length))],noise=SonicVisualSystem.fbm2(i*.021+time*.1,phase-time*.035,3),layer=phase,base=cy+r*(.38-layer*.26)+bassLift*r*.03,height=(band*.34+SonicVisualSystem.smoothstep(-.6,.7,noise)*.2+midFlow*.06)*r*(.7+look.intensity*.45),x=cx+u*r*1.46,flash=Math.pow(Math.max(0,Math.sin(phase*15+t*.8)),22)*treblePulse;
-      pixel(x,base-height,(anySceneLoaded?.42:r*(.6+layer*.7))+visualEffects.glow*.5,peakWeight*((anySceneLoaded?.018:.035)+(anySceneLoaded?.011:.07)*(1-layer)+flash*(anySceneLoaded?.14:.12))*strength,flash>.08);
+      pixel(x,base-height,(anySceneLoaded?.42:r*(.6+layer*.7))+look.glow*.5,peakWeight*((anySceneLoaded?.018:.035)+(anySceneLoaded?.011:.07)*(1-layer)+flash*(anySceneLoaded?.14:.12))*strength,flash>.08);
       if(!anySceneLoaded&&layer<.42)pixel(x+noise*r*.1,base-height*.84,r*(.95+layer),peakWeight*.045*strength,false);
     }
     const holeWeight=sceneWeights.blackhole;
     if(useAssets&&nebulaAssetAvailable('blackhole'))drawNebulaAsset('blackhole',cx,cy,r,t,holeWeight,look);
     if(holeWeight>.002)for(let i=0;i<overlayCount;i++){
-      const p=galaxyParticles[i],cycle=(p.radial-time*(.014+midFlow*.02))%1,inward=cycle<0?cycle+1:cycle,radius=r*(.13+Math.pow(inward,1.8)*1.45),noise=SonicVisualSystem.fbm2(i*.025+time*.12,inward*3-time*.06,3),angle=p.arm*Math.PI*.5+inward*5.2-time*.08-flow*.18+noise*.09,heat=1-inward,flash=Math.pow(Math.max(0,Math.sin(p.phase*11+t*.9)),18)*treblePulse,halo=.025+Math.max(0,.5-Math.abs(inward-.13))*.12+bassLift*.025;
-      if(inward>.38)pixel(cx+Math.cos(angle)*radius*1.42,cy+Math.sin(angle)*radius*.68,(anySceneLoaded?.62:1.4)+heat*(anySceneLoaded?1.4:3.8)+visualEffects.glow*(anySceneLoaded?.65:2)+flash*(anySceneLoaded?2:5),(anySceneLoaded?.018:.055)+heat*(anySceneLoaded?.09:.32)+flash*(anySceneLoaded?.2:.4)+bassLift*halo,heat>.64||flash>.08);
+      const p=renderGalaxy[i],cycle=(p.radial-time*(.014+midFlow*.02))%1,inward=cycle<0?cycle+1:cycle,radius=r*(.13+Math.pow(inward,1.8)*1.45),noise=SonicVisualSystem.fbm2(i*.025+time*.12,inward*3-time*.06,3),angle=p.arm*Math.PI*.5+inward*5.2-time*.08-flow*.18+noise*.09,heat=1-inward,flash=Math.pow(Math.max(0,Math.sin(p.phase*11+t*.9)),18)*treblePulse,halo=.025+Math.max(0,.5-Math.abs(inward-.13))*.12+bassLift*.025;
+      if(inward>.38)pixel(cx+Math.cos(angle)*radius*1.42,cy+Math.sin(angle)*radius*.68,(anySceneLoaded?.62:1.4)+heat*(anySceneLoaded?1.4:3.8)+look.glow*(anySceneLoaded?.65:2)+flash*(anySceneLoaded?2:5),(anySceneLoaded?.018:.055)+heat*(anySceneLoaded?.09:.32)+flash*(anySceneLoaded?.2:.4)+bassLift*halo,heat>.64||flash>.08);
     }
     g.restore();
     ctx.save();ctx.globalAlpha=lightAlpha();ctx.drawImage(state.surface,0,0,w,h);ctx.restore();
@@ -4014,10 +4157,11 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
   }
 
   function animate(now){
+    rafId=0;if(!animationRunning)return;
     try{
-      if(document.hidden){requestAnimationFrame(animate);return}
+      if(document.hidden){stopAnimation();return}
       const dt=Math.min((now-(lastFrame||now))/1000,.05);lastFrame=now;
-      const interval=reduced?1000/15:1000/60;if(now-drawTime<interval-1){requestAnimationFrame(animate);return}const elapsed=Math.min((now-(drawTime||now))/1000,.1);drawTime=now;
+      const interval=reduced?1000/15:energySaver&&!clipLocked()?1000/30:1000/60;if(now-drawTime<interval-1){rafId=requestAnimationFrame(animate);return}const elapsed=Math.min((now-(drawTime||now))/1000,.1);drawTime=now;const renderStarted=performance.now();
       updateInstrument(elapsed,now);updateAtelier(elapsed,now);readAudio(elapsed,now);updateStory(elapsed);if(!reduced&&seekVisualTarget===null)sceneTime+=elapsed*(.065+music.presence*.19+music.drift*.20+music.percussion*.12)*motionSpeed*(atelier.settings.breathing?lifeMotion:1);
       mouse.x+=(mouse.tx-mouse.x)*(reduced?0:.04);mouse.y+=(mouse.ty-mouse.y)*(reduced?0:.04);
       cloudBlend=Math.min(1,cloudBlend+elapsed*.65);
@@ -4027,9 +4171,16 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
       updatePolish(elapsed,now);draw(sceneTime,elapsed);renderClipFrame();frame++;
       if(now-lastUIUpdate>95){lastUIUpdate=now;updateTimeline();updateJourneyUI();updateExternalSignal(now);if($('clipDialog').open)clipUpdateControls();const values=[bass,mid,high];['bass','mid','high'].forEach((name,i)=>{const value=Math.round(values[i]*100);$(name+'Value').textContent=value+'%';$(name+'Fill').style.width=value+'%'});$('beatLight').style.opacity=.2+music.cloud*.8;$('melodyLight').style.opacity=.2+music.flow*.8;$('trebleLight').style.opacity=.2+music.shimmer*.8;app.dataset.musicLayers=JSON.stringify({cloud:+music.cloud.toFixed(3),flow:+music.flow.toFixed(3),shimmer:+music.shimmer.toFixed(3),presence:+music.presence.toFixed(3)});app.dataset.musicCharacter=JSON.stringify({sustain:+music.sustain.toFixed(3),percussion:+music.percussion.toFixed(3),air:+music.air.toFixed(3),drift:+music.drift.toFixed(3)});app.dataset.musicState=music.presence>.12?'listening':'resting';app.dataset.beatPulse=beatPulse.toFixed(3);app.dataset.treblePulse=treblePulse.toFixed(3)}
       if(!visualFirstFrameReady){visualFirstFrameReady=true;maybeFinishVisualLoading()}
-      requestAnimationFrame(animate);
-    }catch(error){console.error(error);window.reportVisualFatal?.('星空引擎运行中断：'+(error.message||'未知错误'))}
+      const renderCost=performance.now()-renderStarted;app.dataset.frameCost=renderCost.toFixed(1);
+      if(energySaver&&!clipLocked()){overloadFrames=renderCost>90?overloadFrames+1:Math.max(0,overloadFrames-2);if(overloadFrames>=30){stopAnimation();app.dataset.qualityReason='overloaded';window.activateVisualFallback('设备运行完整画面较吃力，已自动换成轻量星光。音乐可继续播放。');return}}
+      if(!energySaver&&!energyUserChoice&&!clipLocked()){slowFrameCount=renderCost>25?slowFrameCount+1:Math.max(0,slowFrameCount-1);if(slowFrameCount>=45){energySaver=true;resize();syncEffects();savePreferences();app.dataset.qualityReason='slow-device';showToast('检测到画面吃力，已自动开启省电模式。')}}
+      rafId=requestAnimationFrame(animate);
+    }catch(error){stopAnimation();console.error(error);window.reportVisualFatal?.('完整画面运行中断，已切换轻量星光。可继续听音乐，或重试完整效果。')}
   }
+  function startAnimation(){if(animationRunning||document.hidden)return;animationRunning=true;lastFrame=0;drawTime=0;app.dataset.rafRunning='true';rafId=requestAnimationFrame(animate)}
+  function stopAnimation(){animationRunning=false;if(rafId)cancelAnimationFrame(rafId);rafId=0;app.dataset.rafRunning='false'}
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)stopAnimation();else if(app.dataset.visualFallback!=='active')startAnimation()});
+  window.__retryVisualEngine=()=>{stopAnimation();visualFirstFrameReady=false;slowFrameCount=0;overloadFrames=0;energySaver=true;resize();syncEffects();startAnimation()};
   window.addEventListener('pagehide',()=>{saveSession();stopExternal('',true);generation++;loadGeneration++;stopDemo();audio.pause();if(objectUrl)URL.revokeObjectURL(objectUrl);if(audioContext)audioContext.close()});
   window.addEventListener('pageshow',e=>{if(e.persisted)location.reload()});
 
@@ -4069,7 +4220,7 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
     };
   }
 
-  try{setupProjectPack();setupJourney();setupPostcards();app.append($('postcardDialog'));setupLibraryFive();setupOnlineMusic();setupEditionThree();setupExternalFive();setupFilm();setupAtelier();setupInstrument();setupPolish();setupVisualPresets();updateTimeline();resize();requestAnimationFrame(animate);}catch(error){console.error(error);window.reportVisualFatal?.('星空引擎没有完成初始化：'+(error.message||'未知错误'))}
+  try{setupProjectPack();setupJourney();setupPostcards();app.append($('postcardDialog'));setupLibraryFive();setupOnlineMusic();setupEditionThree();setupExternalFive();setupFilm();setupAtelier();setupInstrument();setupPolish();setupVisualPresets();updateTimeline();resize();startAnimation();}catch(error){console.error(error);window.reportVisualFatal?.('完整画面初始化未完成，已启用轻量星光。可播放示例或重试。')}
 })();
 </script>
 </body>
