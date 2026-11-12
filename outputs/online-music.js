@@ -7,6 +7,7 @@
 
   const PROVIDER = 'qishui';
   const MAX_TEXT = 240;
+  const DEFAULT_COVER_TEMPLATE = 'tplv-b829550vbb';
 
   function text(value, fallback = '') {
     return typeof value === 'string' ? value.trim().slice(0, MAX_TEXT) : fallback;
@@ -16,7 +17,13 @@
     if (typeof value !== 'string') return null;
     try {
       const url = new URL(value);
-      return url.protocol === 'https:' ? url.toString() : null;
+      if (url.protocol !== 'https:' || url.username || url.password) return null;
+      if (/^p\d+-luna\.douyinpic\.com$/i.test(url.hostname)
+        && url.pathname.startsWith('/img/')
+        && !url.pathname.includes('~tplv-')) {
+        url.pathname += `~${DEFAULT_COVER_TEMPLATE}-resize:360:360.image`;
+      }
+      return url.toString();
     } catch {
       return null;
     }
@@ -183,6 +190,13 @@
       }
     }
 
+    function coverUrl(mediaId) {
+      const id = String(mediaId || '');
+      return /^\d{1,30}$/.test(id)
+        ? resolveUrl(`/api/qishui/tracks/${encodeURIComponent(id)}/cover`)
+        : '';
+    }
+
     return {
       get available() { return available; },
       get baseUrl() { return baseUrl; },
@@ -210,6 +224,7 @@
       playlist: id => request(`/api/qishui/playlists/${encodeURIComponent(id)}?limit=100&offset=0`, undefined, 12000),
       lyrics: id => request(`/api/qishui/songs/${encodeURIComponent(id)}/lyrics`, undefined, 10000),
       audio: mediaId => request(`/api/qishui/tracks/${encodeURIComponent(mediaId)}/audio`, {}, 15000),
+      coverUrl,
       like: (mediaId, liked) => request('/api/qishui/like', { id: mediaId, liked }, 12000),
       playlistEdit: (operation, id, ids) => request(`/api/qishui/playlist/${operation}`, { id, ids }, 12000),
       resolveUrl,

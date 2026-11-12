@@ -26,6 +26,19 @@ test('rejects insecure track data and invalid media ids', () => {
   }).cover, null);
 });
 
+test('repairs legacy Qishui cover URLs and exposes the local cover route', () => {
+  const track = online.normalizeTrack({
+    provider: 'qishui',
+    mediaId: '7676337516358617115',
+    name: '晴天',
+    cover: 'https://p3-luna.douyinpic.com/img/cover-id',
+  });
+  assert.match(track.cover, /~tplv-b829550vbb-resize:360:360\.image$/);
+  const client = online.createClient({ baseUrls: ['http://127.0.0.1:8765'] });
+  assert.equal(client.coverUrl(track.mediaId), 'http://127.0.0.1:8765/api/qishui/tracks/7676337516358617115/cover');
+  assert.equal(client.coverUrl('../bad'), '');
+});
+
 test('migrates legacy link-only soda records without making them playable', () => {
   const migrated = online.migrateLegacyLink({ id: 'soda-1', kind: 'soda', name: '旧链接' });
   assert.equal(migrated.kind, 'soda');

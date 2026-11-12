@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#080811">
-<title>声波宇宙 30 · 让汽水音乐成为星空</title>
+<title>声波宇宙 31 · 让汽水音乐成为星空</title>
 <style>.help-btn{text-decoration:none}.footer-links{flex-wrap:wrap}</style>
 <meta name="description" content="搜索汽水音乐、同步喜欢与歌单，并用可公开播放的歌曲实时驱动声波宇宙。">
 <meta property="og:type" content="website">
@@ -214,6 +214,15 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
 .online-onboarding{display:grid;gap:14px}.online-compat{margin-top:4px}.online-compat summary{cursor:pointer;color:#a99db8;font-size:11px;padding:8px 0}.online-compat[open] summary{margin-bottom:12px}
 .online-lyrics{position:fixed;z-index:8;left:50%;bottom:155px;transform:translateX(-50%);width:min(680px,calc(100vw - 36px));padding:15px 18px;border:1px solid rgba(var(--accent-rgb),.2);border-radius:13px;background:linear-gradient(135deg,rgba(11,12,24,.88),rgba(16,13,28,.72));backdrop-filter:blur(16px);box-shadow:0 18px 60px rgba(0,0,0,.35);text-align:center;pointer-events:auto}.online-lyrics[hidden]{display:none}.online-lyrics-head{display:flex;align-items:center;gap:10px;justify-content:space-between;margin-bottom:9px;color:#a99eba;font-size:9px;letter-spacing:1.6px;text-transform:uppercase}.online-lyrics-head button{width:24px;height:24px}.online-lyrics-line{font-size:15px;line-height:1.75;color:#f0eaff;min-height:26px;transition:opacity .18s}.online-lyrics-next{font-size:10px;line-height:1.6;color:#8f849f;margin-top:5px}.quiet .online-lyrics{bottom:92px}.online-preview-note{display:inline-flex;align-items:center;gap:5px;font-size:9px;color:#e7c67e;border:1px solid rgba(231,198,126,.25);border-radius:999px;padding:3px 7px;margin-left:7px;vertical-align:1px}
 @media(max-width:760px){.online-results{grid-template-columns:1fr;max-height:none}.online-login-card{grid-template-columns:1fr}.online-qr{width:154px;height:154px;justify-self:center}.online-search{grid-template-columns:1fr}.online-search button{width:100%}.online-local-callout{align-items:stretch;flex-direction:column}.online-local-callout button{width:100%;min-height:38px}.online-lyrics{position:fixed;bottom:138px;padding:12px 14px}.online-lyrics-line{font-size:13px}.online-service{padding:13px}.online-service-row{align-items:flex-start}}
+/* V31 · living cover and lyric stage */
+.player{position:relative;isolation:isolate;overflow:hidden;grid-template-columns:minmax(238px,1.02fr) minmax(285px,1.42fr) minmax(170px,.78fr);border-color:rgba(var(--accent-rgb),.22);background:linear-gradient(115deg,rgba(24,21,36,.94),rgba(18,16,29,.87))}.player::after{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;background:linear-gradient(90deg,rgba(9,8,16,.04),rgba(9,8,16,.1) 42%,rgba(9,8,16,.56)),linear-gradient(0deg,rgba(4,4,10,.34),transparent 55%)}.player>*{position:relative;z-index:1}.player-ambience{position:absolute;inset:-24px;z-index:0;pointer-events:none;overflow:hidden;opacity:0;transition:opacity .7s ease}.player-ambience img{display:block;width:100%;height:100%;object-fit:cover;filter:blur(32px) saturate(1.35) brightness(.62);transform:scale(1.16)}.player.has-cover .player-ambience{opacity:.32}.track{gap:16px}.album-button{width:80px;height:80px;border:1px solid rgba(var(--accent-rgb),.28);border-radius:14px;background:radial-gradient(circle at 41% 34%,rgba(var(--accent-rgb),.9),rgba(var(--accent-rgb),.22) 24%,#21182d 56%,#090a14 82%);box-shadow:0 13px 35px rgba(0,0,0,.36),inset 0 0 0 1px rgba(255,255,255,.035);transition:transform .35s ease,border-color .35s ease,box-shadow .35s ease}.album-button::before{width:92px;height:30px;top:24px;left:-7px;border:1px solid rgba(var(--accent-rgb),.34);opacity:.7;z-index:4;transition:transform .6s ease}.album-button::after{left:61px;top:7px;z-index:6;color:#fff3d8;text-shadow:0 0 13px rgba(var(--accent-rgb),.9)}.album-button:hover{transform:translateY(-2px) scale(1.025);border-color:rgba(var(--accent-rgb),.68);box-shadow:0 16px 42px rgba(0,0,0,.45),0 0 30px rgba(var(--accent-rgb),.15)}.album-button:hover::before{transform:rotate(20deg) scale(1.06)}.album-button img{z-index:3;border-radius:12px;opacity:0;transform:scale(1.04);transition:opacity .5s ease,transform .7s ease}.album-button.cover-ready img{opacity:1;transform:scale(1)}.album-button.has-cover::before,.album-button.has-cover::after{display:block}.album-orbit{position:absolute;inset:-7px;z-index:2;border:1px solid rgba(var(--accent-rgb),.3);border-radius:19px;pointer-events:none;transition:inset .35s ease,border-color .35s ease}.album-orbit::before,.album-orbit::after{content:"";position:absolute;border-radius:50%;background:var(--accent);box-shadow:0 0 10px rgba(var(--accent-rgb),.8)}.album-orbit::before{width:3px;height:3px;left:9px;top:8px}.album-orbit::after{width:2px;height:2px;right:5px;bottom:14px;opacity:.72}.album-button:hover .album-orbit{inset:-10px;border-color:rgba(var(--accent-rgb),.55)}.album-shine{position:absolute;inset:0;z-index:5;border-radius:12px;pointer-events:none;background:linear-gradient(132deg,rgba(255,255,255,.24),transparent 29%,transparent 72%,rgba(var(--accent-rgb),.16));mix-blend-mode:screen;opacity:.65}.track-text{min-width:0;padding-right:4px}.now-playing-label{display:flex;align-items:center;gap:6px;margin-bottom:5px;font:7px ui-monospace,monospace;letter-spacing:1.7px;color:rgba(var(--accent-rgb),.92);white-space:nowrap}.now-playing-label:before{content:"";width:3px;height:3px;border-radius:50%;background:var(--accent);box-shadow:0 0 9px rgba(var(--accent-rgb),.9)}.player .track-title{max-width:245px;margin-bottom:7px;font-size:14px;letter-spacing:.7px;color:#f2ebfa}.player .track-sub{max-width:260px;color:#a79bb4;line-height:1.5}.player .track-tag{margin-left:8px}
+
+.online-lyrics{isolation:isolate;width:min(780px,calc(100vw - 38px));padding:20px 25px 15px;overflow:hidden;border-color:rgba(var(--accent-rgb),.3);border-radius:20px;background:radial-gradient(ellipse at 50% -20%,rgba(var(--accent-rgb),.2),transparent 54%),linear-gradient(145deg,rgba(8,9,18,.91),rgba(17,12,27,.86));box-shadow:0 24px 80px rgba(0,0,0,.46),inset 0 1px 0 rgba(255,255,255,.055);backdrop-filter:blur(24px) saturate(1.2);text-align:left}.online-lyrics::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;opacity:.24;background-image:radial-gradient(circle at 18% 25%,rgba(255,255,255,.5) 0 1px,transparent 1.2px),radial-gradient(circle at 76% 36%,rgba(var(--accent-rgb),.55) 0 1px,transparent 1.2px),radial-gradient(circle at 44% 80%,rgba(255,255,255,.35) 0 1px,transparent 1.2px);background-size:73px 67px,101px 89px,127px 113px}.online-lyrics-aura{position:absolute;left:50%;top:41%;width:62%;height:74%;transform:translate(-50%,-50%);border-radius:50%;pointer-events:none;background:radial-gradient(ellipse,rgba(var(--accent-rgb),.13),transparent 68%);filter:blur(11px)}.online-lyrics-head{position:relative;display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding-bottom:13px;border-bottom:1px solid rgba(var(--accent-rgb),.13)}.online-lyrics-identity{min-width:0}.online-lyrics-kicker{display:flex;align-items:center;gap:7px;color:#b8a3cf;font:7px ui-monospace,monospace;letter-spacing:1.8px}.online-lyrics-kicker i,.online-lyrics-foot i{display:inline-block;width:4px;height:4px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px rgba(var(--accent-rgb),.95)}.online-lyrics-identity strong{display:block;max-width:600px;margin-top:7px;color:#eee6f7;font-size:12px;font-weight:400;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.5px}.online-lyrics-actions{display:flex;align-items:center;gap:12px;flex:none}.online-lyrics-source{padding:4px 7px;border:1px solid rgba(var(--accent-rgb),.18);border-radius:999px;color:#9c8eab;font:6px ui-monospace,monospace;letter-spacing:1.2px}.online-lyrics-head button{width:26px;height:26px;border:1px solid rgba(255,255,255,.07);border-radius:50%;font-size:14px;color:#ad9eb9}.online-lyrics-viewport{position:relative;height:252px;margin:2px 0 0;overflow:hidden;mask-image:linear-gradient(to bottom,transparent,#000 17%,#000 83%,transparent);-webkit-mask-image:linear-gradient(to bottom,transparent,#000 17%,#000 83%,transparent)}.online-lyrics-track{position:absolute;top:50%;left:0;right:0;will-change:transform;transition:transform .72s cubic-bezier(.2,.75,.24,1);transform:translate3d(0,0,0)}.online-lyrics-row{position:relative;min-height:43px;margin:0;padding:10px 42px;color:#93869f;font-size:13px;line-height:1.7;text-align:center;letter-spacing:.7px;opacity:.19;transform:scale(.94);transform-origin:center;transition:opacity .5s ease,color .5s ease,transform .5s ease,filter .5s ease;text-wrap:balance}.online-lyrics-row.is-past{opacity:.29}.online-lyrics-row.is-next{opacity:.58;color:#b7a9c4;transform:scale(.97)}.online-lyrics-row.is-current{opacity:1;color:#fbf5ff;font-size:20px;font-weight:500;letter-spacing:1.2px;text-shadow:0 0 28px rgba(var(--accent-rgb),.5),0 1px 14px rgba(255,255,255,.18);transform:scale(1)}.online-lyrics-row.is-current::before{content:"";position:absolute;left:18px;top:50%;width:13px;height:1px;background:linear-gradient(90deg,transparent,var(--accent));box-shadow:0 0 9px rgba(var(--accent-rgb),.8)}.online-lyrics-row.is-current::after{content:"";position:absolute;right:18px;top:50%;width:13px;height:1px;background:linear-gradient(90deg,var(--accent),transparent);box-shadow:0 0 9px rgba(var(--accent-rgb),.8)}.online-lyrics-status{position:absolute;inset:0;display:none;place-items:center;padding:28px;text-align:center;color:#c2b0d4;font-size:13px;line-height:1.9;letter-spacing:.6px}.online-lyrics-viewport.is-empty .online-lyrics-track{display:none}.online-lyrics-viewport.is-empty .online-lyrics-status{display:grid}.online-lyrics-foot{display:flex;justify-content:space-between;gap:15px;padding-top:12px;border-top:1px solid rgba(var(--accent-rgb),.11);color:#766a81;font:7px ui-monospace,monospace;letter-spacing:1.1px}.online-lyrics-foot span:first-child{display:flex;align-items:center;gap:7px}.online-lyrics-foot b{color:#c5b2d8;font-weight:400}.online-lyrics-foot span:last-child{color:#675b74;text-align:right}.quiet .online-lyrics{bottom:92px}
+
+@media(max-width:1050px){.player{grid-template-columns:minmax(208px,1fr) minmax(230px,1.35fr) 160px}.player .track-title{max-width:185px}.player .track-sub{max-width:195px}.album-button{width:70px;height:70px}.album-button::before{width:81px;height:27px;top:21px;left:-6px}.album-button::after{left:53px;top:6px}.online-lyrics{width:min(720px,calc(100vw - 32px))}}
+@media(max-width:760px){.player{grid-template-columns:minmax(0,1fr) auto}.album-button{width:62px;height:62px;border-radius:12px}.album-button img{border-radius:10px}.album-orbit{inset:-5px;border-radius:16px}.track{gap:11px}.track-text{padding-right:0}.now-playing-label{font-size:6px;letter-spacing:1.2px;margin-bottom:4px}.player .track-title{max-width:190px;font-size:12px;margin-bottom:5px}.player .track-sub{max-width:190px;font-size:8px}.online-lyrics{width:calc(100vw - 24px);padding:15px 14px 12px;border-radius:16px}.online-lyrics-head{gap:9px;padding-bottom:11px}.online-lyrics-kicker{font-size:6px;letter-spacing:1.1px}.online-lyrics-identity strong{max-width:190px;margin-top:5px;font-size:10px}.online-lyrics-actions{gap:7px}.online-lyrics-head button{width:24px;height:24px}.online-lyrics-viewport{height:200px}.online-lyrics-row{min-height:37px;padding:8px 20px;font-size:11px}.online-lyrics-row.is-current{padding-left:28px;padding-right:28px;font-size:16px;letter-spacing:.8px}.online-lyrics-row.is-current::before,.online-lyrics-row.is-current::after{width:7px}.online-lyrics-row.is-current::before{left:8px}.online-lyrics-row.is-current::after{right:8px}.online-lyrics-status{font-size:11px}.online-lyrics-foot{justify-content:center;font-size:6px}.online-lyrics-foot span:last-child{display:none}}
+@media(max-width:380px){.album-button{width:55px;height:55px}.player .track-title,.player .track-sub{max-width:145px}.online-lyrics-identity strong{max-width:155px}.online-lyrics-viewport{height:188px}.online-lyrics-row.is-current{font-size:15px}}
+@media(prefers-reduced-motion:reduce){.album-button,.album-button img,.album-orbit,.online-lyrics-track,.online-lyrics-row,.player-ambience{transition:none!important}}
 </style>
 </head>
 <body>
@@ -226,7 +235,7 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
   <canvas id="universe" role="img" aria-label="一片随音乐频率起伏的星空，低音推开星云，中频留下星轨，高音点亮星闪">你的浏览器暂不支持星空画布。</canvas>
   <div class="grain" aria-hidden="true"></div>
   <header class="header">
-    <div class="brand"><div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M7 17v-2m4 8V9m5 17V6m5 16V10m4 8v-4"/></svg></div><div><div class="brand-name">声波宇宙<span class="version">VOL.30</span></div><div class="brand-en">SONIC UNIVERSE</div></div></div>
+    <div class="brand"><div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M7 17v-2m4 8V9m5 17V6m5 16V10m4 8v-4"/></svg></div><div><div class="brand-name">声波宇宙<span class="version">VOL.31</span></div><div class="brand-en">SONIC UNIVERSE</div></div></div>
     <div class="header-right"><button class="header-action external-action" id="externalBtn" aria-label="外部音乐联动" title="外部音乐联动"><svg viewBox="0 0 24 24"><path d="M3 10v4m4-7v10m5-14v18m5-14v10m4-7v4"/></svg><span class="action-label">外部联动</span></button><button class="header-action studio-action" id="studioBtn" aria-label="布置我的音乐空间" title="布置空间"><svg viewBox="0 0 24 24"><path d="m12 3 2.3 6.7L21 12l-6.7 2.3L12 21l-2.3-6.7L3 12l6.7-2.3Z"/></svg><span class="action-label">布置空间</span></button><button class="header-action" id="queueBtn" aria-label="打开播放列表" title="播放列表"><svg viewBox="0 0 24 24"><path d="M4 5h16M4 10h16M4 15h9m4-1v7m-3-3h6"/></svg><span class="action-label">音乐库</span><span class="queue-count" id="queueCount">01</span></button><button class="upload-btn" id="uploadBtn" aria-label="导入多首音乐" title="可同时选择多首音乐"><svg viewBox="0 0 24 24"><path d="M12 16V3m-5 5 5-5 5 5M4 15v5h16v-5"/></svg><span>导入音乐</span></button><button class="icon-btn" id="fullscreenBtn" aria-label="进入全屏" title="全屏 · F"><svg viewBox="0 0 24 24"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg></button></div>
   </header>
   <main class="stage" id="stage">
@@ -260,10 +269,45 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
     <div class="stage-hint"><svg viewBox="0 0 20 20"><rect x="5" y="2" width="10" height="15" rx="5"/><path d="M10 3v4m-3 12h6"/></svg><span>移动鼠标，轻触星海<span class="reduced-note"> · 低动态模式</span></span></div>
     <div class="spectrum-panel" aria-label="实时音频频段"><div class="band"><div class="band-label">低频<output id="bassValue">0%</output></div><div class="band-track"><span class="band-fill" id="bassFill"></span></div></div><div class="band"><div class="band-label">中频<output id="midValue">0%</output></div><div class="band-track"><span class="band-fill" id="midFill"></span></div></div><div class="band"><div class="band-label">高频<output id="highValue">0%</output></div><div class="band-track"><span class="band-fill" id="highFill"></span></div></div></div>
   </main>
-  <div class="source-ribbon" id="sourceRibbon"><span><i aria-hidden="true"></i>外部声音已接入<small>选歌、暂停与音量在原播放器操作</small></span><button id="sourceManageBtn">管理联动 ↗</button></div><div class="player-wrap"><section class="player" aria-label="音乐播放器"><div class="track"><button class="album album-button" id="albumButton" aria-label="更换歌曲封面" title="布置空间与歌曲封面"><img id="albumImage" alt="" hidden></button><div class="track-text"><div class="track-title" id="trackTitle" title="星际漫游 · Interstellar Drift">星际漫游<span class="track-tag" id="trackTag">DEMO</span></div><div class="track-sub" id="trackSub">Interstellar Drift · 原创合成音景</div></div></div><div class="transport"><div class="transport-buttons"><button class="icon-btn" id="restartBtn" aria-label="上一首" title="上一首"><svg viewBox="0 0 24 24"><path d="M5 5v14m14-14L8 12l11 7Z"/></svg></button><button class="play-btn" id="playBtn" aria-label="播放音乐" title="播放 / 暂停 · 空格"><svg class="play-icon" viewBox="0 0 24 24"><path d="m7 3 15 9-15 9Z"/></svg></button><button class="icon-btn" id="forwardBtn" aria-label="下一首" title="下一首"><svg viewBox="0 0 24 24"><path d="m5 5 11 7-11 7Zm14 0v14"/></svg></button></div><div class="progress-row"><span id="currentTime">00:00</span><input class="range" id="seek" type="range" min="0" max="96" step="0.1" value="0" aria-label="播放进度" aria-valuetext="00:00 / 01:36"><span id="duration">01:36</span></div></div><div class="player-right"><button class="icon-btn active" id="repeatBtn" aria-label="关闭单曲循环" aria-pressed="true" title="单曲循环：开"><svg viewBox="0 0 24 24"><path d="m17 2 4 4-4 4M3 11V8a2 2 0 0 1 2-2h16M7 22l-4-4 4-4m14-1v3a2 2 0 0 1-2 2H3"/></svg></button><div class="volume"><button class="icon-btn" id="muteBtn" aria-label="静音" aria-pressed="false" title="静音 · M"><svg viewBox="0 0 24 24"><path d="m11 4-6 5H2v6h3l6 5Zm4 4a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg></button><input class="range" id="volume" type="range" min="0" max="100" value="65" aria-label="音量" aria-valuetext="65%"></div><span class="player-divider"></span><button class="icon-btn" id="quietBtn" aria-label="进入宇宙" title="沉浸漫游 · H"><svg viewBox="0 0 24 24"><path d="m12 3 2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2Z"/></svg></button></div></section><span class="keyboard-hint">SPACE 播放 / 暂停</span></div>
-  <footer class="footer"><span class="footer-brand"><b>EDITION 30</b> SOUND & STARDUST</span><div class="footer-links footer-center"><button class="help-btn" id="projectBtn">创作与备份 ↗</button><span aria-hidden="true">·</span><button class="help-btn" id="helpBtn">使用指南 ↗</button><span aria-hidden="true">·</span><button class="help-btn" id="flightBtn" title="可选的独立节奏小游戏">星际航行小实验 ↗</button></div><span>你的音乐 · 在本机与汽水音乐之间流动</span></footer>
+  <div class="source-ribbon" id="sourceRibbon"><span><i aria-hidden="true"></i>外部声音已接入<small>选歌、暂停与音量在原播放器操作</small></span><button id="sourceManageBtn">管理联动 ↗</button></div>
+  <div class="player-wrap">
+    <section class="player" aria-label="音乐播放器">
+      <div class="player-ambience" id="playerAmbience" aria-hidden="true"><img id="playerAmbienceImage" alt=""></div>
+      <div class="track">
+        <button class="album album-button" id="albumButton" aria-label="更换歌曲封面" title="布置空间与歌曲封面">
+          <span class="album-orbit" aria-hidden="true"></span>
+          <span class="album-shine" aria-hidden="true"></span>
+          <img id="albumImage" alt="" hidden>
+        </button>
+        <div class="track-text">
+          <div class="now-playing-label">NOW PLAYING</div>
+          <div class="track-title" id="trackTitle" title="星际漫游 · Interstellar Drift">星际漫游<span class="track-tag" id="trackTag">DEMO</span></div>
+          <div class="track-sub" id="trackSub">Interstellar Drift · 原创合成音景</div>
+        </div>
+      </div>
+      <div class="transport">
+        <div class="transport-buttons">
+          <button class="icon-btn" id="restartBtn" aria-label="上一首" title="上一首"><svg viewBox="0 0 24 24"><path d="M5 5v14m14-14L8 12l11 7Z"/></svg></button>
+          <button class="play-btn" id="playBtn" aria-label="播放音乐" title="播放 / 暂停 · 空格"><svg class="play-icon" viewBox="0 0 24 24"><path d="m7 3 15 9-15 9Z"/></svg></button>
+          <button class="icon-btn" id="forwardBtn" aria-label="下一首" title="下一首"><svg viewBox="0 0 24 24"><path d="m5 5 11 7-11 7Zm14 0v14"/></svg></button>
+        </div>
+        <div class="progress-row"><span id="currentTime">00:00</span><input class="range" id="seek" type="range" min="0" max="96" step="0.1" value="0" aria-label="播放进度" aria-valuetext="00:00 / 01:36"><span id="duration">01:36</span></div>
+      </div>
+      <div class="player-right">
+        <button class="icon-btn active" id="repeatBtn" aria-label="关闭单曲循环" aria-pressed="true" title="单曲循环：开"><svg viewBox="0 0 24 24"><path d="m17 2 4 4-4 4M3 11V8a2 2 0 0 1 2-2h16M7 22l-4-4 4-4m14-1v3a2 2 0 0 1-2 2H3"/></svg></button>
+        <div class="volume">
+          <button class="icon-btn" id="muteBtn" aria-label="静音" aria-pressed="false" title="静音 · M"><svg viewBox="0 0 24 24"><path d="m11 4-6 5H2v6h3l6 5Zm4 4a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg></button>
+          <input class="range" id="volume" type="range" min="0" max="100" value="65" aria-label="音量" aria-valuetext="65%">
+        </div>
+        <span class="player-divider"></span>
+        <button class="icon-btn" id="quietBtn" aria-label="进入宇宙" title="沉浸漫游 · H"><svg viewBox="0 0 24 24"><path d="m12 3 2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2Z"/></svg></button>
+      </div>
+    </section>
+    <span class="keyboard-hint">SPACE 播放 / 暂停</span>
+  </div>
+  <footer class="footer"><span class="footer-brand"><b>EDITION 31</b> SOUND & STARDUST</span><div class="footer-links footer-center"><button class="help-btn" id="projectBtn">创作与备份 ↗</button><span aria-hidden="true">·</span><button class="help-btn" id="helpBtn">使用指南 ↗</button><span aria-hidden="true">·</span><button class="help-btn" id="flightBtn" title="可选的独立节奏小游戏">星际航行小实验 ↗</button></div><span>你的音乐 · 在本机与汽水音乐之间流动</span></footer>
   <div class="roam-surface" id="roamSurface" tabindex="0" role="region" aria-label="星空漫游：轻触唤醒按钮，拖动旋转视角，滚轮或双指缩放，加减键调整距离，0 重置，C 定格，右上角选星空，H 或 Escape 返回"></div>
-  <div class="roam-ui roam-top"><div class="roam-identity"><div class="roam-kicker">SONIC JOURNEY · VOL.30</div><p id="roamTrack">星际漫游</p><button class="roam-export" id="roamClipBtn">生成星空短片 ↗</button><button class="roam-export roam-atelier" id="roamAtelierBtn">心情 · 歌词 · 收藏 ↗</button><button class="roam-export roam-atelier" id="roamInstrumentBtn">弹出星空 ↗</button></div><div class="roam-top-actions"><button class="roam-look-toggle" id="roamLookBtn" aria-expanded="false" aria-controls="roamLookPanel" aria-label="选择星空氛围"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.3 6.7L21 12l-6.7 2.3L12 21l-2.3-6.7L3 12l6.7-2.3Z"/></svg>选星空</button><button class="quiet-exit" id="quietExit"><svg viewBox="0 0 24 24"><path d="m14 5-7 7 7 7M7 12h13"/></svg>返回空间 · Esc</button></div>
+  <div class="roam-ui roam-top"><div class="roam-identity"><div class="roam-kicker">SONIC JOURNEY · VOL.31</div><p id="roamTrack">星际漫游</p><button class="roam-export" id="roamClipBtn">生成星空短片 ↗</button><button class="roam-export roam-atelier" id="roamAtelierBtn">心情 · 歌词 · 收藏 ↗</button><button class="roam-export roam-atelier" id="roamInstrumentBtn">弹出星空 ↗</button></div><div class="roam-top-actions"><button class="roam-look-toggle" id="roamLookBtn" aria-expanded="false" aria-controls="roamLookPanel" aria-label="选择星空氛围"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.3 6.7L21 12l-6.7 2.3L12 21l-2.3-6.7L3 12l6.7-2.3Z"/></svg>选星空</button><button class="quiet-exit" id="quietExit"><svg viewBox="0 0 24 24"><path d="m14 5-7 7 7 7M7 12h13"/></svg>返回空间 · Esc</button></div>
     <section class="roam-look-panel" id="roamLookPanel" hidden aria-labelledby="roamLookTitle">
       <div class="roam-look-heading"><div><h2 id="roamLookTitle">此刻，想听见哪片星空</h2><span class="roam-look-current" id="roamLookCurrent"></span></div><button class="icon-btn" id="roamLookClose" aria-label="关闭星空氛围">×</button></div>
       <div class="roam-look-grid" id="roamLookGrid" role="group" aria-label="沉浸星空氛围"></div>
@@ -345,9 +389,16 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
   <div class="local-note"><span class="save-dot" aria-hidden="true"></span><span class="storage-status" role="status">正在读取本机收藏…</span></div>
 </dialog>
 <div class="online-lyrics" id="onlineLyrics" hidden aria-label="汽水音乐歌词">
-  <div class="online-lyrics-head"><span>汽水音乐 · <b id="onlineLyricSource">LIVE LYRIC</b></span><button class="icon-btn" id="onlineLyricClose" type="button" aria-label="关闭歌词">×</button></div>
-  <div class="online-lyrics-line" id="onlineLyricLine">正在读取歌词…</div>
-  <div class="online-lyrics-next" id="onlineLyricNext"></div>
+  <div class="online-lyrics-aura" aria-hidden="true"></div>
+  <div class="online-lyrics-head">
+    <div class="online-lyrics-identity"><span class="online-lyrics-kicker"><i aria-hidden="true"></i>NOW FLOWING · 汽水音乐</span><strong id="onlineLyricTrack">正在连接歌曲</strong></div>
+    <div class="online-lyrics-actions"><span class="online-lyrics-source" id="onlineLyricSource">LIVE LYRIC</span><button class="icon-btn" id="onlineLyricClose" type="button" aria-label="关闭歌词">×</button></div>
+  </div>
+  <div class="online-lyrics-viewport" id="onlineLyricsViewport">
+    <div class="online-lyrics-track" id="onlineLyricTrackList" role="list"></div>
+    <div class="online-lyrics-status" id="onlineLyricStatus" role="status" aria-live="polite"></div>
+  </div>
+  <div class="online-lyrics-foot"><span><i aria-hidden="true"></i><b id="onlineLyricNumber">00 / 00</b> 音乐正在把歌词写入星空</span><span>LYRICS FOLLOW THE MELODY</span></div>
 </div>
 <dialog class="space-dialog studio-dialog" id="studioDialog" aria-labelledby="studioHeading">
   <div class="dialog-heading"><div><div class="dialog-kicker">MAKE THIS SPACE YOURS</div><h2 id="studioHeading">布置我的音乐空间</h2><p>一张图、一句话，让这片宇宙属于你。</p></div><button class="icon-btn dialog-close" data-close="studioDialog" aria-label="关闭空间设置">✕</button></div>
@@ -489,13 +540,13 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
   <div class="instrument-footer"><div><span class="storage-status" role="status">旋律与设置仅保存在本机</span><small>录制一层前数 4 拍，循环播放时可继续录下一层。最多 6 层；关闭乐器台会停止演奏。</small></div><button class="primary-btn" id="instrumentFilmBtn">把演奏录成短片 ↗</button></div>
 </dialog>
 
-  <script src="./project-pack.js?v=30"></script>
-  <script src="./music-motion.js?v=30"></script>
-  <script src="./visual-presets.js?v=30"></script>
-  <script src="./visual-system.js?v=30"></script>
-  <script src="./film-story.js?v=30"></script>
-  <script src="./soda-library.js?v=30"></script>
-  <script src="./online-music.js?v=30"></script>
+  <script src="./project-pack.js?v=31"></script>
+  <script src="./music-motion.js?v=31"></script>
+  <script src="./visual-presets.js?v=31"></script>
+  <script src="./visual-system.js?v=31"></script>
+  <script src="./film-story.js?v=31"></script>
+  <script src="./soda-library.js?v=31"></script>
+  <script src="./online-music.js?v=31.1"></script>
 <script>
 (() => {
   'use strict';
@@ -611,7 +662,7 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
   let audioContext=null,analyser=null,masterGain=null,mediaNode=null,freqData=null,timeData=null,demoBuffer=null,demoBuild=null,demoSource=null;
   let mode='demo',playing=false,busy=false,duration=96,offset=0,startedAt=0,repeat=true,volume=.65,lastVolume=.65,objectUrl=null;
   let generation=0,loadGeneration=0,currentFile=null,pendingFile=null,seeking=false,toastTimer=0,dragDepth=0,lastUIUpdate=0;
-  let onlinePending=null,onlineClipStart=0,onlineRetrying=false,onlineRetryCount=0,onlineSwitching=false,onlineLyricLines=[],onlineLyricTrackId=null,onlineLyricDismissed=false,onlineLyricPositionFrame=0,onlineClient=null,onlineReady=false,onlineLoggedIn=false,onlineLoginPoll=0,onlineLoginGeneration=0,onlinePlaylistCache=[],onlineCurrentPlaylistId='';
+  let onlinePending=null,onlineClipStart=0,onlineRetrying=false,onlineRetryCount=0,onlineSwitching=false,onlineLyricLines=[],onlineLyricTrackId=null,onlineLyricDismissed=false,onlineLyricPositionFrame=0,onlineLyricActiveIndex=-1,onlineLyricRenderedTrackId=null,onlineClient=null,onlineReady=false,onlineLoggedIn=false,onlineLoginPoll=0,onlineLoginGeneration=0,onlinePlaylistCache=[],onlineCurrentPlaylistId='';
   const defaultSpace={title:'让音乐\n成为星空。',description:'旋律有了形状，情绪有了引力。\n在声音的宇宙里，遇见属于你的那片星海。',caption:'YOUR SOUND. YOUR UNIVERSE.',darkness:60};
   let space={...defaultSpace},playbackMode='list',tracks=[makeDemo()],activeId='demo';
   let backgroundImage=null,backgroundData=null,libraryReady=false,restoring=true,libraryPromise=null,importing=false;
@@ -1940,7 +1991,7 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
     g.strokeStyle=line;g.lineWidth=1;g.strokeRect(29.5,29.5,1741,1291);
     g.fillStyle=muted;g.font='16px ui-monospace,Consolas,monospace';
     g.fillText('SONIC UNIVERSE  /  A POSTCARD FROM THE STARS',69,78);
-    g.textAlign='right';g.fillText('VOL.30',1731,78);g.textAlign='left';
+    g.textAlign='right';g.fillText('VOL.31',1731,78);g.textAlign='left';
     const art={x:69,y:109,w:1662,h:842},source=capturedScene,aspect=art.w/art.h;
     let sw,sh;
     if(capturedMoment.quiet){sw=source.width;sh=sw/aspect;if(sh>source.height){sh=source.height;sw=sh*aspect}}
@@ -2207,7 +2258,7 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
     return host==='127.0.0.1'||host==='localhost'||host==='[::1]';
   }
   function localOnlineEntryUrl(){
-    return 'http://127.0.0.1:8765/?v=30';
+    return 'http://127.0.0.1:8765/?v=31';
   }
   function showOnlineUnavailable(message='本机音乐入口没有连接。'){
     setOnlineResultStatus(message+' 公开网页只展示星空；搜索、扫码登录和歌词需要本机完整入口。',true);
@@ -2283,8 +2334,8 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
     if(!list.length){const empty=document.createElement('div');empty.className='online-empty';empty.textContent=emptyMessage;root.append(empty);return}
     list.forEach(track=>{
       const card=document.createElement('article');card.className='online-result';
-      if(track.cover){
-        const cover=document.createElement('img');cover.className='online-result-cover';cover.src=track.cover;cover.alt='';cover.loading='lazy';cover.referrerPolicy='no-referrer';card.append(cover);
+      if(track.cover||onlineClient?.coverUrl(track.mediaId)){
+        const sources=trackCoverSources(track),cover=document.createElement('img');cover.className='online-result-cover';cover.src=sources.primary;cover.alt='';cover.loading='lazy';cover.referrerPolicy='no-referrer';if(sources.fallback)cover.onerror=()=>{cover.onerror=null;cover.src=sources.fallback};card.append(cover);
       }else{
         const cover=document.createElement('span');cover.className='online-result-cover';cover.setAttribute('aria-hidden','true');card.append(cover);
       }
@@ -2452,6 +2503,7 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
     }
     setOnlineServiceState('ready','本机音乐入口已连接','可搜索汽水音乐、扫码登录并读取收藏与歌单。播放能力取决于歌曲版权与会员保护。');
     setOnlineResultStatus('入口已连接。可不登录搜索公开歌曲；登录后可读取收藏、歌单与歌词。');
+    renderActiveTrack();renderPlaylist();
     await refreshOnlineAccount();
   }
   function setupOnlineMusic(){
@@ -2678,17 +2730,64 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
     onlineLyricPositionFrame=requestAnimationFrame(()=>{onlineLyricPositionFrame=0;positionOnlineLyrics()});
   }
   function hideOnlineLyrics(){
-    onlineLyricLines=[];onlineLyricTrackId=null;onlineLyricDismissed=false;
-    $('onlineLyrics').hidden=true;$('onlineLyricLine').textContent='';$('onlineLyricNext').textContent='';$('onlineLyricSource').textContent='LIVE LYRIC';
+    onlineLyricLines=[];onlineLyricTrackId=null;onlineLyricDismissed=false;onlineLyricActiveIndex=-1;onlineLyricRenderedTrackId=null;
+    $('onlineLyrics').hidden=true;$('onlineLyricTrackList').replaceChildren();$('onlineLyricTrackList').style.transform='';
+    $('onlineLyricsViewport').classList.remove('is-empty');$('onlineLyricStatus').textContent='';$('onlineLyricNumber').textContent='00 / 00';$('onlineLyricSource').textContent='LIVE LYRIC';
+  }
+  function focusOnlineLyric(index){
+    const row=$('onlineLyricTrackList').children[index];
+    if(!row)return;
+    requestAnimationFrame(()=>{
+      if(onlineLyricActiveIndex!==index||!row.isConnected)return;
+      const shift=-(row.offsetTop+row.offsetHeight/2);
+      $('onlineLyricTrackList').style.transform='translate3d(0,'+shift+'px,0)';
+    });
+  }
+  function syncOnlineLyricMeta(track){
+    const meta=[track?.artist,track?.album].filter(Boolean).join(' · ');
+    $('onlineLyricTrack').textContent=track?(track.name+(meta?' · '+meta:'')):'正在连接歌曲';
+    $('onlineLyricTrack').title=$('onlineLyricTrack').textContent;
   }
   function updateOnlineLyricDisplay(){
     if(mode!=='online'||!onlineLyricTrackId||onlineLyricDismissed){$('onlineLyrics').hidden=true;return}
     $('onlineLyrics').hidden=false;
-    if(!onlineLyricLines.length){$('onlineLyricLine').textContent='这首歌暂无可用歌词，星空仍在聆听。';$('onlineLyricNext').textContent='';scheduleOnlineLyricsPosition();return}
-    const position=getLocalPosition(),active=globalThis.SonicOnlineMusic?.activeLyric(onlineLyricLines,position);
-    if(active)$('onlineLyricLine').textContent=active.text;
-    const next=onlineLyricLines.find(line=>line.at>position+.03);
-    $('onlineLyricNext').textContent=next?'下一句 · '+next.text:'';
+    const track=tracks.find(item=>item.id===onlineLyricTrackId)||currentTrack();
+    syncOnlineLyricMeta(track);
+    const viewport=$('onlineLyricsViewport'),rows=$('onlineLyricTrackList');
+    if(!onlineLyricLines.length){
+      viewport.classList.add('is-empty');
+      $('onlineLyricStatus').textContent=$('onlineLyricSource').textContent==='READING'?'正在听写这段旋律，让歌词缓缓落入星空…':'这首歌暂无可用歌词，让星光先陪你听。';
+      $('onlineLyricNumber').textContent='00 / 00';
+      scheduleOnlineLyricsPosition();return;
+    }
+    viewport.classList.remove('is-empty');$('onlineLyricStatus').textContent='';
+    const renderKey=onlineLyricTrackId+':'+onlineLyricLines.length+':'+onlineLyricLines[0]?.at+':'+onlineLyricLines.at(-1)?.at;
+    if(renderKey!==onlineLyricRenderedTrackId){
+      const fragment=document.createDocumentFragment();
+      onlineLyricLines.forEach((line,index)=>{
+        const row=document.createElement('p');row.className='online-lyrics-row';row.setAttribute('role','listitem');row.dataset.lyricIndex=String(index);row.textContent=line.text;fragment.append(row);
+      });
+      rows.replaceChildren(fragment);rows.style.transform='translate3d(0,'+(-(rows.children[0]?.offsetHeight||43)/2)+'px,0)';
+      onlineLyricRenderedTrackId=renderKey;onlineLyricActiveIndex=-1;
+    }
+    const position=getLocalPosition();
+    let activeIndex=-1;
+    for(let index=0;index<onlineLyricLines.length;index++){
+      if(onlineLyricLines[index].at>position+.03)break;
+      activeIndex=index;
+    }
+    if(activeIndex<0)activeIndex=0;
+    if(activeIndex!==onlineLyricActiveIndex){
+      Array.from(rows.children).forEach((row,index)=>{
+        row.classList.toggle('is-current',index===activeIndex);
+        row.classList.toggle('is-past',index<activeIndex);
+        row.classList.toggle('is-next',index===activeIndex+1);
+        if(index===activeIndex)row.setAttribute('aria-current','true');else row.removeAttribute('aria-current');
+      });
+      onlineLyricActiveIndex=activeIndex;
+      $('onlineLyricNumber').textContent=String(activeIndex+1).padStart(2,'0')+' / '+String(onlineLyricLines.length).padStart(2,'0');
+      focusOnlineLyric(activeIndex);
+    }
     scheduleOnlineLyricsPosition();
   }
   async function loadOnlineLyrics(track){
@@ -2823,32 +2922,63 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
     resetShuffle();updatePlaybackMode();savePreferences();showToast(playbackLabels[playbackMode]);
   });
   updateVolume();
-  function paintCover(img,data){
-    img.hidden=!data;
-    if(data)img.src=data;else img.removeAttribute('src');
-    img.parentElement.classList.toggle('has-cover',Boolean(data));
+  function trackCoverSources(track){
+    const direct=track?.cover||null;
+    const proxied=track?.kind==='online'&&onlineReady&&onlineClient
+      ?onlineClient.coverUrl?.(track.mediaId)
+      :'';
+    return {primary:proxied||direct,fallback:proxied&&direct?direct:null};
+  }
+  function paintCover(img,data,fallback=null){
+    const parent=img.parentElement,player=document.querySelector('.player'),ambientImage=$('playerAmbienceImage');
+    img.dataset.coverSrc=data||'';
+    parent.classList.remove('cover-ready');
+    parent.classList.toggle('has-cover',Boolean(data));
+    if(!data){
+      img.hidden=true;img.removeAttribute('src');
+      if(img.id==='albumImage'){player?.classList.remove('has-cover');if(ambientImage){ambientImage.hidden=true;ambientImage.removeAttribute('src')}}
+      return;
+    }
+    img.hidden=false;img.referrerPolicy='no-referrer';
+    img.onload=()=>{
+      if(img.dataset.coverSrc!==data)return;
+      img.hidden=false;parent.classList.add('has-cover','cover-ready');
+    };
+    img.onerror=()=>{
+      if(img.dataset.coverSrc!==data)return;
+      if(fallback&&fallback!==data){paintCover(img,fallback,null);return}
+      img.hidden=true;parent.classList.remove('has-cover','cover-ready');
+      if(img.id==='albumImage'){player?.classList.remove('has-cover');if(ambientImage)ambientImage.hidden=true}
+    };
+    img.src=data;
+    if(img.id==='albumImage'){
+      player?.classList.add('has-cover');
+      if(ambientImage){
+        ambientImage.dataset.coverSrc=data;ambientImage.hidden=true;ambientImage.referrerPolicy='no-referrer';
+        ambientImage.onload=()=>{if(ambientImage.dataset.coverSrc===data)ambientImage.hidden=false};
+        ambientImage.onerror=()=>{if(ambientImage.dataset.coverSrc===data)ambientImage.hidden=true};
+        ambientImage.src=data;
+      }
+    }
   }
   function renderActiveTrack(){
     const track=currentTrack();
+    const coverSources=trackCoverSources(track);
     $('trackTitle').textContent=track?track.name:'星空，等待一首歌';
     $('trackTitle').title=track?track.name:'导入音乐或加入内置音景';
     if(track?.kind==='demo'){const tag=document.createElement('span');tag.className='track-tag';tag.textContent='DEMO';$('trackTitle').append(tag)}
-    $('trackSub').textContent=track?(
-      track.kind==='demo'
-        ? 'Interstellar Drift · 原创合成音景'
-        : track.kind==='online'
-          ? '汽水音乐 · 在线播放 · '+(tracks.indexOf(track)+1)+' / '+tracks.length
-          : track.kind==='soda'
-            ? '汽水音乐 · 分享链接 · '+(tracks.indexOf(track)+1)+' / '+tracks.length
-            : '本地音乐 · '+(tracks.indexOf(track)+1)+' / '+tracks.length
-    ):'打开播放列表，开始你的收藏';
+    const trackMeta=track?[track.artist,track.album].filter((value,index,list)=>value&&list.indexOf(value)===index).join(' · '):'';
+    const trackSource=track?.kind==='online'?'汽水音乐 · 在线':track?.kind==='soda'?'汽水音乐 · 链接':track?.kind==='demo'?'原创合成音景':'本地音乐';
+    $('trackSub').textContent=track?[trackMeta||(track.kind==='demo'?'Interstellar Drift':''),trackSource,(track.kind==='demo'?'':(tracks.indexOf(track)+1)+' / '+tracks.length)].filter(Boolean).join(' · '):'打开播放列表，开始你的收藏';
+    $('albumImage').alt=track?.cover||coverSources.primary?track.name+' 的歌曲封面':'';
+    $('playerAmbienceImage').alt='';
     $('coverTrackName').textContent=track?track.name:'请先选择一首音乐';
-    paintCover($('albumImage'),track?.cover);
-    paintCover($('coverThumb'),track?.cover);
+    paintCover($('albumImage'),coverSources.primary,coverSources.fallback);
+    paintCover($('coverThumb'),coverSources.primary,coverSources.fallback);
     $('chooseCoverBtn').disabled=!track;$('coverPreview').disabled=!track;$('removeCoverBtn').disabled=!track?.cover;
     $('albumButton').setAttribute('aria-label',track?'更换「'+track.name+'」的封面':'布置音乐空间');
     seek.disabled=!track||Boolean(externalStream);playBtn.disabled=!track||Boolean(pendingFile)||busy||Boolean(externalStream);
-    if(externalStream){$('trackTitle').textContent='外部声音 · 实时联动';$('trackTitle').title='外部声音联动';$('trackSub').textContent='选歌、暂停与音量请在原播放器操作';paintCover($('albumImage'),null)}
+    if(externalStream){$('trackTitle').textContent='外部声音 · 实时联动';$('trackTitle').title='外部声音联动';$('trackSub').textContent='选歌、暂停与音量请在原播放器操作';$('albumImage').alt='';paintCover($('albumImage'),null)}
     app.dataset.activeTrack=activeId||'';
     updateJourneyUI();
   }
@@ -2877,7 +3007,7 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
       const select=document.createElement('button');select.className='queue-select';select.disabled=!libraryReady;
       const number=document.createElement('span');number.className='queue-number';number.setAttribute('aria-hidden','true');
       const art=document.createElement('span');art.className='queue-art';art.setAttribute('aria-hidden','true');art.textContent=soda?'↗':online?'◉':'✧';
-      if(track.cover){const img=document.createElement('img');img.src=track.cover;img.alt='';img.referrerPolicy='no-referrer';art.append(img)}
+      const coverSources=trackCoverSources(track);if(coverSources.primary){const img=document.createElement('img');img.src=coverSources.primary;img.alt='';img.referrerPolicy='no-referrer';if(coverSources.fallback)img.onerror=()=>{img.onerror=null;img.src=coverSources.fallback};art.append(img)}
       const info=document.createElement('span');info.className='queue-info';
       const title=document.createElement('span');title.className='queue-title';title.textContent=track.name;title.title=track.name;
       const meta=document.createElement('span');meta.className='queue-meta';

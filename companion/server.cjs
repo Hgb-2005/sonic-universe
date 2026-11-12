@@ -12,6 +12,14 @@ const HOST = '127.0.0.1';
 const DEFAULT_PORT = 8765;
 const BODY_LIMIT = 64 * 1024;
 const MEDIA_LIMIT = 256;
+const COVER_LIMIT = 4 * 1024 * 1024;
+const COVER_HOSTS = Object.freeze([
+  'douyinpic.com',
+  'douyinstatic.com',
+  'byteimg.com',
+  'qishui.com',
+  'douyin.com',
+]);
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -145,6 +153,65 @@ async function proxyMedia(request, response, entry, extraHeaders = {}) {
   Readable.fromWeb(upstream.body).on('error', () => response.destroy()).pipe(response);
 }
 
+function isTrustedCoverUrl(value) {
+  try {
+    const url = new URL(String(value || ''));
+    if (url.protocol !== 'https:' || url.username || url.password) return false;
+    if (url.port && url.port !== '443') return false;
+    const host = url.hostname.toLowerCase();
+    return COVER_HOSTS.some(domain => host === domain || host.endsWith(`.${domain}`));
+  } catch {
+    return false;
+  }
+}
+
+async function proxyCover(response, sourceUrl, extraHeaders = {}) {
+  let current = String(sourceUrl || '');
+  let upstream = null;
+  for (let redirect = 0; redirect < 4; redirect++) {
+    if (!isTrustedCoverUrl(current)) {
+      throw Object.assign(new Error('Cover source is not trusted'), { status: 502 });
+    }
+    upstream = await fetch(current, {
+      redirect: 'manual',
+      headers: {
+        Accept: 'image/avif,image/webp,image/png,image/jpeg;q=0.9,*/*;q=0.1',
+        Referer: 'https://qishui.douyin.com/',
+        'User-Agent': 'Mozilla/5.0 SonicUniverse/31',
+      },
+    });
+    if (upstream.status < 300 || upstream.status >= 400) break;
+    const location = upstream.headers.get('location');
+    if (!location) throw Object.assign(new Error('Cover redirect is incomplete'), { status: 502 });
+    current = new URL(location, current).toString();
+    upstream = null;
+  }
+  if (!upstream) throw Object.assign(new Error('Too many cover redirects'), { status: 502 });
+  if (!upstream.ok) throw Object.assign(new Error('Cover upstream failed'), { status: 502 });
+  const contentType = String(upstream.headers.get('content-type') || '').toLowerCase();
+  if (!/^image\/(?:avif|gif|jpeg|png|webp)(?:;|$)/.test(contentType)) {
+    throw Object.assign(new Error('Cover upstream did not return an image'), { status: 502 });
+  }
+  const declaredLength = Number(upstream.headers.get('content-length'));
+  if (Number.isFinite(declaredLength) && declaredLength > COVER_LIMIT) {
+    throw Object.assign(new Error('Cover image is too large'), { status: 502 });
+  }
+  const body = Buffer.from(await upstream.arrayBuffer());
+  if (!body.length || body.length > COVER_LIMIT) {
+    throw Object.assign(new Error('Cover image is invalid or too large'), { status: 502 });
+  }
+  response.writeHead(200, {
+    'Content-Type': contentType.split(';')[0],
+    'Content-Length': String(body.length),
+    'Cache-Control': 'private, max-age=86400',
+    'Content-Security-Policy': "default-src 'none'",
+    'Cross-Origin-Resource-Policy': 'cross-origin',
+    'X-Content-Type-Options': 'nosniff',
+    ...extraHeaders,
+  });
+  response.end(body);
+}
+
 async function serveStatic(request, response, root, pathname) {
   let decoded;
   try { decoded = decodeURIComponent(pathname); } catch { return false; }
@@ -223,6 +290,11 @@ function createAppServer(options = {}) {
       if (match && request.method === 'GET') return sendJson(response, 200, await qishui.playlist(match[1], { limit: url.searchParams.get('limit'), offset: url.searchParams.get('offset') }), cors);
       match = /^\/api\/qishui\/songs\/(\d{1,30})\/lyrics$/.exec(url.pathname);
       if (match && request.method === 'GET') return sendJson(response, 200, await qishui.lyrics(match[1]), cors);
+      match = /^\/api\/qishui\/tracks\/(\d{1,30})\/cover$/.exec(url.pathname);
+      if (match && request.method === 'GET') {
+        const cover = await qishui.cover(match[1]);
+        return proxyCover(response, cover.url, cors);
+      }
       match = /^\/api\/qishui\/tracks\/(\d{1,30})\/audio$/.exec(url.pathname);
       if (match && request.method === 'POST') {
         media ||= createMediaCache(qishui);
@@ -276,6 +348,7 @@ module.exports = {
   createAppServer,
   createMediaCache,
   corsHeaders,
+  isTrustedCoverUrl,
   parseRange,
   readJson,
   serveStatic,

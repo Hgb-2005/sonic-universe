@@ -4,6 +4,8 @@ const { createQishuiApi, createQishuiDeviceId } = require('qishui-music-api');
 const { EncryptedQishuiSessionStore } = require('../session-store.cjs');
 
 const MAX_TEXT = 180;
+const DEFAULT_COVER_TEMPLATE = 'tplv-b829550vbb';
+const COVER_SIZE = 360;
 
 function text(value, fallback = '') {
   return typeof value === 'string' ? value.trim().slice(0, MAX_TEXT) : fallback;
@@ -19,13 +21,42 @@ function httpsUrl(value) {
   }
 }
 
+function coverTemplate(raw) {
+  if (raw && typeof raw === 'object') {
+    const prefix = typeof raw.template_prefix === 'string' ? raw.template_prefix.trim() : '';
+    if (/^[a-z0-9_-]{1,120}$/i.test(prefix)) return prefix;
+    const template = typeof raw.template === 'string' ? raw.template.trim() : '';
+    const match = /^~([a-z0-9_-]{1,120})(?:-|$)/i.exec(template);
+    if (match) return match[1];
+  }
+  return DEFAULT_COVER_TEMPLATE;
+}
+
+function completeCoverUrl(value, template = DEFAULT_COVER_TEMPLATE) {
+  const url = httpsUrl(value);
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    if (!/^p\d+-luna\.douyinpic\.com$/i.test(parsed.hostname) || !parsed.pathname.startsWith('/img/')) return url;
+    if (parsed.pathname.includes('~tplv-')) return url;
+    parsed.pathname += `~${template}-resize:${COVER_SIZE}:${COVER_SIZE}.image`;
+    return httpsUrl(parsed.toString());
+  } catch {
+    return null;
+  }
+}
+
 function coverUrl(raw) {
   if (!raw) return null;
-  if (typeof raw === 'string') return httpsUrl(raw);
+  if (typeof raw === 'string') return completeCoverUrl(raw);
   const base = Array.isArray(raw.urls) ? raw.urls.find(item => typeof item === 'string') : '';
-  if (!base || typeof raw.uri !== 'string') return httpsUrl(base);
+  if (!base) return null;
+  if (typeof raw.uri !== 'string') return completeCoverUrl(base, coverTemplate(raw));
   try {
-    return httpsUrl(new URL(raw.uri, base.endsWith('/') ? base : `${base}/`).toString());
+    return completeCoverUrl(
+      new URL(raw.uri, base.endsWith('/') ? base : `${base}/`).toString(),
+      coverTemplate(raw),
+    );
   } catch {
     return null;
   }
@@ -207,6 +238,16 @@ async function createQishuiProvider(options = {}) {
     },
     async lyrics(id) {
       return lyricData(await request('lyrics', { id: String(id || '') }));
+    },
+    async cover(id) {
+      const track = normalizeTrack(await request('song_detail', { id: String(id || '') }));
+      if (!track?.cover) {
+        const error = new Error('Qishui cover art is not available');
+        error.code = 'not-found';
+        error.status = 404;
+        throw error;
+      }
+      return { url: track.cover };
     },
     async audio(id) {
       const source = await request('audio', { id: String(id || ''), quality: 'standard' });

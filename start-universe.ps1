@@ -5,7 +5,7 @@ $taskRoot = $PSScriptRoot
 $siteRoot = Join-Path $taskRoot 'outputs'
 $companionRoot = Join-Path $taskRoot 'companion'
 $logRoot = Join-Path $taskRoot 'work'
-$siteUrl = 'http://127.0.0.1:8765/?v=30'
+$siteUrl = 'http://127.0.0.1:8765/?v=31'
 $healthUrl = 'http://127.0.0.1:8765/health'
 
 function Test-UniversePage {
