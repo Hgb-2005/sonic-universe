@@ -5,7 +5,7 @@ $taskRoot = $PSScriptRoot
 $siteRoot = Join-Path $taskRoot 'outputs'
 $companionRoot = Join-Path $taskRoot 'companion'
 $logRoot = Join-Path $taskRoot 'work'
-$siteUrl = 'http://127.0.0.1:8765/?v=32'
+$siteUrl = 'http://127.0.0.1:8765/?v=33'
 $healthUrl = 'http://127.0.0.1:8765/health'
 
 function Test-UniversePage {
@@ -17,13 +17,38 @@ function Test-UniversePage {
     }
 }
 
-function Test-CompanionHealth {
+function Test-CompanionHealth([switch]$Current) {
     try {
         $health = Invoke-RestMethod -Uri $healthUrl -TimeoutSec 2
-        return ($health.ok -eq $true -and $health.companion -eq $true)
+        $recognized = ($health.ok -eq $true -and $health.companion -eq $true)
+        if ($Current) {
+            return ($recognized -and [int]$health.musicApiVersion -ge 2 -and
+                $health.providers -contains 'netease' -and $health.providers -contains 'qq')
+        }
+        return $recognized
     } catch {
         return $false
     }
+}
+
+function Stop-OutdatedCompanion {
+    if (-not (Test-CompanionHealth) -or (Test-CompanionHealth -Current)) { return }
+    if (-not (Test-UniversePage)) { throw '端口上的音乐入口无法确认为本作品，请关闭旧入口后重试。' }
+    if (-not (Find-Node24)) { throw '请先安装 Node.js 24 或更高版本，再更新本机音乐入口。' }
+    $connection = Get-NetTCPConnection -LocalPort 8765 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+    if (-not $connection) { return }
+    $process = Get-CimInstance Win32_Process -Filter ("ProcessId=" + $connection.OwningProcess) -ErrorAction SilentlyContinue
+    if (-not $process -or $process.Name -ne 'node.exe' -or
+        [string]$process.CommandLine -notmatch '(?:^|[\\/\s\"])server\.cjs(?:[\s\"]|$)') {
+        throw '检测到旧音乐入口，请先关闭它，再运行启动器。'
+    }
+    Write-Host '正在更新本作品的音乐入口，汽水登录资料会保留…'
+    Stop-Process -Id $connection.OwningProcess -Force
+    for ($attempt = 0; $attempt -lt 20; $attempt++) {
+        Start-Sleep -Milliseconds 150
+        if (-not (Get-NetTCPConnection -LocalPort 8765 -State Listen -ErrorAction SilentlyContinue)) { return }
+    }
+    throw '旧音乐入口尚未退出，请稍后重新运行启动器。'
 }
 
 function Find-Node24 {
@@ -69,7 +94,7 @@ function Stop-LegacyPreviewServer {
 
 function Start-Companion {
     $node = Find-Node24
-    if (-not $node) { throw '需要 Node.js 24 或更高版本才能启动汽水音乐入口。' }
+    if (-not $node) { throw '需要 Node.js 24 或更高版本才能启动音乐入口。' }
     $providerPackage = Join-Path $companionRoot 'node_modules\qishui-music-api\package.json'
     if (-not (Test-Path -LiteralPath $providerPackage)) {
         $npm = Find-Npm
@@ -84,7 +109,7 @@ function Start-Companion {
         }
     }
     $companionProcess = Start-Process -FilePath $node `
-        -ArgumentList @('server.cjs') `
+        -ArgumentList @('"' + (Join-Path $companionRoot 'server.cjs') + '"') `
         -WorkingDirectory $companionRoot `
         -RedirectStandardOutput (Join-Path $logRoot 'companion.log') `
         -RedirectStandardError (Join-Path $logRoot 'companion-errors.log') `
@@ -92,7 +117,7 @@ function Start-Companion {
         -PassThru
     for ($attempt = 0; $attempt -lt 30; $attempt++) {
         Start-Sleep -Milliseconds 250
-        if (Test-CompanionHealth) { return }
+        if (Test-CompanionHealth -Current) { return }
         if ($companionProcess.HasExited) { break }
     }
     $detail = ''
@@ -118,6 +143,7 @@ try {
     if (-not (Test-Path -LiteralPath (Join-Path $siteRoot 'index.html'))) { throw '缺少 outputs\index.html。' }
     New-Item -ItemType Directory -Path $logRoot -Force | Out-Null
 
+    Stop-OutdatedCompanion
     if (-not (Test-CompanionHealth)) {
         if (Test-UniversePage) { Stop-LegacyPreviewServer }
         $occupied = Get-NetTCPConnection -LocalPort 8765 -State Listen -ErrorAction SilentlyContinue
@@ -145,7 +171,7 @@ try {
     }
     if (-not $ready) { throw '声波宇宙没有启动成功，请查看 work 文件夹中的日志。' }
 
-    $online = if (Test-CompanionHealth) { '汽水音乐在线入口已连接' } else { '当前为基础模式，在线音乐离线' }
+    $online = if (Test-CompanionHealth -Current) { '汽水 / 网易云 / QQ 音乐入口已连接' } else { '当前为基础模式，在线音乐离线' }
     Write-Host ('Ready: ' + $siteUrl)
     Write-Host $online
     if (-not $NoBrowser) { Start-Process $siteUrl }

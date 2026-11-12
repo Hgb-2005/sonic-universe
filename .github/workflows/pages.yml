@@ -49,6 +49,8 @@ jobs:
           node --check outputs/online-music.js
           node --check companion/server.cjs
           node --check companion/providers/qishui.cjs
+          node --check companion/providers/public-search.cjs
+          node --check companion/providers/index.cjs
       - name: Run full test suite
         run: node --test tests/*.test.cjs
       - name: Configure Pages

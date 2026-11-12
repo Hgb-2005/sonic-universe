@@ -7,7 +7,7 @@
   "main": "server.cjs",
   "scripts": {
     "start": "node server.cjs",
-    "check": "node --check server.cjs && node --check providers/qishui.cjs",
+    "check": "node --check server.cjs && node --check providers/qishui.cjs && node --check providers/public-search.cjs && node --check providers/index.cjs",
     "test": "node --test ../tests/companion.test.cjs ../tests/online-music.test.cjs"
   },
   "engines": {

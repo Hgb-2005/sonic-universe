@@ -257,8 +257,19 @@ function createAppServer(options = {}) {
     try {
       if (!providers) providers = await ready;
       const qishui = providers.get('qishui');
-      if (url.pathname === '/health') return sendJson(response, 200, { ok: true, companion: true, providers: ['qishui'] }, cors);
-      if (url.pathname === '/api/providers') return sendJson(response, 200, { items: [{ id: 'qishui', name: '汽水音乐', available: Boolean(qishui) }] }, cors);
+      if (url.pathname === '/health') return sendJson(response, 200, { ok: true, companion: true, musicApiVersion: 2, providers: [...providers.keys()] }, cors);
+      if (url.pathname === '/api/providers') return sendJson(response, 200, { musicApiVersion: 2, items: [
+        { id: 'qishui', name: '汽水音乐', available: Boolean(qishui), capabilities: ['search', 'login', 'library', 'audio', 'lyrics'], playback: 'inline' },
+        { id: 'netease', name: '网易云音乐', available: providers.has('netease'), capabilities: ['search', 'external-link'], playback: 'external' },
+        { id: 'qq', name: 'QQ 音乐', available: providers.has('qq'), capabilities: ['search', 'external-link'], playback: 'external' },
+      ] }, cors);
+      const publicSearch = /^\/api\/(netease|qq)\/search$/.exec(url.pathname);
+      if (publicSearch) {
+        if (request.method !== 'POST') return sendJson(response, 405, { error: 'Method not allowed' }, cors);
+        const provider = providers.get(publicSearch[1]);
+        if (!provider) return sendJson(response, 503, { error: '这个音乐平台暂时不可用，请换个平台搜索。', code: 'provider-unavailable' }, cors);
+        return sendJson(response, 200, await provider.search(await readJson(request)), cors);
+      }
       if (!url.pathname.startsWith('/api/qishui/') && !url.pathname.startsWith('/media/')) {
         if (request.method !== 'GET' && request.method !== 'HEAD') return sendJson(response, 405, { error: 'Method not allowed' }, cors);
         if (await serveStatic(request, response, root, url.pathname)) return;

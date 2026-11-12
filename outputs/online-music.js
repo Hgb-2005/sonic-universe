@@ -8,6 +8,27 @@
   const PROVIDER = 'qishui';
   const MAX_TEXT = 240;
   const DEFAULT_COVER_TEMPLATE = 'tplv-b829550vbb';
+  const EXTERNAL_PROVIDERS = Object.freeze({
+    netease: { name: '网易云音乐', host: 'music.163.com' },
+    qq: { name: 'QQ 音乐', host: 'y.qq.com' },
+  });
+
+  function officialTrackUrl(provider, value) {
+    const expected = Object.hasOwn(EXTERNAL_PROVIDERS, provider) ? EXTERNAL_PROVIDERS[provider] : null;
+    if (!expected || typeof value !== 'string') return null;
+    try {
+      const url = new URL(value);
+      return url.protocol === 'https:' && url.hostname === expected.host && !url.username && !url.password && (!url.port || url.port === '443') ? url.toString() : null;
+    } catch { return null; }
+  }
+
+  function normalizeExternalTrack(input) {
+    const provider = input?.provider, spec = Object.hasOwn(EXTERNAL_PROVIDERS, provider) ? EXTERNAL_PROVIDERS[provider] : null;
+    const mediaId = String(input?.mediaId || '');
+    if (!spec || !(provider === 'qq' ? /^[a-zA-Z0-9]{1,40}$/ : /^\d{1,30}$/).test(mediaId)) return null;
+    const fallback = provider === 'qq' ? `https://y.qq.com/n/ryqq/songDetail/${mediaId}` : `https://music.163.com/#/song?id=${mediaId}`;
+    return { provider, mediaId, name: text(input.name, '未命名歌曲'), artist: text(input.artist), album: text(input.album), cover: safeHttpsUrl(input.cover), externalUrl: officialTrackUrl(provider, input.externalUrl) || fallback, linkedOnly: true };
+  }
 
   function text(value, fallback = '') {
     return typeof value === 'string' ? value.trim().slice(0, MAX_TEXT) : fallback;
@@ -263,6 +284,10 @@
       loginCheck: sessionId => request('/api/qishui/login/check', { sessionId }, 7000),
       logout: () => request('/api/qishui/logout', {}, 7000),
       search: query => request('/api/qishui/search', { query, limit: 30, offset: 0 }, 12000),
+      searchByProvider(provider, query) {
+        if (provider !== PROVIDER && !Object.hasOwn(EXTERNAL_PROVIDERS, provider)) return Promise.reject(new Error('不支持这个音乐平台。'));
+        return request(`/api/${provider}/search`, { query, limit: 30, offset: 0 }, 12000);
+      },
       liked: () => request('/api/qishui/library/liked?limit=50&offset=0', undefined, 12000),
       playlists: () => request('/api/qishui/library/playlists?limit=50&offset=0', undefined, 12000),
       playlist: id => request(`/api/qishui/playlists/${encodeURIComponent(id)}?limit=100&offset=0`, undefined, 12000),
@@ -277,6 +302,9 @@
 
   return {
     PROVIDER,
+    EXTERNAL_PROVIDERS,
+    officialTrackUrl,
+    normalizeExternalTrack,
     normalizeTrack,
     migrateLegacyLink,
     mergeTracks,

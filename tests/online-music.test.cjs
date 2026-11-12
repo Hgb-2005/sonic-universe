@@ -26,6 +26,52 @@ test('rejects insecure track data and invalid media ids', () => {
   }).cover, null);
 });
 
+test('external music results preserve QQ ids without entering the playable library', () => {
+  const qq = online.normalizeExternalTrack({ provider: 'qq', mediaId: '0039MnYb0qxYhV', name: '晴天', artist: '周杰伦', externalUrl: 'https://y.qq.com/n/ryqq/songDetail/0039MnYb0qxYhV' });
+  assert.equal(qq.mediaId, '0039MnYb0qxYhV');
+  assert.equal(qq.linkedOnly, true);
+  assert.equal(online.normalizeTrack(qq), null);
+  assert.equal(online.persistentTrack({ ...qq, kind: 'online' }), null);
+  assert.equal(online.mergeTracks([], [qq]).length, 0);
+  assert.equal(online.normalizeExternalTrack({ provider: 'netease', mediaId: '../file' }), null);
+  assert.equal(online.normalizeExternalTrack({ provider: 'unknown', mediaId: '1' }), null);
+  assert.equal(online.normalizeExternalTrack({ provider: 'constructor', mediaId: '1' }), null);
+});
+
+test('official music destinations reject unrelated hosts and unsafe URLs', () => {
+  for (const value of ['https://y.qq.com.attacker.test/song', 'https://attacker.test/y.qq.com', 'https://user:pass@y.qq.com/song', 'http://y.qq.com/song', 'javascript:alert(1)', 'https://y.qq.com:8443/song']) {
+    assert.equal(online.officialTrackUrl('qq', value), null, value);
+  }
+  assert.equal(online.officialTrackUrl('netease', 'https://music.163.com/#/song?id=123'), 'https://music.163.com/#/song?id=123');
+  const repaired = online.normalizeExternalTrack({ provider: 'netease', mediaId: '123', name: 'A', externalUrl: 'https://attacker.test/song' });
+  assert.equal(repaired.externalUrl, 'https://music.163.com/#/song?id=123');
+});
+
+test('provider searches use distinct routes while legacy search stays on Qishui', async t => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  const calls = [];
+  globalThis.fetch = async (url, options) => {
+    calls.push({ url, body: JSON.parse(options.body) });
+    return { ok: true, json: async () => ({ items: [] }) };
+  };
+  const client = online.createClient({ baseUrl: 'http://127.0.0.1:8765' });
+  await client.searchByProvider('netease', '晴天');
+  await client.searchByProvider('qq', '夜曲');
+  await client.search('老歌');
+  await assert.rejects(client.searchByProvider('../bad', 'x'), /不支持/);
+  await assert.rejects(client.searchByProvider('__proto__', 'x'), /不支持/);
+  assert.deepEqual(calls.map(item => item.url), ['http://127.0.0.1:8765/api/netease/search', 'http://127.0.0.1:8765/api/qq/search', 'http://127.0.0.1:8765/api/qishui/search']);
+  assert.equal(calls[0].body.query, '晴天');
+});
+
+test('an old Companion 404 is preserved so the UI can ask for an update', async t => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  globalThis.fetch = async () => ({ ok: false, status: 404, json: async () => ({ error: 'Route not found' }) });
+  await assert.rejects(online.createClient().searchByProvider('qq', 'test'), error => error.status === 404);
+});
+
 test('repairs legacy Qishui cover URLs and exposes the local cover route', () => {
   const track = online.normalizeTrack({
     provider: 'qishui',
