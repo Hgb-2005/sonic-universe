@@ -1,5 +1,7 @@
 # 声波宇宙 · Sonic Universe
 
+维护待办：外链脚本目前使用 `?v=33`，`universe-main.js` 的哈希由手工维护。修改脚本时必须同步更新对应版本号或哈希，避免用户命中旧缓存；后续应添加自动生成或检查。
+
 让音乐成为星空。一个在浏览器里运行的音乐视觉作品：低音推开星云，中频留下星轨，高音点亮星闪。在星环、银河、山峰与引力黑洞之间，看见一首歌的起伏。
 
 **[进入在线体验](https://hgb-2005.github.io/sonic-universe/?v=33)** · **[完整使用说明](outputs/使用说明.md)** · **[有声黑洞示例](https://hgb-2005.github.io/sonic-universe/blackhole-demo.webm)**

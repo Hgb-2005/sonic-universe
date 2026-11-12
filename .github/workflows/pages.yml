@@ -47,6 +47,8 @@ jobs:
           node --check outputs/flight-core.js
           node --check outputs/flight.js
           node --check outputs/online-music.js
+          node --check outputs/universe-main.js
+          node --check outputs/lyric-karaoke.js
           node --check companion/server.cjs
           node --check companion/providers/qishui.cjs
           node --check companion/providers/public-search.cjs
