@@ -1,6 +1,11 @@
 # Publish a curated artwork, without local history, fixtures or debugging output.
 /work/
 /dist/
+/companion/node_modules/
+/.tmp/
+/.tools/
+/tools/
+/$null
 /__pycache__/
 *.py[cod]
 .DS_Store
@@ -28,5 +33,7 @@ Thumbs.db
 /outputs/assets/reference/
 
 !/outputs/project-pack.js
+!/outputs/online-music.js
+!/outputs/soda-library.js
 !/outputs/visual-presets.js
 !/outputs/visual-system.js

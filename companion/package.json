@@ -1,0 +1,19 @@
+{
+  "name": "sonic-universe-companion",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local-only music bridge for Sonic Universe",
+  "type": "commonjs",
+  "main": "server.cjs",
+  "scripts": {
+    "start": "node server.cjs",
+    "check": "node --check server.cjs && node --check providers/qishui.cjs",
+    "test": "node --test ../tests/companion.test.cjs ../tests/online-music.test.cjs"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "dependencies": {
+    "qishui-music-api": "0.2.2"
+  }
+}

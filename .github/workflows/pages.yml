@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'outputs/**'
+      - 'companion/**'
       - 'tests/**'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
@@ -27,29 +28,35 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v4
-      - name: Verify music response, film analysis and optional flight
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: companion/package-lock.json
+      - name: Install local music companion
+        working-directory: companion
+        run: npm ci --no-audit --no-fund
+      - name: Check runtime scripts
         run: |
-          node tests/music-motion.test.cjs
-          node --test tests/film-story.test.cjs
           node --check outputs/music-motion.js
           node --check outputs/film-story.js
-          node tests/flight-core.test.cjs
-          node --test tests/project-pack.test.cjs
-          node --test tests/visual-presets.test.cjs
-          node --test tests/visual-system.test.cjs
           node --check outputs/project-pack.js
           node --check outputs/visual-presets.js
           node --check outputs/visual-system.js
           node --check outputs/flight-core.js
           node --check outputs/flight.js
+          node --check outputs/online-music.js
+          node --check companion/server.cjs
+          node --check companion/providers/qishui.cjs
+      - name: Run full test suite
+        run: node --test tests/*.test.cjs
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload artwork
         uses: actions/upload-pages-artifact@v3
         with:
           path: outputs
-      - name: Wait for artifact metadata
-        run: sleep 8
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4

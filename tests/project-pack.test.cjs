@@ -14,6 +14,18 @@ const sodaFixture=()=>({
   media:[['song-1',new Blob([new Uint8Array([0,1,2,255,9])],{type:'audio/wav'})]],
   preferences:[[Pack.KEYS[0],'{"id":"song-1","position":2}']]
 });
+const onlineFixture=()=>({
+  state:[['library',{
+    version:7,
+    tracks:[
+      {id:'online:qishui:123',kind:'online',provider:'qishui',mediaId:'123',name:'星空来信',artist:'测试歌手',album:'测试专辑',duration:180,cover:'https://example.com/cover.jpg',externalUrl:'https://qishui.douyin.com/song/123',favorite:true,liked:true,preview:false,stored:true,sourcePath:'汽水音乐',signature:'qishui:123'},
+      {id:'online:qishui:456',kind:'online',provider:'qishui',mediaId:'456',name:'温柔黑洞',artist:'测试歌手',album:'测试专辑',duration:200,cover:'',externalUrl:'https://qishui.douyin.com/song/456',favorite:false,liked:false,preview:true,stored:true,sourcePath:'汽水音乐',signature:'qishui:456'}
+    ],
+    playlists:[{id:'online-list',trackIds:['online:qishui:123','online:qishui:456']}]
+  }],['atelier',{version:1,songs:{'online:qishui:123':{lyrics:[{at:2,text:'星光'}]}}}]],
+  media:[],
+  preferences:[[Pack.KEYS[0],'{"id":"online:qishui:123","position":8}']]
+});
 
 test('full pack preserves binary music, artwork, playlists, lyrics and preferences',async()=>{
   const original=fixture(),blob=await Pack.encode(original),restored=await Pack.decode(blob);
@@ -63,4 +75,34 @@ test('invalid or duplicate soda links are rejected before writing a backup',asyn
 test('local file entries still require their audio blob',async()=>{
   const missing=sodaFixture();missing.media=[];
   await assert.rejects(Pack.encode(missing),/缺少歌曲/);
+});
+test('version 7 online songs round-trip as metadata without an audio blob',async()=>{
+  const original=onlineFixture(),restored=await Pack.decode(await Pack.encode(original));
+  assert.deepEqual(restored.state,original.state);
+  assert.deepEqual(restored.preferences,original.preferences);
+  assert.deepEqual(restored.media,[]);
+});
+test('online song records reject playback credentials and duplicate media ids',async()=>{
+  let credential=onlineFixture();
+  credential.state[0][1].tracks[0].streamPath='/media/temporary-token';
+  await assert.rejects(Pack.encode(credential),/在线播放凭据/);
+  let duplicate=onlineFixture();
+  duplicate.state[0][1].tracks.push({
+    ...duplicate.state[0][1].tracks[0],
+    id:'online:qishui:123',
+    mediaId:'123',
+    signature:'qishui:123'
+  });
+  await assert.rejects(Pack.encode(duplicate),/重复的汽水音乐歌曲/);
+});
+test('online song web and cover links must use safe HTTPS addresses',async()=>{
+  let insecure=onlineFixture();
+  insecure.state[0][1].tracks[0].cover='http://example.com/cover.jpg';
+  await assert.rejects(Pack.encode(insecure),/不安全的网页或封面地址/);
+  let malformed=onlineFixture();
+  malformed.state[0][1].tracks[1].externalUrl='not a url';
+  await assert.rejects(Pack.encode(malformed),/不安全的网页或封面地址/);
+  let credentials=onlineFixture();
+  credentials.state[0][1].tracks[0].cover='https://user:pass@example.com/cover.jpg';
+  await assert.rejects(Pack.encode(credentials),/不安全的网页或封面地址/);
 });

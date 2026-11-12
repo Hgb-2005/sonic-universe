@@ -20,10 +20,12 @@
       prefs.add(entry[0]);
     }
     const library = h.state.find(e => e[0] === 'library')?.[1];
-    if (!library || ![5, 6].includes(library.version) || !Array.isArray(library.tracks) || library.tracks.length > 2001) throw Error('备份缺少完整曲库。');
-    const ids = new Set(), files = new Set(), sodaUrls = new Set();
+    if (!library || ![5, 6, 7].includes(library.version) || !Array.isArray(library.tracks) || library.tracks.length > 2001) throw Error('备份缺少完整曲库。');
+    const ids = new Set(), files = new Set(), sodaUrls = new Set(), onlineIds = new Set();
+    const forbidden = new Set(['token','cookiestring','cookie','accesscode','accesscodeurl','streamurl','streampath','mediaurl','playurl','playbackurl','signedurl','audioauthkey','authkey','authorization','credential']);
     for (const t of library.tracks) {
-      if (!t || typeof t.id !== 'string' || !t.id || t.id.length > 160 || ids.has(t.id) || !['demo','file','soda'].includes(t.kind) || typeof t.name !== 'string') throw Error('曲库中有无效或重复歌曲。');
+      if (!t || typeof t.id !== 'string' || !t.id || t.id.length > 160 || !['demo','file','soda','online'].includes(t.kind) || typeof t.name !== 'string') throw Error('曲库中有无效或重复歌曲。');
+      if (Object.keys(t).some(key => forbidden.has(key.toLocaleLowerCase()))) throw Error('备份中检测到在线播放凭据，已拒绝导出。');
       if (t.kind === 'soda') {
         if (typeof t.externalUrl !== 'string' || !t.externalUrl || t.externalUrl.length > 2048) throw Error('汽水音乐入口缺少有效分享链接。');
         let parsed;
@@ -33,6 +35,19 @@
         if (sodaUrls.has(key)) throw Error('曲库中有重复的汽水音乐链接。');
         sodaUrls.add(key);
       }
+      if (t.kind === 'online') {
+        const mediaId = typeof t.mediaId === 'string' ? t.mediaId : '';
+        if (t.provider !== 'qishui' || !/^\d{1,30}$/.test(mediaId) || t.id !== 'online:qishui:'+mediaId || t.signature !== 'qishui:'+mediaId) throw Error('汽水音乐在线歌曲记录无效。');
+        if (onlineIds.has(mediaId)) throw Error('曲库中有重复的汽水音乐歌曲。');
+        onlineIds.add(mediaId);
+        for (const key of ['externalUrl','cover']) {
+          if (t[key] == null || t[key] === '') continue;
+          let parsed;
+          try { parsed = new URL(t[key]); } catch { throw Error('汽水音乐在线歌曲包含不安全的网页或封面地址。'); }
+          if (parsed.protocol !== 'https:' || !parsed.hostname || parsed.username || parsed.password) throw Error('汽水音乐在线歌曲包含不安全的网页或封面地址。');
+        }
+      }
+      if (ids.has(t.id)) throw Error('曲库中有无效或重复歌曲。');
       ids.add(t.id); if (t.kind === 'file') files.add(t.id);
     }
     const mediaIds = new Set(); let size = 0;
