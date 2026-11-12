@@ -37,3 +37,6 @@ Thumbs.db
 !/outputs/soda-library.js
 !/outputs/visual-presets.js
 !/outputs/visual-system.js
+!/outputs/lyric-karaoke.js
+
+!/outputs/share.html
