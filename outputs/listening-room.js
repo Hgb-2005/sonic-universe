@@ -67,6 +67,7 @@
         <div class="lr-lyric-tools">
           <div class="lr-lyric-styles" role="group" aria-label="歌词样式"><button data-lyric-style="list" aria-pressed="false">全文</button><button data-lyric-style="stage" aria-pressed="true">舞台</button><button data-lyric-style="fly" aria-pressed="false">飞入</button></div>
           <button class="lr-lyrics-entry" data-action="lyric-mods" data-desktop-only hidden>样式模组</button>
+          <div class="lr-lyric-timing" data-lyric-timing role="group" aria-label="歌词时间校准" hidden><button type="button" class="lr-lyrics-entry" data-lyric-adjust="-0.1">提前 0.1 秒</button><output data-lyric-offset aria-live="polite"></output><button type="button" class="lr-lyrics-entry" data-lyric-adjust="0.1">延后 0.1 秒</button></div>
           <button class="lr-lyrics-entry" data-action="lyrics">${icon('settings')}导入或调整歌词</button>
           <button class="lr-lyrics-entry" data-action="collapse-lyrics">收起</button>
         </div>
@@ -104,6 +105,7 @@
       <aside class="lr-work-side" data-work-only aria-label="播放队列与设置">
         <section class="lr-queue-preview lr-work-panel" aria-labelledby="workQueueHeading">
           <div class="lr-panel-heading"><h2 id="workQueueHeading">${icon('queue')}播放队列</h2><button class="lr-panel-link" data-action="queue">查看全部 ${icon('arrow')}</button></div>
+          <button type="button" class="lr-continue" data-action="continue" hidden><span>继续听</span><small data-continue-detail></small></button>
           <div class="lr-queue-context"><span data-queue-scope></span><button class="lr-queue-mode" data-action="repeat">${icon('repeat')}<span data-repeat-label>列表循环</span></button></div>
           <ol class="lr-preview-list" data-work-queue></ol>
           <p class="lr-queue-note" data-work-queue-note hidden></p>
@@ -201,7 +203,8 @@
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const backgroundNames = { geometry:'几何微光', mist:'流动光雾', plain:'纯净底色', universe:'星空' };
   const sceneDialog=$('[data-scene-dialog]'), sceneGrid=$('[data-scene-grid]');
-  const sceneDirector=scenes?.createDirector(), sceneBands=new Float32Array(48), previewBands=new Float32Array(48);
+  let jiangnanFrame=null;
+  const sceneDirector=scenes?.createDirector(), directJiangnan=scenes?.createJiangnanDirector(), sceneBands=new Float32Array(48), previewBands=new Float32Array(48);
   let sceneFilter='all', sceneId, visualTrack, visualTime=0, visualEnergy=0, fadeTime=0, fadeCanvas, sceneCardsReady=false;
   let stageChromeTimer=0, stageBreathe='';
   const scenePins=new Map();
@@ -360,7 +363,7 @@
   }
   function paintReactive(seconds,sound,animated,response,brightness) {
     const track=snapshot.track?.id||'';
-    if(track!==visualTrack){visualTrack=track;visualTime=visualEnergy=0;}
+    if(track!==visualTrack){visualTrack=track;visualTime=visualEnergy=0;jiangnanFrame=null;}
     if(animated)visualTime+=seconds;
     const next=sceneDirector.update({track,selected:selectedScene(),active:animated&&response>0,elapsed:seconds,sound,position:snapshot.position});
     if(next!==sceneId) {
@@ -382,11 +385,15 @@
     const accent=sound?.beat?.locked&&preferences.beatRatio!==1 ? .12 : 1;
     const pulse=root.dataset.mode==='visual'&&preferences.beatClock
       ?Math.max((sound?.pulse||0)*accent,(sound?.beat?.pulse||0)*.72):sound?.pulse;
+    if(sceneId==='jiangnan-rain'&&animated&&response>0)jiangnanFrame=directJiangnan({track,position:snapshot.position,duration:snapshot.duration,elapsed:seconds,sound});
+    const jiangnan=sceneId==='jiangnan-rain'?jiangnanFrame:null;
+    if(jiangnan&&root.dataset.jiangnanPhase!==String(jiangnan.phase))root.dataset.jiangnanPhase=String(jiangnan.phase);
+    else if(!jiangnan&&Object.hasOwn(root.dataset,'jiangnanPhase'))delete root.dataset.jiangnanPhase;
     const painted=scenes.draw(context,sceneId,{
       width:canvasWidth,height:canvasHeight,time:visualTime,bass:level(sound?.bass),mid:level(sound?.mid),high:level(sound?.high),
       pulse:level(pulse),energy:level(sound?.presence),spectrum:sceneBands,
       quality:wallpaper?.52:preferences.energySaver?.64:1,seed,
-      morph:(visualTime*.089+visualEnergy*.83+(seed%29)/80)%3,palette,
+      morph:(visualTime*.089+visualEnergy*.83+(seed%29)/80)%3,palette,jiangnan,
     });
     if(!painted)return false;
     context.fillStyle='rgba(7,8,18,'+(root.dataset.mode==='visual'?(.17-brightness*.13):(.65-brightness*.32))+')';
@@ -790,6 +797,18 @@
     musicLibrary.updatePlayback(snapshot);
     if(root.dataset.mode==='work'&&!wallpaper&&(force||performance.now()-lastQueueRefresh>550))renderWorkQueue();
     refreshOpenQueue(force);
+    const resume=snapshot.ready&&!snapshot.playing&&!snapshot.external&&!wallpaper?api.resumeInfo():null;
+    const continueButton=$('[data-action="continue"]');continueButton.hidden=!resume;continueButton.disabled=snapshot.busy||snapshot.externalPending;
+    if(resume){
+      const detail=[resume.name,core.formatTime(resume.position),resume.remaining?'还有 '+resume.remaining+' 首':''].filter(Boolean).join(' · ');
+      const copy=$('[data-continue-detail]');if(copy.textContent!==detail)copy.textContent=detail;
+      continueButton.title=detail;
+    }
+    $('[data-lyric-timing]').hidden=!snapshot.canNudgeLyrics;
+    const offset=snapshot.lyricOffset,offsetLabel=(offset>0?'+':'')+offset.toFixed(1)+' 秒';
+    const offsetOutput=$('[data-lyric-offset]');if(offsetOutput.textContent!==offsetLabel)offsetOutput.textContent=offsetLabel;
+    $('[data-lyric-adjust="-0.1"]').disabled=offset<=-30;
+    $('[data-lyric-adjust="0.1"]').disabled=offset>=30;
     if(!force&&!snapLyrics&&!snapshot.playing&&!snapshot.external&&idleFields.every(key=>snapshot[key]===previous[key])&&
       trackFields.every(key=>snapshot.track?.[key]===previous.track?.[key])&&
       (snapshot.lyrics===previous.lyrics||(!snapshot.lyrics.length&&!previous.lyrics.length)))return;
@@ -1120,7 +1139,7 @@
   queueList.addEventListener('dragend',()=>{endQueueDrag();refreshOpenQueue();});
   queueDialog.addEventListener('close',endQueueDrag);
   const actions={
-    play:()=>api.toggle(),previous:()=>api.previous(),next:()=>api.next(),favorite:()=>api.favorite(),repeat:()=>api.cyclePlayback(),
+    continue:()=>api.continueListening(),play:()=>api.toggle(),previous:()=>api.previous(),next:()=>api.next(),favorite:()=>api.favorite(),repeat:()=>api.cyclePlayback(),
     import:()=>api.importMusic(),folder:()=>api.importFolder(),
     library:()=>{closeDialogs();setMode('library');},online:()=>{closeDialogs();api.openOnline();},
     discovery:()=>{closeDialogs();api.openDiscovery(root);},equalizer:()=>{closeDialogs();window.SonicEqualizer.open();},
@@ -1160,6 +1179,10 @@
   root.addEventListener('click',event=>{
     const button=event.target.closest('button');if(!button||button.disabled)return;
     if(button.hasAttribute('data-close')){button.closest('dialog').close();return;}
+    if(button.dataset.lyricAdjust){
+      if(api.nudgeLyrics(Number(button.dataset.lyricAdjust))!==null){updateUI(true,true);if(desktop)publishPlayerState();}
+      return;
+    }
     if(button.dataset.queueCommand){queueCommand(button);return;}
     if(button.dataset.queuePage){queuePage+=Number(button.dataset.queuePage);renderQueue({resetScroll:true});return;}
     if(button.dataset.queueTrack){
@@ -1249,18 +1272,17 @@
   let nativeTimer=0;
   if(desktop) {
     const releaseSettings=$('[data-desktop-dialog]');
-    releaseSettings.insertAdjacentHTML('beforeend','<div class="lr-choice-row"><button class="lr-choice" data-check-release>检查更新</button><button class="lr-choice" data-open-release hidden>发布说明</button><button class="lr-primary" data-download-release hidden>下载新版</button></div><p class="lr-status" data-release-status role="status"></p>');
+    releaseSettings.insertAdjacentHTML('beforeend','<div class="lr-choice-row"><button class="lr-choice" data-check-release>检查更新</button><button class="lr-choice" data-open-release>打开发布页</button><button class="lr-primary" data-download-release hidden>下载新版</button></div><p class="lr-status" data-release-status role="status"></p>');
     const showRelease=result=>{
       if(!result)return;
-      $('[data-open-release]').hidden=!result.available;
       $('[data-download-release]').hidden=!result.available?.installer;
-      $('[data-release-status]').textContent=result.error||(result.available?'发现新版 '+result.available.version+'。':'当前版本 '+result.current+'，未发现更新的公开版。');
+      $('[data-release-status]').textContent=(result.error?'暂时无法检查更新。可打开发布页查看新版。':'')||(result.available?'发现新版 '+result.available.version+'。':'当前版本 '+result.current+'，未发现更新的公开版。');
       $('[data-action="desktop"]').textContent=result.available?'桌面设置 · 有更新':'桌面设置';
     };
     $('[data-check-release]').addEventListener('click',async event=>{
       const button=event.currentTarget;button.disabled=true;$('[data-release-status]').textContent='正在检查…';
       try{showRelease(await desktop.checkRelease());}
-      catch{$('[data-release-status]').textContent='暂时无法检查更新。';}
+      catch{$('[data-release-status]').textContent='暂时无法检查更新。可打开发布页查看新版。';}
       finally{button.disabled=false;}
     });
     $('[data-open-release]').addEventListener('click',()=>desktop.openUpdate().catch(()=>notify('暂时无法打开发布页。',true)));

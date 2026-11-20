@@ -1,6 +1,14 @@
 # 声波宇宙 · Sonic Universe
 
-[下载 Windows x64 安装包](https://github.com/Hgb-2005/sonic-universe/releases/download/v0.40.0/Sonic-Universe-0.40.0-x64.exe) · [查看 0.40.0 发布说明](https://github.com/Hgb-2005/sonic-universe/releases/tag/v0.40.0) · [打开网页版](https://hgb-2005.github.io/sonic-universe/)
+[下载 Windows x64 安装包](https://github.com/Hgb-2005/sonic-universe/releases/download/v0.41.0/Sonic-Universe-0.41.0-x64.exe) · [查看 0.41.0 发布说明](https://github.com/Hgb-2005/sonic-universe/releases/tag/v0.41.0) · [打开网页版](https://hgb-2005.github.io/sonic-universe/)
+
+## 0.41.0
+
+- 音乐发现会在汽水登录后预取每日推荐。同一会话重开或切回时先显示缓存，更新失败可重试。
+- 搜索结果区分已确认可播、仅试听、待匹配和官方跳转。播放失败时可选其他版本，或播放后续结果。
+- 工作陪伴页可以继续上次的歌曲，恢复播放进度和临时队列。
+- 烟雨江南加入薄雾、细雨和随持续音乐变化展开的水波。歌词页可按每首歌提前或延后 0.1 秒，桌面歌词同步。
+- 桌面设置常驻「打开发布页」。更新检查不可用时仍可手动下载。
 
 ## 0.40.0
 

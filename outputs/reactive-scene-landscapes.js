@@ -102,56 +102,52 @@
   }
 
   function jiangnan(ctx, frame) {
-    const {width:w, height:h, time:t, bass, mid, high, pulse, quality, seed} = frame;
-    sky(ctx, w, h, [[0,'#111e2d'], [.48,'#486b70'], [.61,'#91a491'], [.68,'#395859'], [1,'#12252f']]);
-    bloom(ctx, w * .31, h * .47, Math.max(w,h) * .59, '187,205,167', .25);
-    ridge(ctx, w, h, .51, .21, 1.3, '#688b8d', .615);
-    ridge(ctx, w, h, .566, .23, 4.2, '#496e73', .621);
-    ridge(ctx, w, h, .61, .145, 2.1, '#2c5457', .632);
-    const mist = ctx.createLinearGradient(0, h * .49, 0, h * .74);
-    mist.addColorStop(0, '#b3cbb000');
-    mist.addColorStop(.48, '#c6d0a960');
-    mist.addColorStop(1, '#afd9be00');
-    ctx.fillStyle = mist;
-    ctx.fillRect(0, h * .49, w, h * .25);
+    const {width:w,height:h,time:t,pulse,quality,seed}=frame;
+    const rain=frame.jiangnan?.rain??.54,swell=frame.jiangnan?.swell??0;
+    const waterline=.645-.085*swell;
+    sky(ctx,w,h,[[0,'#0d1d29'],[waterline-.16,'#486b70'],[waterline-.025,'#9eae9b'],[waterline+.025,'#345a60'],[1,'#112936']]);
+    bloom(ctx,w*(.31+.12*swell),h*(waterline-.16),Math.max(w,h)*.58,'192,213,184',.22+swell*.13);
+    ridge(ctx,w,h,waterline-.15,.15+swell*.065,1.3,'#729091',waterline+.008);
+    ridge(ctx,w,h,waterline-.075,.17+swell*.038,4.2,'#507378',waterline+.013);
+    ridge(ctx,w,h,waterline-.017,.095+swell*.034,2.1,'#2c555b',waterline+.02);
+    const haze=1-rain;
+    for(let i=0;i<3;i++){
+      const x=w*(.19+i*.3+Math.sin(t*.09+i)*.055),y=h*(waterline-.07+i*.034);
+      ctx.save();ctx.translate(x,y);ctx.scale(1,.22);
+      bloom(ctx,0,0,w*(.46+i*.06),'204,218,198',.08+haze*.18);ctx.restore();
+    }
 
-    const grains = field(seed, 0xc82478a1, 145);
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = `rgba(199,216,182,${.21 + high * .14})`;
+    const grains=field(seed,0xc82478a1,145);
+    ctx.lineWidth=Math.max(.7,h*.001);
+    ctx.strokeStyle='rgba(188,223,215,'+(.11+swell*.16)+')';
     ctx.beginPath();
-    for (let i = 0; i < 34 * quality; i++) {
-      const [a,b,c,d] = grains[i];
-      const x = ((a + t * (.006 + mid * .005) * (b - .5) + 1000) % 1) * w;
-      const y = h * (.646 + b * b * .29);
-      const span = (6 + d * d * 52) * (h * .0028 + .32) * (1 + bass * .42);
-      ctx.moveTo(x, y); ctx.lineTo(x + span, y + c * .24);
+    for(let i=0;i<32*quality;i++){
+      const [a,b,c,d]=grains[i];
+      const x=((a+t*.017*(b-.5)+1000)%1)*w;
+      const y=h*(waterline+b*b*(1-waterline));
+      const span=(7+d*d*40)*(h*.0028+.32)*(1+swell*1.3);
+      ctx.moveTo(x,y);ctx.quadraticCurveTo(x+span*.5,y-1.4*c,x+span,y+c*.22);
     }
     ctx.stroke();
 
-    const islandX = w * .765, islandY = h * .66;
-    const size = Math.min(w / 850, h / 465) * (.87 + quality * .13);
-    paintPavilion(ctx, islandX, islandY, size, pulse, bass);
-
-    ctx.strokeStyle = `rgba(175,209,203,${.18 + bass * .16})`;
-    ctx.beginPath();
-    for (let i = 0; i < 12; i++) {
-      const [a,b,c] = grains[i + 30];
-      const age = (t * (.47 + c * .35) + b) % 1;
-      const x = w * (.1 + a * .77), y = h * (.70 + b * .29);
-      ctx.moveTo(x + 1 + age * 18, y);
-      ctx.ellipse(x, y, 1 + age * 18, .5 + age * 3.3, 0, 0, tau);
+    paintPavilion(ctx,w*(.765+swell*.065),h*(waterline+.018),Math.min(w/850,h/465)*(.91+quality*.08),0,0);
+    const rings=Math.floor((7+swell*8)*quality);
+    for(let i=0;i<rings;i++){
+      const [a,b,c]=grains[i+30];
+      const age=(t*(.36+c*.28)+b)%1;
+      const x=w*(.1+a*.78),y=h*(waterline+.05+b*(.90-waterline));
+      const radius=(1+age*(19+swell*52))*(1+.15*pulse);
+      ctx.strokeStyle='rgba(177,222,216,'+((1-age)*(.11+rain*.12+swell*.20+pulse*.24))+')';
+      ctx.beginPath();ctx.ellipse(x,y,radius,.48+radius*.16,0,0,tau);ctx.stroke();
     }
-    ctx.stroke();
 
-    ctx.strokeStyle = `rgba(185,218,228,${.19 + high * .20})`;
+    ctx.strokeStyle='rgba(188,222,232,'+(.14+rain*.18+pulse*.13)+')';
     ctx.beginPath();
-    for (let i = 0; i < grains.length * quality; i++) {
-      const [a,b,c,d] = grains[i];
-      const shift = t * (.31 + c * .47 + mid * .09);
-      const x = ((a + shift * .14) % 1) * w;
-      const y = ((b + shift) % 1) * h;
-      const length = 5 + (9 + h * .014) * d * d;
-      ctx.moveTo(x, y); ctx.lineTo(x - length * .22, y + length);
+    for(let i=0;i<grains.length*quality*(.16+rain*.84);i++){
+      const [a,b,c,d]=grains[i],shift=t*(.25+c*.36);
+      const x=((a+shift*.14)%1)*w,y=((b+shift)%1)*h;
+      const length=(4+(8+h*.012)*d*d)*(1+pulse*.17);
+      ctx.moveTo(x,y);ctx.lineTo(x-length*.24,y+length);
     }
     ctx.stroke();
   }

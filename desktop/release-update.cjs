@@ -60,4 +60,4 @@ function createReleaseCheck(fetch,current){
   };
 }
 
-module.exports={updateFor,createReleaseCheck,downloadUpdate};
+module.exports={updateFor,createReleaseCheck,downloadUpdate,latestReleaseUrl:repository+'/releases/latest'};

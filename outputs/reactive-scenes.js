@@ -95,6 +95,37 @@
     };
   }
 
+  function createJiangnanDirector() {
+    let trackId, lastPosition, level, baseline, phase, candidate, held, wait, bar, rain, swell;
+    return function update({track,position,duration,elapsed,sound}){
+      const dt=Math.min(.1,Math.max(0,elapsed||0)), time=Number.isFinite(position)?position:0;
+      const strength=unit(sound?.presence)*.58+unit(sound?.mid)*.24+unit((sound?.rms||0)*9)*.18;
+      const introEnd=Math.min(9,Math.max(2.5,(duration||90)*.085));
+      if(track!==trackId||!Number.isFinite(lastPosition)||Math.abs(time-lastPosition)>1.5){
+        trackId=track;level=baseline=strength;phase=time<introEnd?0:1;
+        candidate=phase;held=wait=0;bar=null;rain=phase*.7;swell=0;
+      }
+      lastPosition=time;
+      level+=(strength-level)*(1-Math.exp(-dt/1.15));
+      baseline+=(strength-baseline)*(1-Math.exp(-dt/11));
+      const quiet=level<.13,tail=duration>0&&time>duration*.82&&quiet;
+      const rising=level>Math.max(.35,baseline+.105)||(phase===2&&level>Math.max(.27,baseline-.055));
+      const target=time<introEnd||tail||(phase===0&&quiet)?0:rising&&time>introEnd+3?2:1;
+      if(candidate!==target){candidate=target;held=wait=0;}
+      held+=dt;
+      const beat=sound?.beat?.locked?sound.beat:null;
+      const boundary=beat&&(bar!==null&&beat.bar!==bar||beat.barPhase<.035);
+      bar=beat?.bar??null;
+      if(phase!==candidate&&held>=(candidate===2?2.35:1.4)){
+        wait+=dt;
+        if(!beat||boundary||wait>=2.6){phase=candidate;wait=0;}
+      }
+      rain+=([.12,.7,.82][phase]-rain)*(1-Math.exp(-dt/1.45));
+      swell+=((phase===2?1:0)-swell)*(1-Math.exp(-dt/1.65));
+      return {phase,rain,swell};
+    };
+  }
+
   function draw(context, id, frame) {
     const painter = globalThis.SonicReactiveBloom?.[id] || globalThis.SonicReactiveLandscapes?.[id] || globalThis.SonicReactiveNeon?.[id];
     if (typeof painter !== 'function') return false;
@@ -104,5 +135,5 @@
     return true;
   }
 
-  return Object.freeze({ catalogue, get: id => byId.get(id), normalizeSelection, createDirector, seedFor, draw });
+  return Object.freeze({ catalogue, get: id => byId.get(id), normalizeSelection, createDirector, createJiangnanDirector, seedFor, draw });
 });

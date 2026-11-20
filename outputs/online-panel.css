@@ -15,3 +15,8 @@
 .online-empty{grid-column:1/-1;padding:20px;text-align:center;color:#978ca5;font-size:11px;line-height:1.8;border:1px dashed rgba(255,255,255,.1);border-radius:10px}
 .online-playlists{display:flex;gap:8px;flex-wrap:wrap}.online-playlist-chip{max-width:240px;padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.online-playlist-chip[aria-pressed=true]{border-color:var(--accent);background:rgba(var(--accent-rgb),.1);color:#f3eaff}
 .online-onboarding{display:grid;gap:14px}.online-compat{margin-top:4px}.online-compat summary{cursor:pointer;color:#a99db8;font-size:11px;padding:8px 0}.online-compat[open] summary{margin-bottom:12px}
+.online-result-heading{display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:wrap}
+.online-result-heading .online-result-title{min-width:0;max-width:100%}
+.online-result-badge{max-width:100%;white-space:nowrap;padding:2px 6px;border-radius:6px;background:#ccb6ff1c;color:#decdf1;font-size:10px}
+.online-result-badge[data-state=direct]{background:#8bd9af20;color:#b9ebcf}
+.online-result-badge[data-state=preview]{background:#efbe7920;color:#f8d7ab}

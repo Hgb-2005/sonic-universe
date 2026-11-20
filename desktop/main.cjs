@@ -6,7 +6,7 @@ const { trustedFrame, externalUrl, playerState } = require('./policy.cjs');
 const { createWallpaperController } = require('./wallpaper.cjs');
 const { createDesktopLyrics } = require('./desktop-lyrics.cjs');
 const { createExternalNowPlaying } = require('./external-now-playing.cjs');
-const { createReleaseCheck, downloadUpdate } = require('./release-update.cjs');
+const { createReleaseCheck, downloadUpdate, latestReleaseUrl } = require('./release-update.cjs');
 const checkRelease=createReleaseCheck((...args)=>net.fetch(...args),app.getVersion());
 let releaseDownloading=false;
 
@@ -154,9 +154,7 @@ async function start() {
   ipcMain.handle('sonic:check-release',event=>valid(event)?checkRelease():null);
   ipcMain.handle('sonic:open-update',async event=>{
     if(!valid(event))return false;
-    const {available}=await checkRelease();
-    if(!available||!valid(event))return false;
-    await shell.openExternal(available.url);return true;
+    await shell.openExternal(latestReleaseUrl);return true;
   });
   ipcMain.handle('sonic:download-update',async event=>{
     if(!valid(event)||releaseDownloading)return {message:'当前无法开始下载。'};

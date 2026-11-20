@@ -4,6 +4,37 @@
   const bilibiliVideoId = /^BV[A-Za-z0-9]{10}$/;
   const youtubeVideoId = /^[A-Za-z0-9_-]{11}$/;
   let dialog,client,player,tab,controller,chartMatch,objectUrl,musicBeforeVideo,videoSequence=0;
+  const feedCache=new Map(),feedRequests=new Map();
+  const isFeed=kind=>kind==='daily'||kind==='charts';
+  const freshFor={daily:5*60000,charts:10*60000};
+  const keepFor={daily:30*60000,charts:2*60*60000};
+  function invalidateDaily(){
+    feedCache.delete('daily');feedRequests.get('daily')?.abort.abort();feedRequests.delete('daily');
+    if(dialog?.open&&tab==='daily'){
+      controller?.abort();controller=null;get('[data-discovery-items]').replaceChildren();get('[data-discovery-retry]').hidden=true;
+      status('请在在线搜索中确认汽水音乐登录状态。',true);
+    }
+  }
+  function cachedFeed(kind){
+    const value=feedCache.get(kind);
+    return value&&Date.now()-value.at<keepFor[kind]?value:null;
+  }
+  function fetchFeed(kind,companion){
+    const previous=feedRequests.get(kind);
+    if(previous?.client===companion)return previous.promise;
+    previous?.abort.abort();
+    const abort=new AbortController(), request={abort,client:companion};
+    request.promise=(async()=>{
+      const result=await (kind==='daily'?companion.discovery({signal:abort.signal}):companion.charts({signal:abort.signal}));
+      abort.signal.throwIfAborted();
+      const value={result,at:Date.now()};feedCache.set(kind,value);return value;
+    })().finally(()=>{if(feedRequests.get(kind)===request)feedRequests.delete(kind);});
+    feedRequests.set(kind,request);return request.promise;
+  }
+  function warmDaily(companion){
+    if(companion&&!(Date.now()-(cachedFeed('daily')?.at||0)<freshFor.daily))void fetchFeed('daily',companion).catch(()=>{});
+  }
+  function feedTitle(kind,result){return kind==='daily'?'汽水每日推荐':(result?.title||'Apple Music 热门榜单')+' · 使用汽水音乐播放匹配版本';}
 
   function officialUrl(value,hosts) {
     try {
@@ -45,6 +76,7 @@
   function chooseTab(value) {
     chartMatch?.abort();chartMatch=null;
     tab=value;
+    get('[data-discovery-retry]').hidden=true;
     for(const item of dialog.querySelectorAll('[data-discovery-tab]'))item.setAttribute('aria-pressed',String(item.dataset.discoveryTab===value));
     get('[data-discovery-form]').hidden=!['mv','resolve'].includes(value);
     get('[data-discovery-video-tools]').hidden=value!=='mv';
@@ -133,13 +165,17 @@
   }
   async function load(kind,query='') {
     controller?.abort();const request=new AbortController();controller=request;
-    get('[data-discovery-items]').replaceChildren();
-    status('正在读取…');
+    const cached=isFeed(kind)?cachedFeed(kind):null;
+    if(cached){
+      showItems(Array.isArray(cached.result?.items)?cached.result.items:[],kind,feedTitle(kind,cached.result));
+      if(Date.now()-cached.at<freshFor[kind])return;
+      if(cached.result?.items?.length)status('已显示上次结果，正在更新…');
+    }else{get('[data-discovery-items]').replaceChildren();status('正在读取…');}
+    const refresh=get('[data-discovery-retry]');refresh.hidden=true;
     try{
       let result,title;
       const options={signal:request.signal};
-      if(kind==='daily'){result=await client.discovery(options);title='汽水每日推荐'}
-      else if(kind==='charts'){result=await client.charts(options);title=(result?.title||'Apple Music 热门榜单')+' · 使用汽水音乐播放匹配版本'}
+      if(isFeed(kind)){result=(await fetchFeed(kind,client)).result;title=feedTitle(kind,result);}
       else if(kind==='mv'){
         const source=get('[data-discovery-mv-source]').value;
         result=source==='apple'?await client.musicVideos(query,options):await client.playableVideos(query,{...options,source});
@@ -158,7 +194,10 @@
       showItems(Array.isArray(result?.items)?result.items:[],kind,title);
     }catch(error){
       if(controller!==request||request.signal.aborted)return;
-      status(error?.status===401?'请先在在线搜索中登录汽水音乐。':error?.message||'音乐入口暂时不可用，请稍后重试。',true);
+      const auth=kind==='daily'&&(error?.status===401||error?.code==='auth-required');
+      if(auth){feedCache.delete('daily');get('[data-discovery-items]').replaceChildren();}
+      const message=auth?'请先在在线搜索中登录汽水音乐。':cached?'更新未完成，仍可查看上次结果。':error?.message||'音乐入口暂时不可用，请稍后重试。';
+      status(message,true);refresh.hidden=auth;
     }
   }
   function stopVideo(resume) {
@@ -239,12 +278,13 @@
       <div class="sd-video-bar" data-discovery-video-bar hidden><span data-discovery-video-credit></span><button type="button" class="lr-choice" data-discovery-video-close>关闭视频</button></div>
       <video class="sd-video" controls playsinline preload="metadata" hidden></video>
       <div class="sd-embed" data-discovery-embed hidden></div>
-      <p class="lr-status" data-discovery-status role="status" aria-live="polite"></p><div data-discovery-items></div>`;
+      <p class="lr-status" data-discovery-status role="status" aria-live="polite"></p><button type="button" class="lr-choice" data-discovery-retry hidden>重试</button><div data-discovery-items></div>`;
     for(const [key,label] of Object.entries(tabs)){
       const choice=button(label,()=>{if(tab==='mv'&&key!=='mv')stopVideo(true);chooseTab(key)});
       choice.dataset.discoveryTab=key;get('.lr-choice-row').append(choice);
     }
     get('[data-discovery-close]').addEventListener('click',()=>dialog.close());
+    get('[data-discovery-retry]').addEventListener('click',()=>void load(tab,get('[data-discovery-query]').value.trim()));
     get('[data-discovery-video-close]').addEventListener('click',()=>{stopVideo(true);status('已关闭视频。')});
     get('[data-discovery-mv-source]').addEventListener('change',()=>{
       controller?.abort();controller=null;get('[data-discovery-items]').replaceChildren();
@@ -279,10 +319,11 @@
     root.append(dialog);
   }
   function open(root,companion,playback) {
+    if(client&&client!==companion){invalidateDaily();feedCache.delete('charts');}
     client=companion;player=playback;
     if(!dialog)create(root);
     if(!dialog.open)dialog.showModal();
     chooseTab('daily');
   }
-  window.SonicMusicDiscovery=Object.freeze({open});
+  window.SonicMusicDiscovery=Object.freeze({open,warmDaily,invalidateDaily});
 })();

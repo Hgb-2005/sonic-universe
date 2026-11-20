@@ -364,6 +364,11 @@ html.listening-enabled .online-lyrics { display: none !important; }
 #listeningRoom .lr-lyric-timeline[data-quiet=true] + .lr-lyric-notice { top: 32%; }
 #listeningRoom .lr-lyric-notice p { margin: 0; color: #c2b7ce; font-size: clamp(20px, 3.5vw, 43px); letter-spacing: .025em; }
 #listeningRoom .lr-lyric-timeline:has(button) + .lr-lyric-notice p { color: var(--room-accent); font-size: 14px; letter-spacing: .13em; }
+#listeningRoom .lr-continue { display:flex; align-items:center; flex-wrap:wrap; gap:4px 10px; width:100%; min-width:0; text-align:left; margin:0 0 10px; padding:8px 10px; border:1px solid #dec9ff28; border-radius:9px; background:#d4b7ff0e; color:#e4d3ff; }
+#listeningRoom .lr-continue:hover { background:#d4b7ff20; }
+#listeningRoom .lr-continue small { color:#b9accc; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#listeningRoom .lr-lyric-timing { display:inline-flex; align-items:center; flex-wrap:wrap; gap:4px; }
+#listeningRoom .lr-lyric-timing output { color:#b7a8cc; min-width:4.3em; text-align:center; font-variant-numeric:tabular-nums; font-size:11px; }
 #listeningRoom .lr-lyric-tools { display: flex; justify-content: flex-end; align-items: center; flex-wrap: wrap; gap: 10px; min-height: 30px; }
 #listeningRoom .lr-lyric-styles { display: inline-flex; gap: 3px; padding: 3px; border: 1px solid #ded6ff27; border-radius: 9px; background: #141521b0; }
 #listeningRoom .lr-lyric-styles button { padding: 5px 11px; border-radius: 6px; color: var(--room-muted); font-size: 11px; }

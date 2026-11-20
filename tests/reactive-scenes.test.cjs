@@ -41,3 +41,26 @@ test('a sustained timbre change waits for the next bar even when loudness stays 
   for(let i=0;i<25;i++)assert.equal(director.update({...frame,sound:{...changed,beat:{locked:true,bar:12,barPhase:.55}}}),'prism-bloom');
   assert.equal(director.update({...frame,sound:{...changed,beat:{locked:true,bar:13,barPhase:0}}}),'silkscreen');
 });
+
+test('Jiangnan holds the composition on a brief accent and follows sustained changes at a bar boundary', () => {
+  const director = scenes.createJiangnanDirector();
+  const calm = {presence:.28, mid:.30, rms:.035};
+  const swell = {presence:.83, mid:.77, rms:.11};
+  const quiet = {presence:.06, mid:.11, rms:.008};
+  const transitions = [];
+  let previous;
+  for (let frame = 0; frame < 620; frame++) {
+    const time = frame / 10;
+    const sound = time < 5 || time >= 52 ? quiet : time >= 26 && time < 47 ? swell : calm;
+    const accent = time >= 16 && time < 16.5;
+    const beat = {locked:true, bar:Math.floor(time/2), barPhase:(time%2)/2};
+    const state = director({track:'song', position:time, duration:62, elapsed:.1, sound:{...(accent?swell:sound),beat}});
+    if (state.phase !== previous) transitions.push({phase:state.phase, time});
+    previous = state.phase;
+  }
+  assert.deepEqual(transitions.map(step => step.phase),[0,1,2,1,0]);
+  const opening = transitions.find(step => step.phase === 2);
+  assert.ok(opening.time > 28 && opening.time < 34);
+  assert.ok(opening.time % 2 <= .1,'the first strong sustained section opens on the bar');
+  assert.equal(director({track:'next', position:0, duration:60, elapsed:.1, sound:swell}).phase,0);
+});
