@@ -18,6 +18,8 @@ const matchedChartSong = { ...recommendation, mediaId:'8105', name:chart.name, a
 const matchingPublicSong = { ...matchedChartSong, provider:'netease', mediaId:'9411', linkedOnly:true, externalUrl:'https://music.163.com/song?id=9411' };
 const livePublicSong = { ...matchingPublicSong, mediaId:'9412', duration:47, externalUrl:'https://music.163.com/song?id=9412' };
 const unmatchedChartSong = { ...chart, mediaId:'8106', name:'暂无汽水同版的榜单歌曲', externalUrl:'https://music.apple.com/cn/song/8106' };
+const lastChartSong = { ...chart, mediaId:'8107',name:'榜单下一首' };
+const matchedLastChartSong = { ...matchedChartSong, mediaId:'8108', name:lastChartSong.name };
 const musicVideo = { ...chart, mediaId:'8104', name:'测试 MV', externalUrl:'https://music.apple.com/cn/music-video/8104' };
 const inlineVideo = { provider:'commons', mediaId:'41356', name:'可在应用内播放的 MV', artist:'镜湖',
   videoUrl:'https://upload.wikimedia.org/wikipedia/commons/1/11/Inline-test.webm',
@@ -117,6 +119,7 @@ async function mockCompanion(page) {
     if (url.pathname.startsWith('/api/')) requests.push(url.pathname + url.search);
     if (url.pathname === '/api/qishui/discovery') return route.fulfill({ json:{ provider:'qishui', items:[recommendation] } });
     if (url.pathname === '/api/netease/search') return route.fulfill({json:{items:[matchingPublicSong,livePublicSong]}});
+    if (url.pathname === '/api/qishui/search') return route.fulfill({json:{items:[matchedLastChartSong]}});
     if (url.pathname === '/api/qishui/library/playlists') return route.fulfill({ json:{ items:[playlist()], hasMore:false } });
     if (url.pathname === `/api/qishui/playlists/${playlistSource.id}`) {
       return route.fulfill({ json:{ playlist:playlist(), items:playlistItems, hasMore:false } });
@@ -126,12 +129,12 @@ async function mockCompanion(page) {
       return route.fulfill({ status:500, json:{ error:'同步测试不允许写入汽水歌单' } });
     }
     if (url.pathname === `/api/qishui/songs/${resolvedSong.mediaId}`) return route.fulfill({ json:{ item:resolvedSong } });
-    if (url.pathname === '/api/discovery/charts') return route.fulfill({ json:{ title:'测试热门榜单', items:[chart,unmatchedChartSong] } });
+    if (url.pathname === '/api/discovery/charts') return route.fulfill({ json:{ title:'测试热门榜单', items:[chart,unmatchedChartSong,lastChartSong] } });
     if (url.pathname === '/api/discovery/charts/match') {
       assert.equal(request.method(),'POST');
       const input = request.postDataJSON();
       chartMatches.push(input);
-      const item = input?.name === chart.name && input?.artist === chart.artist ? matchedChartSong : null;
+      const item = [matchedChartSong,matchedLastChartSong].find(song=>song.name===input?.name&&song.artist===input?.artist)||null;
       return route.fulfill({ json:{ item } });
     }
     if (url.pathname === '/api/discovery/music-videos') return route.fulfill({ json:{ items:[musicVideo] } });
@@ -139,7 +142,7 @@ async function mockCompanion(page) {
       const provider = url.searchParams.get('source');
       return route.fulfill({ json:{ provider, items:videoSearchFixtures[provider] ?? [] } });
     }
-    if ([recommendation,matchedChartSong].some(track => url.pathname === `/api/qishui/tracks/${track.mediaId}/audio`)) {
+    if ([recommendation,matchedChartSong,matchedLastChartSong].some(track => url.pathname === `/api/qishui/tracks/${track.mediaId}/audio`)) {
       return route.fulfill({ json:{ streamPath:'/media/music-upgrade-test', preview:false } });
     }
     if (url.pathname === '/media/music-upgrade-test') {
@@ -200,14 +203,24 @@ async function verifyPlaylistSync(page, companion) {
   await room.getByRole('button',{ name:`播放 ${resolvedSong.name}`,exact:true }).waitFor();
 
   companion.refreshFixture();
+  const review=page.getByRole('dialog',{name:'预览歌单变化'});
   await room.locator('[data-sl-command="refresh-synced"]').click();
+  await review.getByText('新增 1 首',{exact:true}).waitFor();
+  await review.getByRole('button',{name:'取消',exact:true}).click();
+  assert.deepEqual(await page.evaluate(id=>SonicPlayback.library().playlists.find(list=>list.id===id).trackIds,mirror.id),mirror.trackIds);
+  await room.locator('[data-sl-command="refresh-synced"]').click();
+  await review.getByRole('button',{name:'保留本机编排，只追加新增'}).click();
   await room.getByRole('button',{ name:`播放 ${refreshedSong.name}`,exact:true }).waitFor();
+  assert.deepEqual(await page.evaluate(id=>SonicPlayback.library().playlists.find(list=>list.id===id).trackIds,mirror.id),[...mirror.trackIds,`online:qishui:${refreshedSong.mediaId}`]);
+  await room.locator('[data-sl-command="refresh-synced"]').click();
+  await review.getByRole('button',{name:'采用远端曲目和顺序'}).click();
+  await room.getByRole('button',{ name:`播放 ${recommendation.name}`,exact:true }).waitFor({state:'hidden'});
   const lists = await page.evaluate(() => SonicPlayback.library().playlists);
   assert.deepEqual(lists.filter(item => item.synced),[{
     id:mirror.id, name:'刷新后的同步歌单', trackIds:[`online:qishui:${resolvedSong.mediaId}`,`online:qishui:${refreshedSong.mediaId}`],synced:true,
   }]);
   const reads = companion.requests.filter(request => request.startsWith(`/api/qishui/playlists/${playlistSource.id}?`));
-  assert.equal(reads.length,2);
+  assert.equal(reads.length,4);
   assert.ok(reads.every(request => new URL(request,origin).searchParams.get('ownerId') === playlistSource.ownerId));
   assert.deepEqual(companion.providerWrites,[]);
   console.log('PASS Qishui playlist sync refreshes tracks in place without writing to the provider');
@@ -301,6 +314,15 @@ async function verifyUpgrade(page) {
   assert.deepEqual(await page.evaluate(() => window.musicUpgradeOfficialLinks),[]);
   console.log('PASS chart playback plays the matched Qishui track and keeps unmatched results in the app');
 
+  const before=companion.chartMatches.length;
+  await items.getByRole('button',{name:'播放整榜'}).click();
+  await page.waitForFunction(()=>SonicPlayback.snapshot({queue:true}).queueCount===3&&SonicPlayback.snapshot().playing);
+  assert.deepEqual(companion.chartMatches.slice(before).map(match=>match.name),[chart.name]);
+  await page.evaluate(()=>SonicPlayback.next());
+  await page.waitForFunction(id=>SonicPlayback.snapshot().playing&&SonicPlayback.snapshot().track?.id==='online:qishui:'+id,matchedLastChartSong.mediaId);
+  assert.deepEqual(companion.chartMatches.slice(before).map(match=>match.name),[chart.name,unmatchedChartSong.name,lastChartSong.name]);
+  console.log('PASS whole chart queues all rows and skips the unmatched track on advance');
+
   await discovery.evaluate(dialog=>dialog.close());
   await page.locator('.lr-header [data-action="online"]').click();
   await page.locator('[data-online-provider="netease"]').click();
@@ -309,6 +331,9 @@ async function verifyUpgrade(page) {
   const matchingButtons=page.locator('[data-online-action="match-qishui"]');
   await matchingButtons.last().click();
   await page.getByText('汽水暂时没有可确认的同版本，仍可在原平台收听。',{exact:true}).waitFor();
+  await page.locator('[data-online-action="choose-qishui"]').click();
+  await page.getByRole('dialog',{name:'选择汽水版本'}).getByRole('button',{name:/榜单下一首/}).click();
+  await page.waitForFunction(id=>SonicPlayback.snapshot().playing&&SonicPlayback.snapshot().track?.id==='online:qishui:'+id,matchedLastChartSong.mediaId);
   await matchingButtons.first().click();
   await page.getByText('正在播放汽水音乐提供的匹配版本。',{exact:true}).waitFor();
   assert.equal(await page.evaluate(()=>SonicPlayback.snapshot().track.id),`online:qishui:${matchedChartSong.mediaId}`);
@@ -447,6 +472,22 @@ async function verifyUpgrade(page) {
 
   await equalizer.getByRole('button',{ name:'关闭均衡器',exact:true }).click();
   await page.keyboard.press('Escape');
+  await page.locator('[data-action="playback-settings"]').click();
+  await page.locator('[data-playback-rate]').selectOption('1.5');
+  assert.equal(await page.evaluate(()=>SonicPlayback.playbackSettings().rate),1.5);
+  await page.locator('[data-sleep-timer]').selectOption('15');
+  assert.ok(await page.evaluate(()=>SonicPlayback.playbackSettings().sleepDeadline>Date.now()));
+  await page.locator('[data-sleep-timer]').selectOption('0');
+  assert.equal(await page.evaluate(()=>SonicPlayback.playbackSettings().sleepDeadline),0);
+  await page.locator('[data-playback-rate]').selectOption('1');
+  await page.getByRole('button',{name:'关闭播放设置'}).click();
+  await page.evaluate(()=>{
+    const real=window.setTimeout;
+    window.setTimeout=(handler,delay,...args)=>real(handler,delay===900000?25:delay,...args);
+    try{SonicPlayback.setSleepTimer(15);}finally{window.setTimeout=real;}
+  });
+  await page.waitForFunction(()=>!SonicPlayback.snapshot().playing&&SonicPlayback.playbackSettings().sleepDeadline===0);
+  console.log('PASS playback rate and sleep timer settings control the active player');
   await verifyPlaylistSync(page,companion);
   await verifyFolderImport(page);
   assert.deepEqual(errors,[]);

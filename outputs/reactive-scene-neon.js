@@ -379,10 +379,78 @@
     context.restore();
   }
 
+  function silkscreen(context,frame){
+    const {width,height,time,bass,mid,high,pulse,quality,seed}=frame;
+    backdrop(context,width,height,[[0,'#e5b792'],[1,'#b47365']]);
+    const unit=Math.min(width,height),size=unit*.45;
+    context.translate(width*.5,height*.44);
+    context.rotate(-.16+Math.sin(time*.29)*.035);
+    context.fillStyle='#242442';context.fillRect(-size*.75,-size*.52,size*1.5,size*1.04);
+    const palette=['#161d36','#ea5545','#efad66','#eee0ac'];
+    for(let panel=0;panel<3;panel++){
+      context.rotate(panel===1?.28:-.14);
+      const x=(panel-1)*(size*.49+mid*size*.06),y=(panel%2-.5)*size*.16;
+      context.fillStyle=palette[panel+1];context.fillRect(x-size*.37,y-size*.28,size*.74,size*.56);
+    }
+    const count=quality>.7?22:17;
+    for(let row=0;row<count;row++)for(let col=0;col<count;col++){
+      const x=(col/(count-1)-.5)*size*1.66,y=(row/(count-1)-.5)*size*1.07;
+      const pitch=sample(frame.spectrum,col/(count-1));
+      const radius=unit*(.0025+pitch*.006+pulse*.0017)*(.65+noise(row*count+col,seed)*.7);
+      context.fillStyle=(col+row)%6===0?'#fce0ba':'rgba(30,29,48,.67)';
+      context.beginPath();context.arc(x+Math.sin(row*.44+time)*high*6,y,radius,0,TAU);context.fill();
+    }
+    context.strokeStyle='#fff1d1';context.lineWidth=1+unit*.002;
+    context.strokeRect(-size*.86-bass*8,-size*.61,size*1.72+bass*16,size*1.22);
+  }
+
+  function lanternWindows(context,frame){
+    const {width,height,time,bass,pulse,spectrum,seed}=frame;
+    backdrop(context,width,height,[[0,'#16122c'],[.65,'#381f40'],[1,'#18162d']]);
+    glow(context,width*.5,height*.49,height*.72,'229,112,87',.30+bass*.22);
+    const count=9,unit=Math.min(width/13,height/7);
+    for(let index=0;index<count;index++){
+      const x=width/2+(index-4)*unit*1.17;
+      const pitch=sample(spectrum,index/(count-1));
+      const y=height*.44+Math.sin(index*.82+time*.76)*unit*.35-pitch*unit*.46;
+      const light=.48+pitch*.38+pulse*.12;
+      context.strokeStyle='rgba(242,190,153,.26)';context.lineWidth=1;
+      context.beginPath();context.moveTo(x,height*.04);context.lineTo(x,y);context.stroke();
+      context.fillStyle=`rgba(244,${153+Math.round(noise(index,seed)*53)},111,${light})`;
+      context.beginPath();context.roundRect(x-unit*.39,y,unit*.78,unit*.97,unit*.19);context.fill();
+      context.strokeStyle='#58334b';
+      for(const column of [-.18,0,.18]){context.beginPath();context.moveTo(x+column*unit,y);context.lineTo(x+column*unit,y+unit*.97);context.stroke();}
+      context.fillStyle='rgba(241,182,138,.13)';context.fillRect(x-unit*.27,height*.69,unit*.54,unit*(.13+pitch*.46));
+    }
+  }
+
+  function tideDial(context,frame){
+    const {width,height,time,bass,pulse,spectrum,quality}=frame;
+    backdrop(context,width,height,[[0,'#10292e'],[1,'#07191c']]);
+    const radius=Math.min(width,height)*.23, ticks=quality>.7?96:64;
+    context.translate(width*.5,height*.45);
+    context.strokeStyle='#527976';context.lineWidth=1;
+    for(const scale of [.57,.8,1,1.30]){context.beginPath();context.arc(0,0,radius*scale,0,TAU);context.stroke();}
+    for(let index=0;index<ticks;index++){
+      const theta=index/ticks*TAU, pitch=sample(spectrum,index/ticks);
+      const inner=radius*(1+(index%8===0?.07:.14)),outer=radius*(1.26+pitch*.28);
+      context.strokeStyle=index%8===0?'#f6c78f':`rgba(123,211,186,${.28+pitch*.62})`;
+      context.beginPath();context.moveTo(Math.cos(theta)*inner,Math.sin(theta)*inner);context.lineTo(Math.cos(theta)*outer,Math.sin(theta)*outer);context.stroke();
+    }
+    context.lineWidth=Math.max(2,radius*.024);context.strokeStyle='#8cdebb';
+    context.beginPath();context.arc(0,0,radius*.80,time*.3,time*.3+.65+bass*2.3);context.stroke();
+    context.rotate(time*.32+bass*.24);context.strokeStyle='#ffbd85';
+    context.beginPath();context.moveTo(-radius*.2,0);context.lineTo(radius*.94,0);context.stroke();
+    context.fillStyle='#ffe0a9';context.beginPath();context.arc(0,0,radius*(.042+pulse*.023),0,TAU);context.fill();
+  }
+
   root.SonicReactiveNeon = Object.freeze({
     'neon-grid': neonGrid,
     'prism-tunnel': prismTunnel,
     'orbit-particles': orbitParticles,
     'signal-wave': signalWave,
+    silkscreen,
+    'lantern-windows':lanternWindows,
+    'tide-dial':tideDial,
   });
 })(typeof globalThis === 'object' ? globalThis : this);

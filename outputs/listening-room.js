@@ -121,15 +121,22 @@
         </section>
       </aside>
     </main>
-    <footer class="lr-footer"><div class="lr-footer-group"><button data-action="settings" data-background-label>几何微光</button><span data-eco-label>省电优先</span><button data-action="external" data-listen-link hidden>外部声音联动</button></div><div class="lr-footer-group"><button data-action="equalizer">均衡器</button><button data-action="desktop-lyrics-window" data-desktop-only aria-pressed="false" hidden>桌面歌词</button><button data-action="mini" data-desktop-only hidden>迷你播放器</button><button data-action="desktop" data-desktop-only hidden>桌面设置</button><button data-action="legacy">星空与创作 ↗</button></div></footer>
+    <footer class="lr-footer"><div class="lr-footer-group"><button data-action="settings" data-background-label>几何微光</button><span data-eco-label>省电优先</span><button data-action="external" data-listen-link hidden>外部声音联动</button></div><div class="lr-footer-group"><button data-action="playback-settings">播放设置</button><button data-action="equalizer">均衡器</button><button data-action="desktop-lyrics-window" data-desktop-only aria-pressed="false" hidden>桌面歌词</button><button data-action="mini" data-desktop-only hidden>迷你播放器</button><button data-action="desktop" data-desktop-only hidden>桌面设置</button><button data-action="legacy">星空与创作 ↗</button></div></footer>
+    <dialog class="lr-dialog" data-playback-dialog aria-labelledby="playbackSettingsTitle">
+      <div class="lr-dialog-heading"><h2 id="playbackSettingsTitle">播放设置</h2><button class="lr-icon" data-close aria-label="关闭播放设置">${icon('close')}</button></div>
+      <label class="lr-field"><span class="lr-field-title">输出设备</span><select class="lr-search-input" data-output-device><option value="">系统默认</option></select></label>
+      <label class="lr-field"><span class="lr-field-title">播放速度</span><select class="lr-search-input" data-playback-rate><option value="0.75">0.75×</option><option value="1">1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></label>
+      <label class="lr-field"><span class="lr-field-title">定时停止</span><select class="lr-search-input" data-sleep-timer><option value="0">关闭</option><option value="15">15 分钟</option><option value="30">30 分钟</option><option value="45">45 分钟</option><option value="60">60 分钟</option><option value="90">90 分钟</option><option value="120">120 分钟</option></select></label>
+      <p class="lr-status" role="status" data-playback-status></p>
+    </dialog>
     <dialog class="lr-dialog lr-scene-dialog" data-scene-dialog aria-labelledby="sceneGalleryHeading">
       <div class="lr-dialog-heading"><div><h2 id="sceneGalleryHeading">动态场景</h2><p data-scene-selection></p></div><button class="lr-icon" data-close aria-label="关闭动态场景">${icon('close')}</button></div>
       <div class="lr-scene-controls">
-        <div class="lr-scene-filters" aria-label="场景分类" role="group"><button class="lr-choice" data-scene-filter="all">全部</button><button class="lr-choice" data-scene-filter="山水">山水</button><button class="lr-choice" data-scene-filter="氛围">氛围</button><button class="lr-choice" data-scene-filter="赛博">赛博</button></div>
+        <div class="lr-scene-filters" aria-label="场景分类" role="group"><button class="lr-choice" data-scene-filter="all">全部</button><button class="lr-choice" data-scene-filter="山水">山水</button><button class="lr-choice" data-scene-filter="氛围">氛围</button><button class="lr-choice" data-scene-filter="赛博">赛博</button><button class="lr-choice" data-scene-filter="图形">图形</button></div>
         <button class="lr-choice lr-scene-auto" data-scene-select="auto">${icon('sound')}自动随曲</button>
       </div>
       <div class="lr-scene-grid" data-scene-grid></div>
-      <div class="lr-scene-preferences"><label class="lr-check"><input type="checkbox" data-scene-backdrop>用于陪伴和歌词背景</label><button class="lr-choice" data-action="scene-pin" aria-pressed="false">记住这首歌的场景</button></div>
+      <div class="lr-scene-preferences"><label class="lr-check"><input type="checkbox" data-scene-backdrop>用于陪伴和歌词背景</label><button class="lr-choice" data-action="scene-pin" aria-pressed="false">记住这首歌的场景</button><label>节拍校正 <select class="lr-choice" data-beat-ratio><option value="1">自动</option><option value="0.5">半速</option><option value="2">倍速</option></select></label></div>
     </dialog>
     <dialog class="lr-dialog" data-settings aria-labelledby="roomSettingsHeading"><div class="lr-dialog-heading"><div><h2 id="roomSettingsHeading">让氛围，刚刚好。</h2><p>选一份舒服的背景，之后交给音乐。</p></div><button class="lr-icon" data-close aria-label="关闭氛围设置">${icon('close')}</button></div><div class="lr-field"><div class="lr-field-title">背景</div><div class="lr-choice-row"><button class="lr-choice" data-background="geometry">几何微光</button><button class="lr-choice" data-background="mist">流动光雾</button><button class="lr-choice" data-background="plain">纯净底色</button></div></div><div class="lr-field"><div class="lr-field-title">配色</div><div class="lr-choice-row"><button class="lr-choice" data-color="amber"><i class="lr-swatch" style="--swatch:#e5c483"></i>暖金</button><button class="lr-choice" data-color="ocean"><i class="lr-swatch" style="--swatch:#95bcd1"></i>雾蓝</button><button class="lr-choice" data-color="lilac"><i class="lr-swatch" style="--swatch:#b8a9db"></i>浅紫</button><button class="lr-choice" data-color="cover">跟随封面</button></div></div><label class="lr-field"><span class="lr-field-title">背景亮度 <output data-brightness-value></output></span><input class="lr-range" data-brightness type="range" min="10" max="100" step="5" aria-label="背景亮度"></label><label class="lr-field"><span class="lr-field-title">声音响应 <output data-response-value></output></span><input class="lr-range" data-response type="range" min="0" max="100" step="5" aria-label="声音响应强度"></label><label class="lr-check"><input type="checkbox" data-desktop-lyrics>工作时显示小歌词</label><label class="lr-check"><input type="checkbox" data-energy>省电优先</label><p class="lr-dialog-note" data-save-note role="status">设置自动保存在这台设备。</p></dialog>
     <dialog class="lr-dialog" data-queue-dialog aria-labelledby="roomQueueHeading">
@@ -252,6 +259,7 @@
     $('[data-visual-view]').hidden=mode!=='visual';
     beatClock.hidden=mode!=='visual';
     beatClock.setAttribute('aria-pressed',String(preferences.beatClock));
+    $('[data-beat-ratio]').value=preferences.beatRatio;
     musicLibrary.setVisible(mode==='library');
     $('[data-work-caption]').hidden=mode!=='work'||!preferences.desktopLyrics;
     root.dataset.caption=String(preferences.desktopLyrics);
@@ -354,7 +362,7 @@
     const track=snapshot.track?.id||'';
     if(track!==visualTrack){visualTrack=track;visualTime=visualEnergy=0;}
     if(animated)visualTime+=seconds;
-    const next=sceneDirector.update({track,selected:selectedScene(),active:animated&&response>0,elapsed:seconds,sound});
+    const next=sceneDirector.update({track,selected:selectedScene(),active:animated&&response>0,elapsed:seconds,sound,position:snapshot.position});
     if(next!==sceneId) {
       if(sceneId&&animated) {
         fadeCanvas ||= document.createElement('canvas');
@@ -371,8 +379,9 @@
     const seed=scenes.seedFor(track);
     if(animated)visualEnergy=core.approach(visualEnergy,level(sound?.presence)*.62+level(sound?.bass)*.38,seconds,1.4);
     if(strength!==1)for(let i=0;i<sceneBands.length;i++)sceneBands[i]*=strength;
+    const accent=sound?.beat?.locked&&preferences.beatRatio!==1 ? .12 : 1;
     const pulse=root.dataset.mode==='visual'&&preferences.beatClock
-      ?Math.max(sound?.pulse||0,(sound?.beat?.pulse||0)*.72):sound?.pulse;
+      ?Math.max((sound?.pulse||0)*accent,(sound?.beat?.pulse||0)*.72):sound?.pulse;
     const painted=scenes.draw(context,sceneId,{
       width:canvasWidth,height:canvasHeight,time:visualTime,bass:level(sound?.bass),mid:level(sound?.mid),high:level(sound?.high),
       pulse:level(pulse),energy:level(sound?.presence),spectrum:sceneBands,
@@ -823,13 +832,14 @@
     const state=api.snapshot(), {index,line}=core.lyricAt(state.lyrics,state.lyricPosition,state.lyricDuration);
     const track={name:state.track?.name,artist:state.track?.artist};
     const desktopLyric=line?.text||'',nextLyric=state.lyrics[index+1]?.text||'';
+    const previousLyric=state.lyrics[index-1]?.text||'', translation=line?.translation||'';
     const text=preferences.desktopLyrics?desktopLyric:'';
     const time=Math.floor(state.position);
     const playing=state.external?state.externalMetadata?.playing===true:state.playing;
-    const values=[track.name,track.artist,playing,state.external,time,Math.floor(state.duration),text,desktopLyric,nextLyric];
+    const values=[track.name,track.artist,playing,state.external,time,Math.floor(state.duration),text,desktopLyric,nextLyric,previousLyric,translation];
     if(values.every((value,index)=>value===lastPublishedState[index]))return;
     lastPublishedState=values;
-    desktop.publish({track,playing,external:state.external,position:state.position,duration:state.duration,lyric:text,desktopLyric,nextLyric});
+    desktop.publish({track,playing,external:state.external,position:state.position,duration:state.duration,lyric:text,desktopLyric,nextLyric,previousLyric,translation});
   }
   function queueTick(delay) {
     clearTimeout(timer);
@@ -887,6 +897,7 @@
     const seconds=wasActive?Math.min(.1,(now-lastFrame)/1000):1/(fps||20);
     lastFrame=fps?now:0;
     const sound=active&&(animate||showSpectrum||snapshot.external||coverBeat||stageBeat)?api.sample(seconds):null;
+    if(sound)sound.beat=SonicMusicMotion.correctBeat(sound.beat,preferences.beatRatio);
     const beat=sound?.beat, age=beat?.age??Infinity;
     if(mode==='visual')renderBeatClock(beat,active,reduced);
     const pulse=coverBeat&&age<.37?beat.strength*(1-Math.exp(-age*70))*Math.exp(-age*11):0;
@@ -1122,6 +1133,20 @@
     'expand-lyrics':()=>setLyricExpanded(true),'collapse-lyrics':()=>setLyricExpanded(false),'lyric-mods':()=>lyricMods?.open(),
     'scene-gallery':openSceneGallery,'scene-pin':toggleScenePin,
     'beat-clock':()=>{preferences.beatClock=!preferences.beatClock;applyPreferences(true);},
+    'playback-settings':async()=>{
+      const select=$('[data-output-device]'), current=api.playbackSettings();
+      $('[data-playback-rate]').value=String(current.rate);
+      if(!current.sleepDeadline)$('[data-sleep-timer]').value='0';
+      $('[data-playback-status]').textContent=current.sleepDeadline?'将在 '+new Date(current.sleepDeadline).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})+' 暂停。':'定时停止只控制声波宇宙里的播放。';
+      $('[data-playback-rate]').disabled=snapshot.external;
+      select.disabled=true;show($('[data-playback-dialog]'));
+      try{
+        const devices=await api.audioOutputs();
+        select.replaceChildren(new Option('系统默认',''),...(devices||[]).map((device,index)=>new Option(device.label||'输出设备 '+(index+1),device.deviceId)));
+        select.value=devices?.some(device=>device.deviceId===current.output)?current.output:'';
+        select.disabled=snapshot.external||!devices;
+      }catch(error){$('[data-playback-status]').textContent=error.message||'暂时无法读取输出设备。';}
+    },
     queue:()=>{
       queueSearch.value='';
       renderQueue({locateCurrent:true,resetScroll:true});
@@ -1160,6 +1185,20 @@
   root.addEventListener('keydown',revealStageChrome);
   for(const key of ['brightness','response'])$('[data-'+key+']').addEventListener('input',event=>{preferences[key]=Number(event.target.value);$('[data-'+key+'-value]').textContent=preferences[key]+'%';fill(event.target);persist();backgroundDirty=true;wake();});
   $('[data-desktop-lyrics]').addEventListener('change',event=>{preferences.desktopLyrics=event.target.checked;applyPreferences(true);});
+  $('[data-beat-ratio]').addEventListener('change',event=>{preferences.beatRatio=Number(event.target.value);applyPreferences(true);});
+  $('[data-output-device]').addEventListener('change',async event=>{
+    const select=event.target;select.disabled=true;
+    try{if(await api.setAudioOutput(select.value))$('[data-playback-status]').textContent='已切换输出设备。';}
+    catch(error){select.value=api.playbackSettings().output;$('[data-playback-status]').textContent=error.message||'切换设备失败。';}
+    finally{select.disabled=snapshot.external;}
+  });
+  $('[data-playback-rate]').addEventListener('change',event=>{
+    if(!api.setPlaybackRate(Number(event.target.value)))event.target.value=String(api.playbackSettings().rate);
+  });
+  $('[data-sleep-timer]').addEventListener('change',event=>{
+    const minutes=Number(event.target.value);api.setSleepTimer(minutes);
+    $('[data-playback-status]').textContent=minutes?minutes+' 分钟后暂停声波宇宙的播放。':'已关闭定时停止。';
+  });
   $('[data-energy]').addEventListener('change',event=>{preferences.energySaver=event.target.checked;applyPreferences(true);});
   $('[data-scene-backdrop]').addEventListener('change',event=>{preferences.reactiveBackdrop=event.target.checked;applyPreferences(true);});
   sceneDialog.addEventListener('close',()=>{backgroundDirty=true;if(!usesReactiveScene())$('[data-background-label]').textContent=backgroundNames[preferences.background];wake();});
@@ -1209,6 +1248,29 @@
   new MutationObserver(()=>api.refreshLegacy()).observe(document.getElementById('app'),{subtree:true,attributes:true,attributeFilter:['open']});
   let nativeTimer=0;
   if(desktop) {
+    const releaseSettings=$('[data-desktop-dialog]');
+    releaseSettings.insertAdjacentHTML('beforeend','<div class="lr-choice-row"><button class="lr-choice" data-check-release>检查更新</button><button class="lr-choice" data-open-release hidden>发布说明</button><button class="lr-primary" data-download-release hidden>下载新版</button></div><p class="lr-status" data-release-status role="status"></p>');
+    const showRelease=result=>{
+      if(!result)return;
+      $('[data-open-release]').hidden=!result.available;
+      $('[data-download-release]').hidden=!result.available?.installer;
+      $('[data-release-status]').textContent=result.error||(result.available?'发现新版 '+result.available.version+'。':'当前版本 '+result.current+'，未发现更新的公开版。');
+      $('[data-action="desktop"]').textContent=result.available?'桌面设置 · 有更新':'桌面设置';
+    };
+    $('[data-check-release]').addEventListener('click',async event=>{
+      const button=event.currentTarget;button.disabled=true;$('[data-release-status]').textContent='正在检查…';
+      try{showRelease(await desktop.checkRelease());}
+      catch{$('[data-release-status]').textContent='暂时无法检查更新。';}
+      finally{button.disabled=false;}
+    });
+    $('[data-open-release]').addEventListener('click',()=>desktop.openUpdate().catch(()=>notify('暂时无法打开发布页。',true)));
+    $('[data-download-release]').addEventListener('click',async event=>{
+      const button=event.currentTarget;button.disabled=true;$('[data-release-status]').textContent='正在准备下载…';
+      try{$('[data-release-status]').textContent=(await desktop.downloadUpdate()).message;}
+      catch{$('[data-release-status]').textContent='暂时无法下载新版本。';}
+      finally{button.disabled=false;}
+    });
+    setTimeout(()=>desktop.checkRelease?.().then(result=>{if(result?.available)showRelease(result);}).catch(()=>{}),8000);
     $$('[data-desktop-only]').forEach(element=>element.hidden=false);
     if(lyricMods?.current())preferences.lyricStyle=lyricMods.current().layout;
     desktop.onDesktopLyricsState?.(visible=>$('[data-action="desktop-lyrics-window"]').setAttribute('aria-pressed',String(visible)));

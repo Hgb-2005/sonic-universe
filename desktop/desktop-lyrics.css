@@ -67,3 +67,7 @@ button:focus-visible { outline: 2px solid #d3c4ff; outline-offset: -2px; }
 
 .current[data-empty="true"] { font-size: clamp(16px, 3vw, 22px); font-weight: 450; color: #c5c8e1; }
 .next { white-space: nowrap; text-overflow: ellipsis; font-size: clamp(12px, 2.1vw, 17px); color: #bbb9dc; }
+.translation { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #d2cef1; font-size: 13px; }
+body[data-layout="scroll"] .current, .lines:has(.translation:not([hidden])) .current { -webkit-line-clamp: 1; }
+body[data-layout="scroll"] #previous { opacity: .7; }
+#translationToggle[aria-pressed="true"] { color: #f3dbb4; }

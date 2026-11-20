@@ -24,6 +24,8 @@ function createDesktopLyrics({ onState }) {
       external: player.external,
       lyric: player.desktopLyric,
       nextLyric: player.nextLyric,
+      previousLyric: player.previousLyric,
+      translation: player.translation,
     };
   }
 

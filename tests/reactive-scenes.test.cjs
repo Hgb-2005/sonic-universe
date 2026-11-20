@@ -29,5 +29,15 @@ test('explicit scenes take priority and preference recovery accepts only catalog
   assert.equal(director.update({track:'pinned',selected:'jiangnan-rain',active:true,elapsed:.1}),'jiangnan-rain');
   assert.equal(scenes.normalizeSelection('orbit-particles'),'orbit-particles');
   assert.equal(scenes.normalizeSelection('constructor'),'auto');
-  assert.equal(new Set(scenes.catalogue.map(scene=>scene.id)).size,9);
+  assert.equal(new Set(scenes.catalogue.map(scene=>scene.id)).size,12);
+});
+
+test('a sustained timbre change waits for the next bar even when loudness stays steady',()=>{
+  const director=scenes.createDirector();
+  const frame={track:'sections',active:true,elapsed:.1,selected:'auto'};
+  const start={presence:.57,bass:.45,mid:.08,high:.14};
+  const changed={presence:.57,bass:.14,mid:.08,high:.45};
+  for(let i=0;i<135;i++)director.update({...frame,sound:start});
+  for(let i=0;i<25;i++)assert.equal(director.update({...frame,sound:{...changed,beat:{locked:true,bar:12,barPhase:.55}}}),'prism-bloom');
+  assert.equal(director.update({...frame,sound:{...changed,beat:{locked:true,bar:13,barPhase:0}}}),'silkscreen');
 });

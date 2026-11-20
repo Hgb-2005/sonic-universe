@@ -24,6 +24,8 @@ function playerState(value) {
     lyric,
     desktopLyric: typeof source.desktopLyric === 'string' ? text(source.desktopLyric, 300) : lyric,
     nextLyric: text(source.nextLyric, 300),
+    previousLyric: text(source.previousLyric, 300),
+    translation: text(source.translation, 300),
   };
 }
 module.exports = { trustedFrame, externalUrl, playerState };

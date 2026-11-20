@@ -246,5 +246,12 @@
     return {state, update, reset};
   }
 
-  return {create, createBeatTracker, laneCount, historyLength};
+  function correctBeat(beat,factor){
+    if(!beat?.locked||![.5,2].includes(factor))return beat;
+    const position=(beat.bar+beat.barPhase)*4*factor;
+    const whole=Math.floor(position),phase=position-whole;
+    return {...beat,bpm:beat.bpm*factor,phase,beatInBar:whole%4,barPhase:(position%4)/4,bar:Math.floor(whole/4),pulse:Math.pow(1-phase,4)*beat.confidence};
+  }
+
+  return {create, createBeatTracker, correctBeat, laneCount, historyLength};
 });

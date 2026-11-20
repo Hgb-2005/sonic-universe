@@ -1,11 +1,14 @@
 'use strict';
-const { app, BrowserWindow, Menu, Tray, nativeImage, ipcMain, shell, screen, powerMonitor, dialog } = require('electron');
+const { app, BrowserWindow, Menu, Tray, nativeImage, ipcMain, shell, screen, powerMonitor, dialog, net } = require('electron');
 const path = require('node:path');
 const { createAppServer } = require('../companion/server.cjs');
 const { trustedFrame, externalUrl, playerState } = require('./policy.cjs');
 const { createWallpaperController } = require('./wallpaper.cjs');
 const { createDesktopLyrics } = require('./desktop-lyrics.cjs');
 const { createExternalNowPlaying } = require('./external-now-playing.cjs');
+const { createReleaseCheck, downloadUpdate } = require('./release-update.cjs');
+const checkRelease=createReleaseCheck((...args)=>net.fetch(...args),app.getVersion());
+let releaseDownloading=false;
 
 const port=Number(process.env.SONIC_DESKTOP_PORT||17865),origin='http://127.0.0.1:'+port;
 let window=null,mini=null,tray=null,server=null,quitting=false,captureUntil=0,lastState=playerState(null),normalBounds=null;
@@ -89,7 +92,7 @@ function createMain() {
   const rendererSession=window.webContents.session;
   function allowPermission(contents,permission,requestUrl,isMainFrame){
     return contents===window?.webContents&&isMainFrame&&validOrigin(requestUrl)&&
-      (permission==='fullscreen'||(permission==='display-capture'&&Date.now()<=captureUntil));
+      (permission==='fullscreen'||permission==='speaker-selection'||(permission==='display-capture'&&Date.now()<=captureUntil));
   }
   rendererSession.setPermissionCheckHandler((contents,permission,requestOrigin,details)=>
     allowPermission(contents,permission,requestOrigin,details.isMainFrame));
@@ -148,6 +151,28 @@ async function start() {
   ipcMain.handle('sonic:mini',event=>{if(!valid(event))return false;createMini();return true;});
   ipcMain.handle('sonic:desktop-lyrics',event=>valid(event)?desktopLyrics.toggle():{ok:false,message:'无效的窗口。'});
   ipcMain.handle('sonic:settings',event=>valid(event)?settings():{});
+  ipcMain.handle('sonic:check-release',event=>valid(event)?checkRelease():null);
+  ipcMain.handle('sonic:open-update',async event=>{
+    if(!valid(event))return false;
+    const {available}=await checkRelease();
+    if(!available||!valid(event))return false;
+    await shell.openExternal(available.url);return true;
+  });
+  ipcMain.handle('sonic:download-update',async event=>{
+    if(!valid(event)||releaseDownloading)return {message:'当前无法开始下载。'};
+    releaseDownloading=true;
+    try{
+      const {available}=await checkRelease();
+      const installer=available?.installer;
+      if(!installer||!valid(event))return {message:'没有可校验的安装包，可查看发布页。'};
+      const destination=await dialog.showSaveDialog(window,{title:'保存新版本安装包',defaultPath:path.join(app.getPath('downloads'),installer.filename),filters:[{name:'Windows 安装包',extensions:['exe']}]});
+      if(destination.canceled||!destination.filePath)return {message:'已取消下载。'};
+      await downloadUpdate((...args)=>net.fetch(...args),installer,destination.filePath);
+      shell.showItemInFolder(destination.filePath);
+      return {ok:true,message:'安装包已下载并通过校验。打开该文件可进行安装。'};
+    }catch(error){return {message:error.message||'暂时无法下载。'};}
+    finally{releaseDownloading=false;}
+  });
   ipcMain.handle('sonic:startup',(event,enabled)=>{if(!valid(event))return {ok:false,message:'无效的窗口。'};try{app.setLoginItemSettings({openAtLogin:enabled===true});return {ok:true};}catch(error){return {ok:false,message:error.message};}});
   ipcMain.handle('sonic:capture',event=>{if(!valid(event)||wallpaper.active||!window.isVisible())throw Error('请从可见的主窗口连接声音。');captureUntil=Date.now()+5000;return true;});
   ipcMain.handle('sonic:external-now-playing',async(event,options)=>{

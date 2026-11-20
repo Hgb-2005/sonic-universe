@@ -13,12 +13,16 @@
       <span id="track" class="track"></span>
       <span id="status" class="status" hidden></span>
       <div id="controls" class="controls">
+        <button id="layout" type="button" title="切换歌词布局">双行</button>
+        <button id="translationToggle" type="button" aria-pressed="true">翻译</button>
         <button id="lock" type="button" aria-label="锁定桌面歌词" title="锁定歌词，鼠标将穿透窗口。可在系统托盘解锁。">锁定</button>
         <button id="close" type="button" aria-label="关闭桌面歌词" title="关闭桌面歌词">×</button>
       </div>
     </header>
     <div class="lines">
+      <p id="previous" class="next" hidden></p>
       <p id="current" class="current" data-empty="true">暂无同步歌词</p>
+      <p id="translation" class="translation" hidden></p>
       <p id="next" class="next" hidden></p>
     </div>
   </main>

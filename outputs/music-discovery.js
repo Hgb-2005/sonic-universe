@@ -85,6 +85,17 @@
       const playAll=button('播放推荐',()=>void player.playOnlineList(items,'每日推荐'));
       playAll.className='lr-primary';root.append(playAll);
     }
+    if(kind==='charts'){
+      const playAll=button('播放整榜',async()=>{
+        playAll.disabled=true;
+        status('已建立榜单队列，正在匹配第一首可播放的歌曲…');
+        try{
+          const started=await player.playChartList(items,'热门榜单 · 汽水音乐');
+          if(playAll.isConnected)status(started?'已开始整榜连播。尚未匹配的歌曲会在轮到时查找。':'暂时无法开始榜单连播，请检查汽水登录或换一个榜单。',!started);
+        }finally{playAll.disabled=false;}
+      });
+      playAll.className='lr-primary';root.append(playAll);
+    }
     const list=document.createElement('ol');list.className='sd-items';
     for(const item of items){
       const row=document.createElement('li'),info=document.createElement('span'),name=document.createElement('strong'),artist=document.createElement('small');

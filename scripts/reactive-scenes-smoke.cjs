@@ -64,14 +64,14 @@ async function verifyScenes(page) {
     }
     return { colors:colors.size, image:element.toDataURL() };
   }));
-  assert.equal(previews.length, 9);
+  assert.equal(previews.length, 12);
   assert.ok(previews.every(preview => preview.colors > 5), 'all scene previews show painted detail');
-  assert.equal(new Set(previews.map(preview => preview.image)).size, 9);
+  assert.equal(new Set(previews.map(preview => preview.image)).size, 12);
   assert.equal(await sceneButton('auto').getAttribute('aria-pressed'), 'true');
   await sceneButton('jiangnan-rain').click();
   await waitForScene('jiangnan-rain');
   await closeGallery();
-  console.log('PASS geometry remains the work default; the stage opens on Prism Bloom and all nine previews are distinct');
+  console.log('PASS geometry remains the work default; the stage opens on Prism Bloom and all twelve previews are distinct');
 
   const pausedFrame = await fingerprint();
   await play.click();

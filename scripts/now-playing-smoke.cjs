@@ -89,7 +89,7 @@ function savedDetails(page, id) {
   }, id);
 }
 
-async function verifyNowPlaying(page, folder) {
+async function verifyNowPlaying(page, folder, app) {
   page.setDefaultTimeout(12000);
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
@@ -207,6 +207,30 @@ async function verifyNowPlaying(page, folder) {
     await mods.locator('[data-mod-close]').click();
     await closeLyrics();
     console.log('PASS desktop applies the built-in and custom lyric mods and rejects invalid JSON and settings');
+    const updatedLines=originalLyrics+'\n[00:17.00]磁盘更新后的歌词';
+    await fs.writeFile(path.join(folder,'smoke.lrc'),updatedLines);
+    await folderInput.setInputFiles(folder);
+    await page.waitForFunction(()=>!SonicPlayback.library().importing&&SonicPlayback.snapshot().lyrics.some(line=>line.text==='磁盘更新后的歌词'));
+    assert.equal((await savedDetails(page,id)).lyricsRaw,updatedLines);
+    await fs.writeFile(path.join(folder,'smoke.lrc'),originalLyrics);
+    await folderInput.setInputFiles(folder);
+    await page.waitForFunction(()=>!SonicPlayback.library().importing&&SonicPlayback.snapshot().lyrics.length===8);
+    console.log('PASS changed disk lyrics appear on rescan with the original audio track ID');
+    await setMode('work');
+    await page.evaluate(()=>SonicPlayback.seek(5.2));
+    const opened=app.waitForEvent('window',{predicate:other=>other!==page});
+    await room.locator('[data-action="desktop-lyrics-window"]').click();
+    const caption=await opened;
+    await caption.getByText('测试翻译',{exact:true}).waitFor();
+    await caption.locator('#layout').click();
+    assert.equal(await caption.locator('body').getAttribute('data-layout'),'scroll');
+    await caption.getByText('逐字推进',{exact:true}).waitFor();
+    await caption.locator('#translationToggle').click();
+    assert.equal(await caption.locator('#translation').isVisible(),false);
+    await caption.locator('#layout').click();
+    assert.equal(await caption.locator('#next').isVisible(),false);
+    await caption.getByRole('button',{name:'关闭桌面歌词'}).click();
+    console.log('PASS desktop overlay switches layouts and toggles a real timed translation');
   }
 
   await setMode('library');
@@ -302,6 +326,7 @@ async function verifyNowPlaying(page, folder) {
       const list=SonicPlayback.savePlaylist('重扫测试');SonicPlayback.setMembership(id,[list]);return list;
     },id);
     await fs.writeFile(path.join(folder,'smoke.wav'),longTagAudioFixture());
+    await fs.writeFile(path.join(folder,'smoke.lrc'),'[00:00.00]盘中修改不得覆盖明确手编版本');
     await fs.unlink(path.join(folder,longTagsFile));
     await folderInput.setInputFiles(folder);
     await page.waitForFunction(()=>!SonicPlayback.library().importing&&document.getElementById('importStatus').textContent.includes('更新 1 首'));
@@ -327,7 +352,7 @@ async function run(folder) {
       env:{ ...process.env, SONIC_DESKTOP_PROFILE:profile, SONIC_DESKTOP_PORT:String(port) } });
     const app = await launch();
     let expected;
-    try { expected = await verifyNowPlaying(await app.firstWindow(),folder); }
+    try { expected = await verifyNowPlaying(await app.firstWindow(),folder,app); }
     finally { await app.close(); }
     const reopened = await launch();
     try {
@@ -358,9 +383,10 @@ async function main() {
   try {
     await fs.writeFile(wav,audioFixture());
     await fs.writeFile(lrc,originalLyrics);
+    await fs.writeFile(path.join(folder,'smoke.translation.lrc'),'[00:05.00]测试翻译');
     await run(folder);
   } finally {
-    for (const file of [wav,lrc,path.join(folder,longTagsFile)]) {
+    for (const file of [wav,lrc,path.join(folder,'smoke.translation.lrc'),path.join(folder,longTagsFile)]) {
       await fs.unlink(file).catch(error => { if (error.code !== 'ENOENT') throw error; });
     }
     await fs.rmdir(folder);

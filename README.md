@@ -1,6 +1,15 @@
 # 声波宇宙 · Sonic Universe
 
-[下载 Windows x64 安装包](https://github.com/Hgb-2005/sonic-universe/releases/download/v0.39.0/Sonic-Universe-0.39.0-x64.exe) · [查看 0.39.0 发布说明](https://github.com/Hgb-2005/sonic-universe/releases/tag/v0.39.0) · [打开网页版](https://hgb-2005.github.io/sonic-universe/)
+[下载 Windows x64 安装包](https://github.com/Hgb-2005/sonic-universe/releases/download/v0.40.0/Sonic-Universe-0.40.0-x64.exe) · [查看 0.40.0 发布说明](https://github.com/Hgb-2005/sonic-universe/releases/tag/v0.40.0) · [打开网页版](https://hgb-2005.github.io/sonic-universe/)
+
+## 0.40.0
+
+- 「发现 → 热门榜单 → 播放整榜」会建立临时队列，轮到某首歌时再匹配汽水版本，并跳过无匹配或播不了的歌曲。在线搜索的自动匹配失败时，可以查看汽水候选版本并手动选歌。
+- 汽水歌单刷新先预览新增、远端移除和顺序变化。可以保留本机编排、只追加新增歌曲，也可以采用远端曲目和顺序。
+- Windows 重扫同一文件夹时会刷新自动导入的同名歌词和翻译，保留在应用内手动保存的版本。歌词时间偏移、字号和启用状态会继续保留。
+- 视觉舞台新增丝网印刷、纸灯走廊和潮汐仪盘。自动随曲会根据持续的音色和能量变化选择转场，节拍稳定时优先等到下一组四拍的开头。场景选择器提供半速和倍速校正。
+- 桌面歌词支持单行、双行和滚动布局，可独立开关翻译。「播放设置」可选择系统提供的输出设备、调整倍速和设置定时暂停。外部联动的声音仍由原播放器控制。
+- 桌面版启动后会检查 GitHub Releases。找到有可校验安装包的新版本时，可从「桌面设置」下载并校验，用户打开安装包完成更新。
 
 ## 0.39.0 · Windows 独立播放器
 
