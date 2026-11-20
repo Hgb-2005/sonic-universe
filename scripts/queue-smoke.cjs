@@ -204,7 +204,8 @@ async function verifyQueue(page) {
   assert.equal(opened.queue[0].entryId,opened.queueEntryId);
 
   await waitForPlaying(interrupted);
-  assert.deepEqual(network.audioRequests.slice(0,4),[first,unavailable,unrecognizedMedia,interrupted]);
+  assert.deepEqual([...new Set(network.audioRequests)],[first,unavailable,unrecognizedMedia,interrupted]);
+  assert.ok(network.audioRequests.filter(id=>id===unavailable).length<=2);
   assert.ok(network.mediaRequests.includes(unrecognizedMedia));
   console.log('PASS both Qishui pages become an ordered queue and natural playback skips failures');
 
@@ -239,9 +240,16 @@ async function verifyQueue(page) {
   await waitForPlaying(duplicate);
   assert.equal((await state()).queueEntryId,inserted.entryId);
   assert.ok(network.audioRequests.filter(id => id === interrupted).length <= 2);
+  await Promise.all([
+    page.waitForResponse(response => response.url().endsWith(`/api/qishui/tracks/${moveUp}/audio`) && response.ok()),
+    page.evaluate(() => SonicPlayback.seek(18)),
+  ]);
+  assert.ok(!network.mediaRequests.includes(moveUp),'The next song should not request audio bytes before switching');
   await room.locator('[data-action="next"]').click();
   await waitForPlaying(moveUp);
+  assert.equal(network.audioRequests.filter(id=>id===moveUp).length,1,'Switching should reuse the ticket');
   console.log('PASS an audio failure during playback continues with the edited queue order');
+  console.log('PASS the next song prepares a single ticket without fetching audio before switching');
 
   await launchOnline();
   await openPlaylist(unavailablePlaylistId);

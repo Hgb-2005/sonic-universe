@@ -122,7 +122,7 @@ function createMediaCache(provider, options = {}) {
       const token = crypto.randomBytes(24).toString('base64url');
       const expiresAt = Math.min(Date.now() + ttl, Number(source.expiresAt) > 0 ? Number(source.expiresAt) : Infinity);
       entries.set(token, { ...source, expiresAt });
-      return { streamPath: `/media/${token}`, preview: source.preview, quality: source.quality, clipStartMs: source.clipStartMs };
+      return { streamPath: `/media/${token}`, expiresAt, preview: source.preview, quality: source.quality, clipStartMs: source.clipStartMs };
     },
     get(token) {
       const entry = entries.get(String(token || ''));

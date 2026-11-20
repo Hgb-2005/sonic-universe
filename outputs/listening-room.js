@@ -3,12 +3,14 @@
   'use strict';
   if (new URLSearchParams(location.search).has('sharedViewer')) return;
   const core = window.SonicListeningCore, api = window.SonicPlayback;
-  const scenes = window.SonicReactiveScenes;
-  if (!core || !api) { document.documentElement.classList.remove('listening-enabled'); return; }
+  const scenes = window.SonicReactiveScenes, effects = window.SonicLyricEffects;
+  if (!core || !api || !effects) { document.documentElement.classList.remove('listening-enabled'); return; }
   const storageKey = 'sonic-listening-room-v1';
   let preferences;
   try { preferences = core.normalize(JSON.parse(localStorage.getItem(storageKey))); }
   catch { preferences = core.normalize(); }
+  preferences.lyricEffect=effects.get(preferences.lyricEffect).id;
+  const effectShapes='<span class="lr-fx-shapes" aria-hidden="true"><i></i><i></i><i></i></span>';
   const icons = {
     library:'<path d="M4 4h5v16H4Zm8 0v16m4-15 4 14"/>',
     settings:'<path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/>',
@@ -59,13 +61,14 @@
         </div>
         <div class="lr-expanded-lyrics" id="lrLyricReading" data-expanded-lyrics hidden>
         <div class="lr-lyric-window" data-stage-lyrics>
+          <div class="lr-effect-stage" data-effect-stage hidden aria-hidden="true">${effectShapes}</div>
           <div class="lr-lyric-timeline" data-lyric-timeline></div>
           <div class="lr-lyric-notice" data-lyric-notice hidden><p data-lyric-meta></p></div>
         </div>
         <div class="lr-full-lyrics" data-full-lyrics role="region" aria-label="完整歌词" tabindex="0" hidden></div>
         <div class="lr-full-tools" data-lyric-full-tools hidden><button type="button" class="lr-choice" data-lyric-follow hidden>回到当前歌词</button></div>
         <div class="lr-lyric-tools">
-          <div class="lr-lyric-styles" role="group" aria-label="歌词样式"><button data-lyric-style="list" aria-pressed="false">全文</button><button data-lyric-style="stage" aria-pressed="true">舞台</button><button data-lyric-style="fly" aria-pressed="false">飞入</button></div>
+          <div class="lr-lyric-styles" role="group" aria-label="歌词样式"><button data-lyric-style="list" aria-pressed="false">全文</button><button data-lyric-style="stage" aria-pressed="true">舞台</button><button data-lyric-style="fly" aria-pressed="false">飞入</button><button data-action="lyric-effects" aria-haspopup="dialog" aria-pressed="false">动效</button></div>
           <button class="lr-lyrics-entry" data-action="lyric-mods" data-desktop-only hidden>样式模组</button>
           <div class="lr-lyric-timing" data-lyric-timing role="group" aria-label="歌词时间校准" hidden><button type="button" class="lr-lyrics-entry" data-lyric-adjust="-0.1">提前 0.1 秒</button><output data-lyric-offset aria-live="polite"></output><button type="button" class="lr-lyrics-entry" data-lyric-adjust="0.1">延后 0.1 秒</button></div>
           <button class="lr-lyrics-entry" data-action="lyrics">${icon('settings')}导入或调整歌词</button>
@@ -131,6 +134,13 @@
       <label class="lr-field"><span class="lr-field-title">定时停止</span><select class="lr-search-input" data-sleep-timer><option value="0">关闭</option><option value="15">15 分钟</option><option value="30">30 分钟</option><option value="45">45 分钟</option><option value="60">60 分钟</option><option value="90">90 分钟</option><option value="120">120 分钟</option></select></label>
       <p class="lr-status" role="status" data-playback-status></p>
     </dialog>
+    <dialog class="lr-dialog lr-effect-dialog" data-effect-dialog aria-labelledby="lyricEffectsHeading">
+      <div class="lr-dialog-heading"><h2 id="lyricEffectsHeading">歌词动效</h2><button class="lr-icon" data-close aria-label="关闭歌词动效">${icon('close')}</button></div>
+      ${effects.groups.map(({name,entries})=>`<section><h3>${name}</h3><div class="lr-effect-grid">${entries.map(preset=>`
+        <button type="button" class="lr-effect-card" data-effect-choice="${preset.id}" aria-pressed="false" aria-label="${preset.label}" title="${preset.description}">
+          <span class="lr-effect-sample" data-fx="${preset.id}" aria-hidden="true">${effectShapes}<strong>听见光</strong></span><span>${preset.label}</span>
+        </button>`).join('')}</div></section>`).join('')}
+    </dialog>
     <dialog class="lr-dialog lr-scene-dialog" data-scene-dialog aria-labelledby="sceneGalleryHeading">
       <div class="lr-dialog-heading"><div><h2 id="sceneGalleryHeading">动态场景</h2><p data-scene-selection></p></div><button class="lr-icon" data-close aria-label="关闭动态场景">${icon('close')}</button></div>
       <div class="lr-scene-controls">
@@ -193,13 +203,15 @@
   let artworkSource = '', lastTitle = '', displayedPlaying = null, lastRgb = '', artworkRgb = '', coverScale=1;
   let lastQueueRefresh=0,workQueueKey=[],lastSpectrumKey='';
   const emptyLyrics=[], lyricRows=new Map(), lyricTimeline=$('[data-lyric-timeline]');
+  const effectStage=$('[data-effect-stage]'),effectDialog=$('[data-effect-dialog]'),effectButton=$('[data-action="lyric-effects"]');
+  let effectBeat=0;
   const lyricNotice=$('[data-lyric-notice]'),lyricNoticeText=$('[data-lyric-meta]'),lyricEditor=$('[data-listen] [data-action="lyrics"]');
   const seekSlider=$('[data-seek]');
   const queueDialog = $('[data-queue-dialog]'), queueList = $('[data-queue-list]'), queueSearch = $('[data-queue-search]');
   const queuePageSize = 60;
   let queueItems = [], queuePage = 0, queueDialogKey = [], draggedEntry = null, dropTarget = null;
   let renderedLyrics=emptyLyrics, lyricTrack, lyricIndex=-2, lastLyricPosition=0;
-  let renderedFly=false, flyFrom=-Infinity, flyLineTransition=null;
+  let renderedLyricStyle, flyFrom=-Infinity, flyLineTransition=null;
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const backgroundNames = { geometry:'几何微光', mist:'流动光雾', plain:'纯净底色', universe:'星空' };
   const sceneDialog=$('[data-scene-dialog]'), sceneGrid=$('[data-scene-grid]');
@@ -242,8 +254,17 @@
   }
   function applyPreferences(save=false) {
     const mode=wallpaper?'work':preferences.mode;
+    const style=preferences.lyricStyle,effectActive=lyricExpanded&&style==='effects';
     root.dataset.mode=mode;root.dataset.background=preferences.background;root.dataset.lyricStyle=lyricExpanded?preferences.lyricStyle:'compact';
-    root.dataset.immersive=String(mode==='visual'||mode==='listen'&&lyricExpanded&&preferences.lyricStyle==='fly');
+    root.dataset.immersive=String(mode==='visual'||mode==='listen'&&lyricExpanded&&(style==='fly'||effectActive));
+    const preset=effects.get(preferences.lyricEffect);
+    effectStage.hidden=!effectActive;
+    effectStage.dataset.fx=preset.id;
+    if(effectActive)root.dataset.lyricEffect=preset.id;
+    else delete root.dataset.lyricEffect;
+    effectButton.textContent=effectActive?`动效 · ${preset.label}`:'动效';
+    effectButton.setAttribute('aria-pressed',String(effectActive));
+    $$('[data-effect-choice]').forEach(button=>button.setAttribute('aria-pressed',String(effectActive&&button.dataset.effectChoice===preset.id)));
     revealStageChrome();
     root.dataset.lyricLayout=lyricExpanded?(preferences.lyricStyle==='list'?'list':'stage'):'compact';
     root.dataset.lyricExpanded=String(lyricExpanded);
@@ -283,7 +304,7 @@
     preferences.mode=mode;applyPreferences(true);
   }
   function setLyricExpanded(expanded) {
-    if(expanded)preferences.lyricStyle=lyricMods?.current()?.layout||'list';
+    if(expanded&&preferences.lyricStyle!=='effects')preferences.lyricStyle=lyricMods?.current()?.layout||'list';
     lyricExpanded=expanded;
     applyPreferences();
     (expanded?(preferences.lyricStyle==='list'?$('[data-full-lyrics]'):$('[data-action="collapse-lyrics"]')):$('[data-action="expand-lyrics"]')).focus({preventScroll:true});
@@ -543,15 +564,18 @@
     element.type='button';
     element.className='lr-lyric-row';
     element.dataset.lyricIndex=index;
-    element.setAttribute('aria-label',line.translation?`${line.text}\n${line.translation}`:line.text);
+    const fly=preferences.lyricStyle==='fly',effect=preferences.lyricStyle==='effects';
+    const translatedText=fly||effect?'':line.translation;
+    element.setAttribute('aria-label',translatedText?`${line.text}\n${translatedText}`:line.text);
     const size=karaoke.split(line.text).reduce((total,char)=>total+(/[\u0000-\u00ff]/.test(char)?.55:1),0);
     element.dataset.density=size>40?'dense':size>21?'long':'normal';
-    const fly=preferences.lyricStyle==='fly';
-    if(fly&&size>40)element.style.setProperty('--lr-line-length',size);
-    const spans=karaoke.timedSpans(line,end);
-    const row={element,words:[],start:line.time,index,density:size>40?.56:size>21?.78:1,timed:spans.length>0};
+    if(effect&&size<=8)element.setAttribute('data-short','');
+    if((fly||effect)&&size>40)element.style.setProperty('--lr-line-length',size);
+    const timed=karaoke.timedSpans(line,end);
+    const spans=effect?effects.units(line,end,timed):timed;
+    const row={element,words:[],start:line.time,index,density:size>40?.56:size>21?.78:1,timed:timed.length>0};
     element.dataset.lyricTiming=row.timed?'word':'line';
-    if(!row.timed){
+    if(!spans.length){
       const text=document.createElement('span');
       text.className='lr-lyric-word';
       text.textContent=line.text;
@@ -569,9 +593,14 @@
         node.className='lr-lyric-word';
         node.textContent=span.text;
         let token;
-        if (fly) {
+        if (fly||effect) {
           token=document.createElement('span');
-          token.className='lr-flight-token';
+          token.className=fly?'lr-flight-token':'lr-effect-word';
+          if(effect){
+            token.style.setProperty('--fx-side',order%2===0?'1':'-1');
+            token.style.setProperty('--fx-order',String(order%4));
+            if(!row.timed)node.dataset.sing='sung';
+          }
           token.append(node);
           element.append(token);
         } else {
@@ -581,10 +610,10 @@
         row.words.push({...span,node,token,order,fill:-1,state:'',lift:0,flight:-1});
       }
     }
-    if(line.translation){
+    if(translatedText){
       const translation=document.createElement('span');
       translation.className='lr-lyric-translation';
-      translation.textContent=line.translation;
+      translation.textContent=translatedText;
       element.append(translation);
     }
     return row;
@@ -617,48 +646,52 @@
     }
     word.flight = frame;
   }
-  function clearFlightLines() {
+  function clearFlightLine() {
     if (!flyLineTransition) return;
-    for (const row of [flyLineTransition.incoming,flyLineTransition.outgoing]) {
-      if (!row) continue;
-      delete row.element.dataset.flightLine;
-      for (const property of ['x','y','scale','opacity']) row.element.style.removeProperty('--lr-flight-'+property);
-    }
+    const {element}=flyLineTransition.row;
+    delete element.dataset.flightLine;
+    for (const property of ['x','y','scale','opacity']) element.style.removeProperty('--lr-flight-'+property);
     flyLineTransition=null;
   }
-  function startFlightLines(outgoing,incoming,end) {
-    clearFlightLines();
-    if (!incoming) return;
-    incoming.element.dataset.flightLine='enter';
-    if (outgoing) outgoing.element.dataset.flightLine='exit';
-    flyLineTransition={incoming,outgoing,duration:core.clamp(end-incoming.start,.13,.39),frame:-1};
+  function startFlightLine(row,end) {
+    clearFlightLine();
+    if (!row) return;
+    row.element.dataset.flightLine='enter';
+    flyLineTransition={row,duration:core.clamp(end-row.start,.13,.39),frame:-1};
   }
-  function drawFlightLines(position) {
+  function drawFlightLine(position) {
     if (!flyLineTransition) return;
-    const {incoming,outgoing,duration}=flyLineTransition;
-    const progress=core.clamp((position-incoming.start)/duration,0,1);
-    if (progress>=1) { clearFlightLines(); return; }
+    const {row,duration}=flyLineTransition;
+    const progress=core.clamp((position-row.start)/duration,0,1);
+    if (progress>=1) { clearFlightLine(); return; }
     const frame=Math.round(progress*600);
     if (frame===flyLineTransition.frame) return;
     flyLineTransition.frame=frame;
     const rest=(1-progress)**2.2;
-    const direction=incoming.index%2===0?-1:1;
-    const incomingStyle=incoming.element.style;
-    incomingStyle.setProperty('--lr-flight-x',(-direction*.77*rest)+'em');
-    incomingStyle.setProperty('--lr-flight-y',(.23*rest)+'em');
-    incomingStyle.setProperty('--lr-flight-scale',1-.065*rest);
-    incomingStyle.setProperty('--lr-flight-opacity',1-.27*rest);
-    if (!outgoing) return;
-    const slip=1-(1-progress)**2;
-    const outgoingStyle=outgoing.element.style;
-    outgoingStyle.setProperty('--lr-flight-x',(direction*1.7*Math.sin(Math.PI*progress))+'em');
-    outgoingStyle.setProperty('--lr-flight-y',`calc(${-slip} * var(--lr-row-step))`);
-    outgoingStyle.setProperty('--lr-flight-scale',1-.57*slip);
-    outgoingStyle.setProperty('--lr-flight-opacity',.16+.84*(1-progress)**4);
+    const direction=row.index%2===0?-1:1;
+    const style=row.element.style;
+    style.setProperty('--lr-flight-x',(-direction*.77*rest)+'em');
+    style.setProperty('--lr-flight-y',(.23*rest)+'em');
+    style.setProperty('--lr-flight-scale',1-.065*rest);
+    style.setProperty('--lr-flight-opacity',1-.27*rest);
+  }
+  function drawEffectFrame(position,line,end,row,animated) {
+    const pose=effects.lineFrame(position,line?.time??position,end,animated&&Boolean(line));
+    updateEffectStyle(effectStage,pose);
+    if(!row)return;
+    updateEffectStyle(row.element,pose);
+    for(const word of row.words)updateEffectStyle(word.token,effects.wordFrame(word,position,line.time,word.order,animated));
+  }
+  function updateEffectStyle(node,values) {
+    for(const [name,value] of Object.entries(values)){
+      const key='--fx-'+name, rounded=String(Math.round(value*64)/64);
+      if(node.style.getPropertyValue(key)!==rounded)node.style.setProperty(key,rounded);
+    }
   }
   function showLyricRows(lines,index,animate) {
     lyricTimeline.dataset.flow=String(animate);
-    const first=Math.max(0,index-2),last=Math.min(lines.length-1,index+2);
+    const neighbors=preferences.lyricStyle==='stage'?2:0;
+    const first=Math.max(0,index-neighbors),last=Math.min(lines.length-1,index+neighbors);
     for(const [number,row] of lyricRows) {
       if(number<first||number>last) {
         row.element.remove();
@@ -702,13 +735,13 @@
       link.hidden=snapshot.external||!snapshot.track;
       return;
     }
-    const track=snapshot.track?.id,fly=preferences.lyricStyle==='fly';
-    const sourceChanged=lines!==renderedLyrics||lyricTrack!==track||renderedFly!==fly;
+    const track=snapshot.track?.id,style=preferences.lyricStyle,fly=style==='fly',effect=style==='effects';
+    const sourceChanged=lines!==renderedLyrics||lyricTrack!==track||renderedLyricStyle!==style;
     const advance = position - lastLyricPosition;
     const flowing = !sourceChanged && !snap && !seeking && !reducedMotion.matches && root.dataset.modMotion!=='still' && lyricsPlaying() && onScreen() &&
       advance >= -.018 && advance < .4 && index >= lyricIndex && index <= lyricIndex + 1;
     if (!flowing) {
-      clearFlightLines();
+      clearFlightLine();
       if (fly) flyFrom=position;
     }
     if(sourceChanged) {
@@ -717,16 +750,14 @@
       lyricIndex=-2;
       lyricTrack=track;
       renderedLyrics=lines;
-      renderedFly=fly;
+      renderedLyricStyle=style;
     }
     if(index!==lyricIndex) {
-      const outgoing=lyricRows.get(lyricIndex);
-      if (fly&&outgoing) for (const word of outgoing.words) drawGlyphFlight(word,outgoing,position,false);
-      showLyricRows(lines,index,!fly && flowing);
+      showLyricRows(lines,index,style==='stage'&&flowing);
       lyricIndex=index;
-      if (fly&&flowing) startFlightLines(outgoing,lyricRows.get(index),end);
+      if (fly&&flowing) startFlightLine(lyricRows.get(index),end);
     }
-    if (fly) drawFlightLines(position);
+    if (fly) drawFlightLine(position);
     lastLyricPosition=position;
     const songsHaveLyrics=Boolean(lines.length);
     const interlude=Number.isFinite(line?.end)&&lines[index+1]?.time-line.end>2.5&&
@@ -738,10 +769,12 @@
     if(lyricNoticeText.textContent!==notice){lyricNoticeText.textContent=notice;lyricNotice.hidden=!notice;}
     if(lyricEditor.hidden!==snapshot.external)lyricEditor.hidden=snapshot.external;
     const row=lyricRows.get(index);
+    if(effect)drawEffectFrame(position,line,end,row,flowing&&preferences.lyricEffect!=='still');
     const timing=row?.timed?(fly?'按字词时间飞入':'按字词时间同步'):line?'逐行同步':'导入或调整歌词';
     if(lyricEditor.title!==timing)lyricEditor.title=timing;
     for(const word of row?.words||[]) {
       if (fly) drawGlyphFlight(word,row,position,flowing);
+      if (!row.timed) continue;
       const fill=Math.round(karaoke.progress(word,position)*1000)/10;
       if (fill !== word.fill) {
         word.fill = fill;
@@ -870,7 +903,10 @@
     return (seeking ? Number(seekSlider.value) : api.position()) + offset;
   }
   function lyricsPlaying() { return snapshot.external ? snapshot.externalMetadata?.playing===true : snapshot.playing; }
-  function needsLyricFrame() { return onScreen()&&root.dataset.mode==='listen'&&lyricsPlaying()&&snapshot.lyrics.length>0&&!reducedMotion.matches; }
+  function needsLyricFrame() {
+    const cap=lyricExpanded&&preferences.lyricStyle==='effects'&&(preferences.energySaver||preferences.lyricEffect==='still');
+    return !cap&&onScreen()&&root.dataset.mode==='listen'&&lyricsPlaying()&&snapshot.lyrics.length>0&&!reducedMotion.matches;
+  }
   function renderListeningPosition(position,snap=false) {
     if(root.dataset.mode==='listen'&&(!lyricExpanded||preferences.lyricStyle==='list')) {
       nowPlaying.sync(snapshot,position,{expanded:lyricExpanded,full:lyricExpanded,force:snap});
@@ -909,15 +945,18 @@
     const animate=active&&!reduced&&mode!=='library'&&(reactive||preferences.background!=='plain');
     const showSpectrum=mode==='work'&&!wallpaper;
     const coverBeat=active&&!reduced&&(mode==='listen'&&!lyricExpanded||mode==='work'&&!wallpaper);
+    const lyricBeat=active&&!reduced&&lyricsPlaying()&&mode==='listen'&&lyricExpanded&&preferences.lyricStyle==='effects'&&preferences.lyricEffect!=='still';
     const stageBeat=active&&mode==='visual'&&preferences.beatClock;
     const followLyrics=mode==='listen'&&lyricsPlaying()&&snapshot.lyrics.length>0;
     const fps=core.frameRate({active:active&&(animate||showSpectrum||snapshot.external||followLyrics||coverBeat||stageBeat),reduced,mode,energySaver:preferences.energySaver});
     const wasActive=lastFrame>0;
     const seconds=wasActive?Math.min(.1,(now-lastFrame)/1000):1/(fps||20);
     lastFrame=fps?now:0;
-    const sound=active&&(animate||showSpectrum||snapshot.external||coverBeat||stageBeat)?api.sample(seconds):null;
+    const sound=active&&(animate||showSpectrum||snapshot.external||coverBeat||stageBeat||lyricBeat)?api.sample(seconds):null;
     if(sound)sound.beat=SonicMusicMotion.correctBeat(sound.beat,preferences.beatRatio);
     const beat=sound?.beat, age=beat?.age??Infinity;
+    const lyricPulse=lyricBeat&&beat?.locked?Math.round(beat.pulse*preferences.response*.5)/50:0;
+    if(lyricPulse!==effectBeat){effectBeat=lyricPulse;effectStage.style.setProperty('--fx-beat',String(lyricPulse));}
     if(mode==='visual')renderBeatClock(beat,active,reduced);
     const pulse=coverBeat&&age<.37?beat.strength*(1-Math.exp(-age*70))*Math.exp(-age*11):0;
     const pulseScale=1+Math.round(pulse*preferences.response*.91)/1000;
@@ -1150,6 +1189,7 @@
     },
     settings:()=>show($('[data-settings]')),lyrics:()=>{closeDialogs();api.editLyrics();},listen:()=>setMode('listen'),
     'expand-lyrics':()=>setLyricExpanded(true),'collapse-lyrics':()=>setLyricExpanded(false),'lyric-mods':()=>lyricMods?.open(),
+    'lyric-effects':()=>show(effectDialog),
     'scene-gallery':openSceneGallery,'scene-pin':toggleScenePin,
     'beat-clock':()=>{preferences.beatClock=!preferences.beatClock;applyPreferences(true);},
     'playback-settings':async()=>{
@@ -1198,6 +1238,12 @@
     if(button.dataset.roomMode){setMode(button.dataset.roomMode);return;}
     if(button.dataset.sceneFilter){filterScenes(button.dataset.sceneFilter);return;}
     if(button.dataset.sceneSelect){selectScene(button.dataset.sceneSelect);return;}
+    if(button.dataset.effectChoice){
+      lyricMods?.clear();
+      preferences.lyricStyle='effects';preferences.lyricEffect=effects.get(button.dataset.effectChoice).id;
+      effectDialog.close();applyPreferences(true);
+      return;
+    }
     if(button.dataset.lyricStyle){lyricMods?.clear();preferences.lyricStyle=button.dataset.lyricStyle;applyPreferences(true);return;}
     if(button.dataset.background){preferences.background=button.dataset.background;preferences.reactiveBackdrop=false;applyPreferences(true);return;}
     if(button.dataset.color){preferences.color=button.dataset.color;applyPreferences(true);return;}

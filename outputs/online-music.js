@@ -458,7 +458,7 @@
       playlist: id => playlistPage(id),
       playlistAllTracks,
       lyrics: id => request(`/api/qishui/songs/${encodeURIComponent(id)}/lyrics`, undefined, 10000),
-      audio: mediaId => request(`/api/qishui/tracks/${encodeURIComponent(mediaId)}/audio`, {}, 15000),
+      audio: (mediaId, { signal } = {}) => requestFrom(baseUrl, `/api/qishui/tracks/${encodeURIComponent(mediaId)}/audio`, {}, 15000, signal),
       coverUrl,
       like: (mediaId, liked) => request('/api/qishui/like', { id: mediaId, liked }, 12000),
       playlistEdit: (operation, id, ids) => request(`/api/qishui/playlist/${operation}`, { id, ids }, 12000),

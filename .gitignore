@@ -61,6 +61,8 @@ Thumbs.db
 !/outputs/folder-library.js
 !/outputs/external-now-playing.js
 !/outputs/lyric-style-mods.js
+!/outputs/lyric-effects.js
+!/outputs/lyric-effects.css
 !/outputs/assets/lyric-stage-glass.webp
 !/outputs/music-library.css
 !/outputs/music-library.js

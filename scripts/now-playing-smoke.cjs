@@ -179,10 +179,79 @@ async function verifyNowPlaying(page, folder, app) {
   assert.ok(Math.abs(await page.evaluate(() => SonicPlayback.snapshot().position) - 9) < .2);
   await room.locator('button[data-lyric-style="fly"]').click();
   assert.equal(await room.getAttribute('data-lyric-style'),'fly');
+  const flightRows = room.locator('[data-lyric-timeline] .lr-lyric-row');
+  assert.deepEqual(await flightRows.allTextContents(),['普通整行']);
+  const centerOffset = await flightRows.evaluate(row => {
+    const lyric = row.getBoundingClientRect(), stage = row.parentElement.getBoundingClientRect();
+    return Math.abs((lyric.top + lyric.bottom - stage.top - stage.bottom) / 2);
+  });
+  assert.ok(centerOffset <= 1,'The lyric should sit in the center of the stage');
+  await page.evaluate(() => SonicPlayback.seek(5.2));
+  await flightRows.getByText('夜色',{ exact:true }).waitFor();
+  assert.deepEqual(await flightRows.allTextContents(),['夜色']);
+  await page.emulateMedia({ reducedMotion:'no-preference' });
+  await page.evaluate(() => SonicPlayback.seek(1.6));
+  await play.click();
+  await page.waitForFunction(() => {
+    const rows = document.querySelectorAll('[data-lyric-timeline] .lr-lyric-row');
+    return rows.length === 1 && rows[0].textContent === '逐字推进' &&
+      rows[0].querySelector('.lr-flight-token[data-flight-state="flying"]');
+  });
+  await page.evaluate(() => {
+    SonicPlayback.toggle();
+    SonicPlayback.seek(9);
+  });
+  await flightRows.getByText('普通整行',{ exact:true }).waitFor();
+  assert.deepEqual(await flightRows.allTextContents(),['普通整行']);
+  console.log('PASS fly shows one centered lyric during word animation and after seeking');
   await closeLyrics();
   await preview.waitFor();
   assert.deepEqual(await preview.locator('[data-preview-line]').allTextContents(),['起风','普通整行','回声']);
   console.log('PASS compact preview, full lyrics, explicit word timing, line-only LRC, fly and collapse');
+
+  await openLyrics();
+  const effectButton=room.locator('[data-action="lyric-effects"]');
+  const effectPicker=room.getByRole('dialog',{name:'歌词动效'});
+  const effectChoices=effectPicker.locator('[data-effect-choice]');
+  const stage=room.locator('[data-effect-stage]');
+  await effectButton.click();
+  assert.equal(await effectChoices.count(),18);
+  const ids=await effectChoices.evaluateAll(nodes=>nodes.map(node=>node.dataset.effectChoice));
+  assert.equal(new Set(ids).size,18);
+  for(const [index,id] of ids.entries()){
+    if(index>0)await effectButton.click();
+    await effectChoices.nth(index).click();
+    assert.equal(await room.getAttribute('data-lyric-effect'),id);
+    assert.equal(await stage.getAttribute('data-fx'),id);
+    assert.deepEqual(await flightRows.allTextContents(),['普通整行']);
+    assert.equal(await flightRows.getAttribute('data-lyric-timing'),'line');
+  }
+  await effectButton.click();
+  await effectPicker.getByRole('button',{name:'重拍',exact:true}).click();
+  await page.evaluate(()=>SonicPlayback.seek(1.6));
+  await play.click();
+  await page.waitForFunction(()=>{
+    const row=document.querySelector('[data-lyric-timeline] [data-current-line]');
+    const token=row?.querySelector('.lr-effect-word');
+    return row?.textContent==='逐字推进' && row.dataset.lyricTiming==='word' &&
+      Number(token?.style.getPropertyValue('--fx-rest'))>0 && getComputedStyle(token).transform!=='none';
+  });
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await page.waitForFunction(()=>{
+    const token=document.querySelector('[data-current-line] .lr-effect-word');
+    return token && getComputedStyle(token).transform==='none';
+  });
+  await page.evaluate(()=>{
+    SonicPlayback.toggle();
+    SonicPlayback.seek(9);
+  });
+  await page.emulateMedia({reducedMotion:'no-preference'});
+  await closeLyrics();
+  await openLyrics();
+  assert.equal(await room.getAttribute('data-lyric-effect'),'impact');
+  await room.locator('button[data-lyric-style="list"]').click();
+  await closeLyrics();
+  console.log('PASS all 18 lyric looks select a single line, timed words animate, and reduced motion stays readable');
 
   if (desktop) {
     await openLyrics();

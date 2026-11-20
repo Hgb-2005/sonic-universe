@@ -1,6 +1,12 @@
 # 声波宇宙 · Sonic Universe
 
-[下载 Windows x64 安装包](https://github.com/Hgb-2005/sonic-universe/releases/download/v0.41.0/Sonic-Universe-0.41.0-x64.exe) · [查看 0.41.0 发布说明](https://github.com/Hgb-2005/sonic-universe/releases/tag/v0.41.0) · [打开网页版](https://hgb-2005.github.io/sonic-universe/)
+[下载 Windows x64 安装包](https://github.com/Hgb-2005/sonic-universe/releases/download/v0.42.0/Sonic-Universe-0.42.0-x64.exe) · [查看 0.42.0 发布说明](https://github.com/Hgb-2005/sonic-universe/releases/tag/v0.42.0) · [打开网页版](https://hgb-2005.github.io/sonic-universe/)
+
+## 0.42.0
+
+- 展开「歌词欣赏」后，可在「动效」里选择 17 种动态样式和「静止」。逐字歌词跟随原始时标，普通 LRC 按句入场。
+- 「飞入」只在中央显示当前一句。换句时替换上一句，保留逐字飞入和高亮。
+- 每日推荐和热门榜单的顺序播放会在当前歌曲结束前准备下一首的匹配结果和播放地址，切歌时才请求音频。地址失效后会重新获取。
 
 ## 0.41.0
 
