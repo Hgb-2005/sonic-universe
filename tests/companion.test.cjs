@@ -2,6 +2,9 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const { createRequire } = require('node:module');
+const requireCompanion = createRequire(require.resolve('../companion/package.json'));
+const { createQishuiDeviceId } = requireCompanion('qishui-music-api');
 const {
   createQishuiProvider,
   coverUrl,
@@ -91,7 +94,6 @@ test('Qishui recommendations use a signed-in library and expose only normalized 
   const fs = require('node:fs/promises');
   const os = require('node:os');
   const path = require('node:path');
-  const { createQishuiDeviceId } = require('qishui-music-api');
   const { EncryptedQishuiSessionStore } = require('../companion/session-store.cjs');
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'sonic-qishui-discovery-'));
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
@@ -139,7 +141,6 @@ test('Qishui liked library paginates a complete account snapshot after 50 tracks
   const os = require('node:os');
   const path = require('node:path');
   const { generateKeyPairSync } = require('node:crypto');
-  const { createQishuiDeviceId } = require('qishui-music-api');
   const { EncryptedQishuiSessionStore } = require('../companion/session-store.cjs');
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'sonic-qishui-liked-'));
   t.after(async () => {
