@@ -1,0 +1,19 @@
+{
+  "format": "sonic-lyric-style",
+  "version": 2,
+  "id": "celadon",
+  "name": "青瓷",
+  "layout": "fly",
+  "alignment": "center",
+  "accent": "#9fdfcd",
+  "fontScale": 1.04,
+  "motion": "soft",
+  "layers": [
+    { "shape": "glow", "x": 70, "y": 65, "width": 115, "height": 105, "color": "#3d847e", "opacity": 0.58, "drift": true },
+    { "shape": "glow", "x": 16, "y": 83, "width": 67, "height": 63, "color": "#506299", "opacity": 0.51 },
+    { "shape": "ring", "x": 57, "y": 75, "width": 112, "height": 53, "color": "#8dcfbc", "opacity": 0.21, "angle": -17 },
+    { "shape": "ring", "x": 58, "y": 81, "width": 110, "height": 53, "color": "#8dcfbc", "opacity": 0.12, "angle": -17 },
+    { "shape": "disc", "x": 78, "y": 26, "width": 0.8, "height": 1.1, "color": "#b6dbd0", "opacity": 0.44 },
+    { "shape": "stripe", "x": 73, "y": 64, "width": 48, "height": 1, "color": "#b6dbd0", "opacity": 0.12, "angle": -17 }
+  ]
+}

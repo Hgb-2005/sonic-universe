@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self';">
+  <title>声波宇宙 · 桌面歌词</title>
+  <link rel="stylesheet" href="desktop-lyrics.css">
+</head>
+<body>
+  <main class="caption" aria-label="桌面歌词">
+    <header class="caption-header">
+      <span id="track" class="track"></span>
+      <span id="status" class="status" hidden></span>
+      <div id="controls" class="controls">
+        <button id="lock" type="button" aria-label="锁定桌面歌词" title="锁定歌词，鼠标将穿透窗口。可在系统托盘解锁。">锁定</button>
+        <button id="close" type="button" aria-label="关闭桌面歌词" title="关闭桌面歌词">×</button>
+      </div>
+    </header>
+    <div class="lines">
+      <p id="current" class="current" data-empty="true">暂无同步歌词</p>
+      <p id="next" class="next" hidden></p>
+    </div>
+  </main>
+  <script src="desktop-lyrics.js"></script>
+</body>
+</html>

@@ -4,6 +4,7 @@
 const DEFINITIONS = Object.freeze({
   netease: { name: '网易云音乐', referer: 'https://music.163.com/' },
   qq: { name: 'QQ 音乐', referer: 'https://y.qq.com/' },
+  kugou: { name: '酷狗音乐' },
 });
 const RESPONSE_LIMIT = 2 * 1024 * 1024;
 
@@ -62,6 +63,25 @@ function normalizeQqTrack(raw) {
   };
 }
 
+function normalizeKugouTrack(raw) {
+  const id = String(raw?.MixSongID || raw?.ID || '');
+  const name = text(raw?.SongName).replace(/<\/?em>/gi, '').trim();
+  if (!/^[1-9]\d{0,29}$/.test(id) || !name) return null;
+  const artist = text(raw.SingerName).replace(/<\/?em>/gi, '').trim();
+  const officialId = text(raw.EMixSongID);
+  const searchQuery = encodeURIComponent([name, artist].filter(Boolean).join(' '));
+  const image = text(raw.AlbumImage || raw.Image);
+  return {
+    provider: 'kugou', mediaId: id, name, artist,
+    album: text(raw.AlbumName), duration: duration(raw.Duration),
+    cover: coverUrl(image.replace('{size}', '400'), ['imge.kugou.com', 'imgessl.kugou.com']),
+    externalUrl: /^[a-zA-Z0-9]{4,40}$/.test(officialId)
+      ? `https://www.kugou.com/mixsong/${officialId}.html`
+      : `https://www.kugou.com/yy/html/search.html#searchType=song&searchKeyWord=${searchQuery}`,
+    linkedOnly: true,
+  };
+}
+
 function searchParams(input) {
   const query = typeof input?.query === 'string' ? input.query.trim() : '';
   if (!query || query.length > 100 || /[\u0000-\u001f\u007f]/.test(query)) {
@@ -106,7 +126,9 @@ function createPublicSearchProvider(id, options = {}) {
   return {
     async search(input) {
       const { query, limit, offset } = searchParams(input);
-      const headers = { Accept: 'application/json', Referer: definition.referer, 'User-Agent': 'Mozilla/5.0 SonicUniverse' };
+      const headers = definition.referer
+        ? { Accept: 'application/json', Referer: definition.referer, 'User-Agent': 'Mozilla/5.0 SonicUniverse' }
+        : { Accept: 'application/json' };
       let rows, total;
       if (id === 'netease') {
         const data = await requestJson(fetchImpl, 'https://music.163.com/api/search/get/web', {
@@ -119,9 +141,18 @@ function createPublicSearchProvider(id, options = {}) {
         rows = data.result.songs || [];
         total = Number(data.result.songCount) || 0;
       } else {
-        // QQ's endpoint paginates by page. Read two pages only if an offset crosses a page boundary.
+        // QQ and Kugou paginate by page. Fetch both pages for an unaligned offset.
         const page = Math.floor(offset / limit) + 1, within = offset % limit;
         const fetchPage = async p => {
+          if (id === 'kugou') {
+            const url = new URL('https://songsearch.kugou.com/song_search_v2');
+            url.search = new URLSearchParams({ keyword: query, page: String(p), pagesize: String(limit), platform: 'WebFilter' });
+            const data = await requestJson(fetchImpl, url.href, { headers }, definition.name, timeoutMs);
+            if (data?.status !== 1 || !Array.isArray(data.data?.lists)) {
+              throw failure('酷狗音乐没有返回有效搜索结果，请稍后重试。', 'upstream-invalid-response');
+            }
+            return { list: data.data.lists, totalnum: data.data.total };
+          }
           const url = new URL('https://c.y.qq.com/soso/fcgi-bin/client_search_cp');
           url.search = new URLSearchParams({ w: query, format: 'json', p: String(p), n: String(limit) }).toString();
           const data = await requestJson(fetchImpl, url.href, { headers }, definition.name, timeoutMs);
@@ -136,7 +167,7 @@ function createPublicSearchProvider(id, options = {}) {
         if (next) rows = rows.concat(next.list);
         rows = rows.slice(within, within + limit);
       }
-      const normalize = id === 'netease' ? normalizeNeteaseTrack : normalizeQqTrack;
+      const normalize = { netease: normalizeNeteaseTrack, qq: normalizeQqTrack, kugou: normalizeKugouTrack }[id];
       const seen = new Set();
       const items = rows.slice(0, limit).map(normalize).filter(item => item && !seen.has(item.mediaId) && seen.add(item.mediaId));
       if (id === 'netease') {
@@ -159,4 +190,4 @@ function createPublicSearchProvider(id, options = {}) {
   };
 }
 
-module.exports = { createPublicSearchProvider, normalizeNeteaseTrack, normalizeQqTrack, searchParams };
+module.exports = { createPublicSearchProvider, normalizeNeteaseTrack, normalizeQqTrack, normalizeKugouTrack, searchParams };

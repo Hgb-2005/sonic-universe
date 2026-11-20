@@ -1,0 +1,33 @@
+#listeningRoom .sd-dialog { width: min(730px, calc(100% - 26px)); }
+#listeningRoom .sd-dialog [aria-pressed=true] { border-color: var(--room-accent); color: var(--room-accent); }
+#listeningRoom .sd-form { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+#listeningRoom .sd-form[hidden], #listeningRoom .sd-video-tools[hidden], #listeningRoom .sd-video[hidden],
+#listeningRoom .sd-video-bar[hidden], #listeningRoom .sd-embed[hidden] { display: none; }
+#listeningRoom .sd-form input { min-width: 0; flex: 1; }
+#listeningRoom .sd-form input, #listeningRoom .sd-mv-source select { margin: 0; min-height: 36px; }
+#listeningRoom .sd-form button { flex: 0 0 auto; }
+#listeningRoom .sd-items { display: grid; padding: 0; margin: 14px 0 0; list-style: none; gap: 3px; }
+#listeningRoom .sd-items li { display: flex; align-items: center; gap: 10px; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #ffffff16; }
+#listeningRoom .sd-row-info { min-width: 0; }
+#listeningRoom .sd-items strong, #listeningRoom .sd-items small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#listeningRoom .sd-items small { color: var(--room-muted); margin-top: 4px; }
+#listeningRoom .sd-items button { flex-shrink: 0; }
+#listeningRoom .sd-play-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 6px 8px; font: inherit; color: inherit; text-align: start; border: 0; border-radius: 7px; background: transparent; cursor: pointer; }
+#listeningRoom .sd-play-row:hover:not(:disabled) { background: #ffffff0a; }
+#listeningRoom .sd-play-row:focus-visible { outline: 2px solid var(--room-accent); }
+#listeningRoom .sd-play-row:disabled { cursor: progress; }
+#listeningRoom .sd-row-action { font-size: 12px; color: var(--room-accent); flex-shrink: 0; }
+#listeningRoom .sd-video-tools { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+#listeningRoom .sd-video-tools form { flex: 1 1 250px; }
+#listeningRoom .sd-mv-source { display: grid; gap: 5px; flex: 1 1 162px; font-size: 12px; color: var(--room-muted); }
+#listeningRoom .sd-mv-source select { cursor: pointer; }
+#listeningRoom .sd-file { position: relative; cursor: pointer; }
+#listeningRoom .sd-file:focus-within { outline: 2px solid var(--room-accent); }
+#listeningRoom .sd-file input { position: absolute; inset: 0; width: 100%; opacity: 0; cursor: pointer; }
+#listeningRoom .sd-video { display: block; width: 100%; max-height: 50vh; background: #07090e; border-radius: 10px; margin-top: 12px; }
+#listeningRoom .sd-video-bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 18px; color: var(--room-muted); font-size: 13px; overflow-wrap: anywhere; }
+#listeningRoom .sd-video-bar button { flex-shrink: 0; }
+#listeningRoom .sd-video-bar a { margin-left: 6px; color: var(--room-accent); }
+#listeningRoom .sd-embed { margin-top: 12px; }
+#listeningRoom .sd-embed iframe { display: block; width: 100%; min-width: 200px; min-height: 200px; max-height: 56vh; aspect-ratio: 16 / 9; border: 0; border-radius: 10px; background: #07090e; }
+#listeningRoom .sd-dialog [data-error=true] { color: #f6a2a2; }

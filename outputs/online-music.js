@@ -9,8 +9,9 @@
   const MAX_TEXT = 240;
   const DEFAULT_COVER_TEMPLATE = 'tplv-b829550vbb';
   const EXTERNAL_PROVIDERS = Object.freeze({
-    netease: { name: '网易云音乐', host: 'music.163.com' },
-    qq: { name: 'QQ 音乐', host: 'y.qq.com' },
+    netease: { name: '网易云音乐', host: 'music.163.com', id: /^\d{1,30}$/, url: id => `https://music.163.com/#/song?id=${id}` },
+    qq: { name: 'QQ 音乐', host: 'y.qq.com', id: /^[a-zA-Z0-9]{1,40}$/, url: id => `https://y.qq.com/n/ryqq/songDetail/${id}` },
+    kugou: { name: '酷狗音乐', host: 'www.kugou.com', id: /^[1-9]\d{0,29}$/, url: (_id,track) => `https://www.kugou.com/yy/html/search.html#searchType=song&searchKeyWord=${encodeURIComponent([text(track.name),text(track.artist)].filter(Boolean).join(' '))}` },
   });
 
   function officialTrackUrl(provider, value) {
@@ -25,9 +26,11 @@
   function normalizeExternalTrack(input) {
     const provider = input?.provider, spec = Object.hasOwn(EXTERNAL_PROVIDERS, provider) ? EXTERNAL_PROVIDERS[provider] : null;
     const mediaId = String(input?.mediaId || '');
-    if (!spec || !(provider === 'qq' ? /^[a-zA-Z0-9]{1,40}$/ : /^\d{1,30}$/).test(mediaId)) return null;
-    const fallback = provider === 'qq' ? `https://y.qq.com/n/ryqq/songDetail/${mediaId}` : `https://music.163.com/#/song?id=${mediaId}`;
-    return { provider, mediaId, name: text(input.name, '未命名歌曲'), artist: text(input.artist), album: text(input.album), cover: safeHttpsUrl(input.cover), externalUrl: officialTrackUrl(provider, input.externalUrl) || fallback, linkedOnly: true };
+    if (!spec || !spec.id.test(mediaId)) return null;
+    const fallback = spec.url(mediaId,input);
+    const length = Number(input.duration);
+    const duration = Number.isFinite(length) && length > 0 && length < 86400 ? length : 0;
+    return { provider, mediaId, name: text(input.name, '未命名歌曲'), artist: text(input.artist), album: text(input.album), duration, cover: safeHttpsUrl(input.cover), externalUrl: officialTrackUrl(provider, input.externalUrl) || fallback, linkedOnly: true };
   }
 
   function text(value, fallback = '') {
@@ -48,6 +51,29 @@
     } catch {
       return null;
     }
+  }
+
+  function qishuiSongId(input) {
+    const value = typeof input === 'string' ? input.trim() : '';
+    if (/^\d{1,30}$/.test(value)) return value;
+    if (value.length > 4000) return '';
+    // Sharing copy may wrap the canonical song URL in a title or punctuation.
+    const canonical = /https:\/\/qishui\.douyin\.com\/song\/(\d{1,30})(?=$|[/?#\s"'，。！？）】])/i.exec(value)?.[1];
+    if (canonical) return canonical;
+    const shareUrl = /https:\/\/music\.douyin\.com\/qishui\/share\/track\?[^\s"'<>,，。！？）】]+/i.exec(value)?.[0];
+    if (!shareUrl) return '';
+    const id = new URL(shareUrl).searchParams.get('track_id') || '';
+    return /^\d{1,30}$/.test(id) ? id : '';
+  }
+
+  function qishuiShareCode(input) {
+    const value = typeof input === 'string' ? input.trim() : '';
+    if (value.length > 4000) return '';
+    return /https:\/\/qishui\.douyin\.com\/s\/([A-Za-z0-9_-]{2,64})(?=$|[/?#\s"'，。！？）】])/i.exec(value)?.[1] || '';
+  }
+
+  function isQishuiShareLink(input) {
+    return Boolean(qishuiShareCode(input) || (qishuiSongId(input) && !/^\d{1,30}$/.test(input.trim())));
   }
 
   function normalizeTrack(input) {
@@ -163,7 +189,7 @@
     let detectionState = 'pending', detectionGeneration = 0, detectionController = null;
     const timeoutMs = Number.isFinite(Number(options.timeoutMs)) ? Math.max(1500, Number(options.timeoutMs)) : 8000;
 
-    async function requestFrom(origin, path, payload, requestTimeout = timeoutMs, parentSignal = null) {
+    async function requestFrom(origin, path, payload, requestTimeout = timeoutMs, parentSignal = null, timeoutCap = timeoutMs) {
       const method = payload === undefined ? 'GET' : 'POST';
       const controller = new AbortController();
       let timedOut = false, timer, rejectAbort;
@@ -172,7 +198,7 @@
       if (parentSignal?.aborted) cancel();
       const cancellation = new Promise((_, reject) => {
         rejectAbort = () => {
-          const error = new Error('这次连接检查已取消。');
+          const error = new Error('这次请求已取消。');
           error.name = 'AbortError';
           reject(error);
         };
@@ -186,7 +212,7 @@
           const error = new Error('连不上本机音乐入口，点「重新连接」再试。');
           error.code = 'timeout';
           reject(error);
-        }, Math.min(timeoutMs, requestTimeout));
+        }, Math.min(timeoutCap, requestTimeout));
       });
       try {
         return await Promise.race([deadline, cancellation, (async () => {
@@ -224,6 +250,117 @@
 
     async function request(path, payload, requestTimeout = timeoutMs) {
       return requestFrom(baseUrl, path, payload, requestTimeout);
+    }
+
+    function playlistPage(id, offset = 0, ownerId = '', signal) {
+      const query = new URLSearchParams({ limit: '100', offset: String(offset) });
+      if (ownerId) query.set('ownerId', ownerId);
+      return requestFrom(baseUrl, `/api/qishui/playlists/${encodeURIComponent(id)}?${query}`, undefined, 12000, signal);
+    }
+
+    async function playlistAllTracks(id, { ownerId, signal } = {}) {
+      const items = [];
+      const seen = new Set();
+      let playlist = null;
+      let offset = 0;
+      for (;;) {
+        signal?.throwIfAborted();
+        const page = await playlistPage(id, offset, ownerId, signal);
+        if (!Array.isArray(page?.items)) throw new Error('汽水歌单返回的数据不完整，请重试。');
+        playlist ||= page.playlist || null;
+        for (const item of page.items) {
+          const track = normalizeTrack(item);
+          if (!track || seen.has(track.mediaId)) continue;
+          seen.add(track.mediaId);
+          items.push(track);
+        }
+        const nextOffset = Number(page.nextOffset);
+        if (page.hasMore !== true) {
+          return {
+            playlist, items, hasMore: false,
+            nextOffset: Number.isSafeInteger(nextOffset) && nextOffset >= offset ? nextOffset : offset + page.items.length,
+          };
+        }
+        if (!Number.isSafeInteger(nextOffset) || nextOffset <= offset) {
+          throw new Error('汽水歌单翻页没有前进，请重试。');
+        }
+        // The Qishui SDK accepts offsets up to 50,000. Do not return a partial playlist as complete.
+        if (nextOffset > 50000) throw new Error('歌曲数量超过汽水当前支持的读取范围。');
+        offset = nextOffset;
+      }
+    }
+
+    async function playlistsAll({ signal } = {}) {
+      const items = [];
+      const seen = new Set();
+      let offset = 0;
+      for (;;) {
+        signal?.throwIfAborted();
+        const params = new URLSearchParams({ limit: '100', offset: String(offset) });
+        const page = await requestFrom(baseUrl, '/api/qishui/library/playlists?' + params, undefined, 12000, signal);
+        if (!Array.isArray(page?.items)) throw new Error('汽水歌单列表返回的数据不完整，请重试。');
+        for (const item of page.items) {
+          const id = String(item?.id ?? '');
+          if (!/^\d{1,30}$/.test(id) || seen.has(id)) continue;
+          seen.add(id);
+          items.push({ ...item, id });
+        }
+        const nextOffset = Number(page.nextOffset);
+        if (page.hasMore !== true) {
+          return { items, hasMore: false, nextOffset: Number.isSafeInteger(nextOffset) && nextOffset >= offset ? nextOffset : offset + page.items.length };
+        }
+        if (!Number.isSafeInteger(nextOffset) || nextOffset <= offset || nextOffset > 50000) {
+          throw new Error('汽水歌单列表无法继续翻页，请重试。');
+        }
+        offset = nextOffset;
+      }
+    }
+
+    async function likedAll({ signal, onProgress } = {}) {
+      const items = [];
+      const seen = new Set();
+      let offset = 0, snapshot = '', total;
+      async function readPage(refresh) {
+        const params = new URLSearchParams({ limit: '25', offset: String(offset) });
+        if (snapshot) params.set('snapshot', snapshot);
+        if (refresh) params.set('refresh', '1');
+        const wait = offset === 0 ? 45000 : 15000;
+        return requestFrom(baseUrl, '/api/qishui/library/liked?' + params, undefined, wait, signal, wait);
+      }
+      for (;;) {
+        signal?.throwIfAborted();
+        let page;
+        try {
+          page = await readPage(offset === 0);
+        } catch (error) {
+          signal?.throwIfAborted();
+          if (!(error instanceof TypeError || error?.code === 'timeout' || error?.status === 429 || error?.status >= 500)) throw error;
+          page = await readPage(false);
+        }
+        signal?.throwIfAborted();
+        if (!Array.isArray(page?.items) || !Number.isSafeInteger(page.nextOffset) || !Number.isSafeInteger(page.total)
+          || typeof page.snapshot !== 'string' || !/^[a-f0-9-]{36}$/.test(page.snapshot)) {
+          throw new Error('本机音乐入口没有返回完整的收藏分页，请更新后重试。');
+        }
+        if ((snapshot && snapshot !== page.snapshot) || (total !== undefined && total !== page.total)
+          || page.total < 0 || page.total > 50000 || page.nextOffset < offset || page.nextOffset > page.total
+          || page.nextOffset - offset > 25 || (page.hasMore !== (page.nextOffset < page.total))
+          || (page.hasMore && page.nextOffset === offset)
+          || !Number.isSafeInteger(page.skipped) || page.skipped < 0 || page.items.length + page.skipped !== page.nextOffset - offset) {
+          throw new Error('汽水音乐收藏分页有变动，请重新读取。');
+        }
+        total = page.total;
+        snapshot = page.snapshot;
+        offset = page.nextOffset;
+        for (const item of page.items) {
+          const track = normalizeTrack(item);
+          if (!track || seen.has(track.mediaId)) continue;
+          seen.add(track.mediaId);
+          items.push({ ...track, liked: true });
+        }
+        onProgress?.({ scanned: offset, total, loaded: items.length });
+        if (!page.hasMore) return { items, total, hasMore: false, nextOffset: offset, skipped: total - items.length };
+      }
     }
 
     function resolveUrl(path) {
@@ -284,13 +421,42 @@
       loginCheck: sessionId => request('/api/qishui/login/check', { sessionId }, 7000),
       logout: () => request('/api/qishui/logout', {}, 7000),
       search: query => request('/api/qishui/search', { query, limit: 30, offset: 0 }, 12000),
+      discovery({ limit = 24, preference = 'familiar', signal } = {}) {
+        const params = new URLSearchParams({ limit: String(limit), preference });
+        return requestFrom(baseUrl, `/api/qishui/discovery?${params}`, undefined, 12000, signal);
+      },
+      async song(input) {
+        const id = qishuiSongId(input);
+        if (id) return request(`/api/qishui/songs/${id}`, undefined, 10000);
+        const share = qishuiShareCode(input);
+        if (share) return request(`/api/qishui/songs/resolve?share=${encodeURIComponent(share)}`, undefined, 10000);
+        throw new Error('请输入汽水音乐的官方歌曲链接或歌曲 ID。');
+      },
+      charts({ country = 'cn', limit = 25, signal } = {}) {
+        const params = new URLSearchParams({ country, limit: String(limit) });
+        return requestFrom(baseUrl,'/api/discovery/charts?' + params,undefined,10000,signal);
+      },
+      matchChartTrack({ name, artist }, { signal } = {}) {
+        return requestFrom(baseUrl,'/api/discovery/charts/match',{name,artist},10000,signal);
+      },
+      musicVideos(query, { country = 'cn', limit = 20, signal } = {}) {
+        const params = new URLSearchParams({ query, country, limit: String(limit) });
+        return requestFrom(baseUrl,'/api/discovery/music-videos?' + params,undefined,10000,signal);
+      },
+      playableVideos(query,{source='commons',limit=20,signal}={}) {
+        const params=new URLSearchParams({query,source,limit:String(limit)});
+        return requestFrom(baseUrl,'/api/discovery/playable-videos?'+params,undefined,10000,signal);
+      },
       searchByProvider(provider, query) {
         if (provider !== PROVIDER && !Object.hasOwn(EXTERNAL_PROVIDERS, provider)) return Promise.reject(new Error('不支持这个音乐平台。'));
         return request(`/api/${provider}/search`, { query, limit: 30, offset: 0 }, 12000);
       },
       liked: () => request('/api/qishui/library/liked?limit=50&offset=0', undefined, 12000),
+      likedAll,
       playlists: () => request('/api/qishui/library/playlists?limit=50&offset=0', undefined, 12000),
-      playlist: id => request(`/api/qishui/playlists/${encodeURIComponent(id)}?limit=100&offset=0`, undefined, 12000),
+      playlistsAll,
+      playlist: id => playlistPage(id),
+      playlistAllTracks,
       lyrics: id => request(`/api/qishui/songs/${encodeURIComponent(id)}/lyrics`, undefined, 10000),
       audio: mediaId => request(`/api/qishui/tracks/${encodeURIComponent(mediaId)}/audio`, {}, 15000),
       coverUrl,
@@ -313,6 +479,8 @@
     activeLyric,
     companionBaseUrls,
     createClient,
+    qishuiSongId,
+    isQishuiShareLink,
     safeHttpsUrl,
   };
 });

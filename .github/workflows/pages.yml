@@ -7,6 +7,7 @@ on:
       - 'outputs/**'
       - 'companion/**'
       - 'tests/**'
+      - 'scripts/stamp-assets.cjs'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
@@ -49,6 +50,10 @@ jobs:
           node --check outputs/online-music.js
           node --check outputs/universe-main.js
           node --check outputs/lyric-karaoke.js
+          node --check outputs/listening-room.js
+          node --check outputs/listening-core.js
+          node --check outputs/music-library.js
+          node scripts/stamp-assets.cjs --check
           node --check companion/server.cjs
           node --check companion/providers/qishui.cjs
           node --check companion/providers/public-search.cjs

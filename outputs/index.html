@@ -5,9 +5,19 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#080811">
 <style>.shared-viewer .header,.shared-viewer .intro,.shared-viewer .themes,.shared-viewer .player-wrap,.shared-viewer .footer,.shared-viewer .live-label,.shared-viewer .orbit-caption,.shared-viewer .spectrum-panel,.shared-viewer .stage-hint,.shared-viewer .edge-label,.shared-viewer .toast,.shared-viewer .quiet-exit{display:none!important}.shared-viewer .stage{min-height:100svh;margin:0}.shared-viewer .app{min-height:100svh}</style>
-<title>声波宇宙 32 · 稳定播放与时间点创作</title>
+<title>声波宇宙 · 让音乐，陪你一会儿</title>
+<link rel="icon" type="image/svg+xml" href="./assets/sonic-mark.svg">
+<meta name="sonic-project-pack-revision" content="bed720a09029">
+<meta name="sonic-file-tags-revision" content="9ac4d4eafaf4">
+<link rel="stylesheet" href="./listening-room.css?v=e09ba64f80f5">
+<link rel="stylesheet" href="./music-library.css?v=aac5da810f97">
+<link rel="stylesheet" href="./music-discovery.css?v=4af8c2d7230d">
+<link rel="stylesheet" href="./equalizer.css?v=7f372d94c3af">
+<link rel="stylesheet" href="./reactive-scenes.css?v=faacf2423d36">
+<link rel="stylesheet" href="./now-playing.css?v=a7fa96a60477">
+<script>if(!new URLSearchParams(location.search).has('sharedViewer')&&new URLSearchParams(location.search).get('interface')!=='legacy'){document.documentElement.classList.add('listening-enabled');setTimeout(()=>{if(!window.SonicListeningRoom){document.documentElement.classList.remove('listening-enabled');window.SonicPlayback?.presentation(false);}},6000);}</script>
 <style>.help-btn{text-decoration:none}.footer-links{flex-wrap:wrap}</style>
-<meta name="description" content="搜索汽水音乐、同步喜欢与歌单，并用可公开播放的歌曲实时驱动声波宇宙。">
+<meta name="description" content="工作时轻量陪伴，听歌时沉浸歌词。用简洁几何、柔和光雾和喜欢的音乐，留一点舒服的空间给自己。">
 <meta property="og:type" content="website">
 <meta property="og:title" content="声波宇宙 · 让旋律坠入星海">
 <meta property="og:description" content="搜索汽水音乐、同步喜欢与歌单，让封面、歌词与星云一起回应音乐。">
@@ -203,7 +213,7 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
 .eyebrow:before,h1 span,.header-action,.upload-btn,.journey-launch,.postcard-launch,.clip-launch,.atelier-launch,.instrument-launch,.theme,.mode-button,.response-profiles button,.play-btn,.primary-btn,.toast{transition:color .28s ease,background-color .28s ease,border-color .28s ease,box-shadow .28s ease,filter .2s ease,transform .2s ease}
 .range::-webkit-slider-thumb,.range::-moz-range-thumb{transition:background-color .28s ease,box-shadow .28s ease}
 </style>
-<link id="onlinePanelStyles" rel="stylesheet" data-href="./online-panel.css?v=33">
+<link id="onlinePanelStyles" rel="stylesheet" data-href="./online-panel.css?v=23a832f16695">
 <script>
 (() => {
   const link = document.getElementById('onlinePanelStyles');
@@ -340,7 +350,7 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
     </div></div><div class="roam-progress"><span id="roamCurrentTime">00:00</span><input class="range" id="roamSeek" type="range" min="0" max="96" step="0.1" value="0" aria-label="漫游播放进度"><span id="roamDuration">01:36</span></div>
   </div></div>
 </div>
-<input type="file" id="fileInput" multiple accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac,.opus,.webm" hidden>
+<input type="file" id="fileInput" multiple accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac,.opus,.webm,.lrc,.yrc,.krc,.ttml,.vtt,.qrc" hidden>
 <audio id="audio" preload="metadata"></audio>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="drop-overlay" id="dropOverlay"><div class="drop-content"><svg viewBox="0 0 48 48"><path d="M24 32V6M14 16 24 6l10 10M8 30v12h32V30"/></svg><p>把音乐，放进宇宙</p><small>可拖入整个文件夹（含子文件夹）或多首音乐 · 仅在本机播放与保存</small></div></div>
@@ -373,15 +383,17 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
         <button class="primary-btn" id="onlineLocalEntryBtn" type="button">打开本机完整入口 ↗</button>
       </div>
       <div class="online-onboarding">
-        <div class="library-tabs online-provider-tabs" role="group" aria-label="选择音乐平台"><button type="button" data-online-provider="qishui" aria-pressed="true">汽水音乐</button><button type="button" data-online-provider="netease" aria-pressed="false">网易云音乐</button><button type="button" data-online-provider="qq" aria-pressed="false">QQ 音乐</button></div>
+        <div class="library-tabs online-provider-tabs" role="group" aria-label="选择音乐平台"><button type="button" data-online-provider="qishui" aria-pressed="true">汽水音乐</button><button type="button" data-online-provider="netease" aria-pressed="false">网易云音乐</button><button type="button" data-online-provider="qq" aria-pressed="false">QQ 音乐</button><button type="button" data-online-provider="kugou" aria-pressed="false">酷狗音乐</button></div>
         <p class="import-status" id="onlineProviderHint">汽水音乐：可搜索公开歌曲；登录后可读取收藏与歌单。</p>
-        <button class="secondary-btn" id="onlineExternalLinkBtn" type="button" hidden>已在官方播放器播放？连接声音与星空 ↗</button>
+        <div class="online-actions"><button class="secondary-btn" id="onlineExternalLinkBtn" type="button" hidden>连接官方播放器的声音 ↗</button><a class="text-btn" href="https://bodian.kuwo.cn/" target="_blank" rel="noopener noreferrer">波点音乐官网 ↗</a></div>
         <form class="online-search" id="onlineSearchForm" role="search">
           <input class="text-input" id="onlineSearchInput" type="search" maxlength="100" placeholder="连接本机入口后搜索歌曲、歌手或专辑…" aria-label="搜索汽水音乐" autocomplete="off" disabled>
           <button class="primary-btn" id="onlineSearchBtn" type="submit" disabled>搜索汽水音乐</button>
         </form>
         <div class="online-actions" id="onlineAccountActions"><button class="text-btn" id="onlineLikedBtn" type="button" disabled>读取我的收藏</button><button class="text-btn" id="onlinePlaylistsBtn" type="button" disabled>读取我的歌单</button></div>
         <div class="online-playlists" id="onlinePlaylists" aria-label="汽水音乐歌单"></div>
+        <div class="online-actions"><button class="primary-btn" id="onlinePlayPlaylistBtn" type="button" data-online-action="play-playlist" hidden disabled>播放整个歌单</button></div>
+        <button class="secondary-btn" id="onlineSyncPlaylistBtn" type="button" hidden disabled>同步到本机歌单</button>
         <p class="import-status" id="onlineResultStatus" role="status" aria-live="polite">未登录也可以搜索公开歌曲；登录后可读取收藏和歌单。</p>
         <div class="online-results" id="onlineResults"><div class="online-empty">输入歌名或歌手，找到想让它变成星空的那首歌。</div></div>
       </div>
@@ -484,7 +496,7 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
   <div class="instrument-film-controls" id="instrumentFilmControls" hidden><div class="instrument-key-heading"><span>LIVE / 录下你的演奏</span><button type="button" class="instrument-monitor text-btn" id="instrumentFilmMonitor">试听中 · 点此静音</button><small>A S D F G H J K · Z X C 鼓点</small></div><div class="instrument-pads" id="instrumentFilmPads"></div><div class="instrument-drums-line"><div class="instrument-drums" id="instrumentFilmDrums"></div><small>直接点音垫，或用键盘演奏。已有旋律自动循环。</small></div></div><div class="clip-footer"><p id="clipStatus" role="status" aria-live="polite">准备好后，开始录制。</p><div><button class="secondary-btn" id="clipViewBtn" hidden>观看上次短片</button><button class="secondary-btn" id="clipSaveBtn" disabled>下载短片 ↗</button><button class="primary-btn" id="clipRecordBtn"><i aria-hidden="true"></i><span>开始录制</span></button><button class="primary-btn clip-stop" id="clipStopBtn" hidden><i aria-hidden="true"></i>结束并预览</button></div></div>
 </dialog>
 
-<input type="file" id="lyricInput" accept=".lrc,text/plain" hidden>
+<input type="file" id="lyricInput" accept=".lrc,.yrc,.krc,.ttml,.vtt,.qrc,text/plain" hidden>
 <dialog class="space-dialog atelier-dialog" id="atelierDialog" aria-labelledby="atelierHeading">
   <div class="dialog-heading"><div><div class="dialog-kicker">THE MUSIC IS YOURS. SO IS THE SKY.</div><h2 id="atelierHeading">让星空，有你的心情。</h2><p id="atelierSong">正在读取这段旅程…</p></div><button class="icon-btn dialog-close" data-close="atelierDialog" aria-label="关闭创作台">✕</button></div>
   <nav class="atelier-tabs" aria-label="创作台栏目"><button data-atelier-tab="mood" aria-pressed="true">01 氛围</button><button data-atelier-tab="lyrics" aria-pressed="false">02 歌词</button><button data-atelier-tab="memories" aria-pressed="false">03 收藏</button><button data-atelier-tab="rehearsal" aria-pressed="false">04 排练</button></nav>
@@ -509,12 +521,12 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
       <div class="atelier-inline-actions"><button class="primary-btn" id="saveMoodBtn">保存这份心情</button><button class="text-btn" id="resetMoodBtn">恢复此预设</button><span id="moodSaveStatus" role="status"></span></div>
     </section>
     <section data-atelier-panel="lyrics" hidden>
-      <div class="atelier-section-title"><h3>让每一句，浮现在星海。</h3><button class="text-btn" id="importLyricBtn">导入 LRC ↗</button></div>
+      <div class="atelier-section-title"><h3>让每一句，浮现在星海。</h3><button class="text-btn" id="importLyricBtn">导入同步歌词 ↗</button></div>
       <label class="field-label" for="lyricSource">带时间的歌词 <small>也可以直接粘贴</small></label><textarea id="lyricSource" rows="7" maxlength="160000" spellcheck="false" placeholder="[00:03.00] 第一束声音，成为星光\n[00:08.00] 把这一刻，留在宇宙里"></textarea>
       <div class="atelier-inline-actions"><button class="primary-btn" id="saveLyricBtn">应用到这首歌</button><button class="text-btn" id="clearLyricBtn">移除歌词</button></div>
       <p class="atelier-hint" id="lyricStatus" role="status">支持 [分:秒.毫秒]，歌词只在本机保存。</p>
       <div class="atelier-selects"><label>显示时间偏移 / 秒<input class="text-input" id="lyricOffset" type="number" min="-30" max="30" step="0.05" value="0"><input id="lyricOffsetRange" type="range" min="-30" max="30" step="0.05" value="0" aria-label="拖动微调歌词时间"></label><label>文字大小<select id="lyricSize"><option value="small">轻声</option><option value="medium">适中</option><option value="large">醒目</option></select></label></div>
-      <p class="atelier-hint">支持逐字时间标签；普通逐行 LRC 按每句时间均匀估算逐字进度。</p>
+      <p class="atelier-hint">带字词时间的歌词跟随原时间同步，普通 LRC 逐行高亮。</p>
       <p class="atelier-hint">正数让歌词晚一些出现，负数让歌词提前。LRC 内的 offset 标签也会读取。</p>
       <div class="atelier-checks"><label><input type="checkbox" id="lyricEnabled" checked> 显示歌词</label><label><input type="checkbox" id="lyricOnly" checked> 只显示当前一句</label></div>
       <p class="atelier-hint">唱完的文字会散成光尘。歌词会出现在沉浸画面、明信片和短片中；外部联动没有歌曲时间，暂不显示同步歌词。</p>
@@ -564,12 +576,27 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
   <div class="instrument-footer"><div><span class="storage-status" role="status">旋律与设置仅保存在本机</span><small>录制一层前数 4 拍，循环播放时可继续录下一层。最多 6 层；关闭乐器台会停止演奏。</small></div><button class="primary-btn" id="instrumentFilmBtn">把演奏录成短片 ↗</button></div>
 </dialog>
 
-  <script defer src="./lyric-karaoke.js?v=33"></script>
-  <script defer src="./music-motion.js?v=33"></script>
-  <script defer src="./visual-presets.js?v=33"></script>
-  <script defer src="./visual-system.js?v=33"></script>
-  <script defer src="./soda-library.js?v=33"></script>
-  <script defer src="./online-music.js?v=33"></script>
-<script defer src="./universe-main.js?v=b804b9d1a028"></script>
+  <script defer src="./lyric-karaoke.js?v=3ea4a3f195a2"></script>
+  <script defer src="./music-motion.js?v=5a80d82d77b5"></script>
+  <script defer src="./visual-presets.js?v=79d1f9962f19"></script>
+  <script defer src="./visual-system.js?v=cd3086ca4807"></script>
+  <script defer src="./soda-library.js?v=51f77f62c8a0"></script>
+  <script defer src="./online-music.js?v=6ee12b7de61c"></script>
+<script defer src="./listening-core.js?v=8da7573495bd"></script>
+<script defer src="./now-playing.js?v=345bb35d482f"></script>
+<script defer src="./track-details.js?v=66474d810773"></script>
+<script defer src="./track-enrichment.js?v=56899a239943"></script>
+<script defer src="./folder-library.js?v=75eed93a2a86"></script>
+<script defer src="./lyric-style-mods.js?v=8aadd0292e03"></script>
+<script defer src="./equalizer.js?v=b70a9b6984ae"></script>
+<script defer src="./music-discovery.js?v=ff43f0a01466"></script>
+<script defer src="./external-now-playing.js?v=4707f602ab4d"></script>
+<script defer src="./universe-main.js?v=4b5197157307"></script>
+<script defer src="./music-library.js?v=c589c13aa720"></script>
+<script defer src="./reactive-scene-landscapes.js?v=67e4e5f5adec"></script>
+<script defer src="./reactive-scene-neon.js?v=fa56cc0e9fc8"></script>
+<script defer src="./reactive-scene-bloom.js?v=e8c1912bc8d6"></script>
+<script defer src="./reactive-scenes.js?v=41d8d124cdc0"></script>
+<script defer src="./listening-room.js?v=3d2524fb765c"></script>
 </body>
 </html>

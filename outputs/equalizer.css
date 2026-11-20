@@ -1,0 +1,112 @@
+.sonic-eq {
+  --eq-accent: var(--accent, #b8a9db);
+  width: min(720px, calc(100vw - 32px));
+  max-height: 88dvh;
+  margin: auto;
+  padding: clamp(18px, 4vw, 30px);
+  overflow: auto;
+  color: #eef0f5;
+  color-scheme: dark;
+  background: #201c2c;
+  border: 1px solid #e0d9f225;
+  border-radius: 20px;
+  box-shadow: 0 35px 110px #0008;
+  box-sizing: border-box;
+}
+
+.sonic-eq::backdrop { background: #050811a8; backdrop-filter: blur(6px); }
+
+.sonic-eq .sonic-eq-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.sonic-eq h2 { margin: 0; color: inherit; font-size: 23px; font-weight: 500; letter-spacing: .04em; }
+
+.sonic-eq button, .sonic-eq select {
+  min-height: 38px;
+  padding: 6px 12px;
+  color: inherit;
+  font: inherit;
+  background: #fff0;
+  border: 1px solid #ffffff20;
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.sonic-eq button:hover, .sonic-eq select:hover { background: #ffffff0e; }
+.sonic-eq :is(button, input, select):focus-visible { outline: 2px solid var(--eq-accent); outline-offset: 3px; }
+.sonic-eq button.sonic-eq-close { min-width: 38px; padding: 0; font-size: 24px; line-height: 1; }
+
+.sonic-eq .sonic-eq-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  margin: 22px 0 16px;
+  gap: 14px 22px;
+  color: #d1ccde;
+  font-size: 14px;
+}
+
+.sonic-eq .sonic-eq-enable, .sonic-eq .sonic-eq-preset { display: inline-flex; align-items: center; gap: 10px; }
+.sonic-eq .sonic-eq-enable { min-height: 38px; cursor: pointer; }
+.sonic-eq .sonic-eq-enable input { width: 18px; height: 18px; margin: 0; accent-color: var(--eq-accent); }
+.sonic-eq select { min-width: 112px; background: #2a2637; padding-inline-end: 14px; }
+
+.sonic-eq .sonic-eq-bands {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 14px 10px 12px;
+  border: 1px solid #ffffff13;
+  border-radius: 13px;
+  background: #171522;
+}
+
+.sonic-eq .sonic-eq-band {
+  display: grid;
+  grid-template-rows: 18px 128px 18px;
+  justify-items: center;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: #b4acc7;
+  font: 500 .71rem / 1.15 ui-monospace, Consolas, monospace;
+  white-space: nowrap;
+}
+
+.sonic-eq .sonic-eq-band output { color: #e0d9ed; font-variant-numeric: tabular-nums; }
+.sonic-eq .sonic-eq-band input {
+  writing-mode: vertical-lr;
+  direction: rtl;
+  width: 28px;
+  height: 118px;
+  margin: 0;
+  accent-color: var(--eq-accent);
+  cursor: pointer;
+}
+
+.sonic-eq[data-enabled="false"] .sonic-eq-band input { accent-color: #9b94ac; }
+
+.sonic-eq .sonic-eq-footer {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin-top: 18px;
+  font-size: 13px;
+}
+
+.sonic-eq .sonic-eq-status { margin: 0; color: #e1b398; }
+
+@media (max-width: 610px) {
+  .sonic-eq .sonic-eq-bands { grid-template-columns: repeat(5, minmax(0, 1fr)); row-gap: 16px; }
+  .sonic-eq .sonic-eq-band { grid-template-rows: 18px 90px 18px; gap: 5px; }
+  .sonic-eq .sonic-eq-band input { height: 84px; }
+}

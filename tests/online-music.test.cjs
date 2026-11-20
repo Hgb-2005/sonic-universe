@@ -72,6 +72,163 @@ test('an old Companion 404 is preserved so the UI can ask for an update', async 
   await assert.rejects(online.createClient().searchByProvider('qq', 'test'), error => error.status === 404);
 });
 
+test('discovery requests use local routes and parse official Qishui song links', async t => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  const calls = [];
+  globalThis.fetch = async (url, options) => {
+    calls.push(new URL(url));
+    assert.equal(options.method, 'GET');
+    assert.equal(options.credentials, 'omit');
+    return Response.json({ items: [] });
+  };
+  const client = online.createClient({ baseUrl: 'http://127.0.0.1:8765' });
+  assert.equal(online.qishuiSongId('汽水音乐 · 星光 https://qishui.douyin.com/song/123?share=1。'), '123');
+  assert.equal(online.qishuiSongId('https://qishui.douyin.com.offsite.test/song/123'), '');
+  assert.equal(online.qishuiSongId('https://qishui.douyin.com/song/123abc'), '');
+  assert.equal(online.qishuiSongId('https://music.douyin.com/qishui/share/track?track_id=123'), '123');
+  assert.equal(online.isQishuiShareLink('分享歌曲 https://qishui.douyin.com/s/ValidShare/'), true);
+  assert.equal(online.isQishuiShareLink('https://qishui.douyin.com.bad.test/s/ValidShare/'), false);
+  assert.equal(online.isQishuiShareLink('123'), false);
+  await assert.rejects(client.song('https://third-party.test/song/123'), /官方歌曲链接/);
+  await client.song('https://qishui.douyin.com/song/123#demo');
+  await client.song('汽水音乐 · 星光 https://qishui.douyin.com/s/example/');
+  await client.discovery({ preference: 'fresh' });
+  await client.charts({ country: 'hk' });
+  await client.musicVideos('测试 & MV');
+  assert.deepEqual(calls.map(url => url.pathname), [
+    '/api/qishui/songs/123', '/api/qishui/songs/resolve', '/api/qishui/discovery', '/api/discovery/charts', '/api/discovery/music-videos',
+  ]);
+  assert.ok(calls.every(url => url.origin === 'http://127.0.0.1:8765'));
+  assert.equal(calls[1].searchParams.get('share'), 'example');
+  assert.equal(calls[2].searchParams.get('preference'), 'fresh');
+  assert.equal(calls[3].searchParams.get('country'), 'hk');
+  assert.equal(calls[4].searchParams.get('query'), '测试 & MV');
+});
+
+test('loads every Qishui playlist page in source order using server offsets', async t => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  const calls = [];
+  const track = id => ({ provider: 'qishui', mediaId: id, name: id });
+  globalThis.fetch = async url => {
+    const { pathname, searchParams } = new URL(url);
+    calls.push(Number(searchParams.get('offset')));
+    assert.equal(pathname, '/api/qishui/playlists/8');
+    assert.equal(searchParams.get('limit'), '100');
+    assert.equal(searchParams.get('ownerId'), 'someone_1');
+    const page = calls.length === 1
+      ? { playlist: { id: '8', name: '夜航' }, items: [track('1'), track('bad')], hasMore: true, nextOffset: 100 }
+      : { items: [track('1'), track('2')], hasMore: false, nextOffset: 102 };
+    return Response.json(page);
+  };
+  const client = online.createClient({ baseUrl: 'http://127.0.0.1:8765' });
+  const data = await client.playlistAllTracks('8', { ownerId: 'someone_1' });
+  assert.deepEqual(calls, [0, 100]);
+  assert.equal(data.playlist.name, '夜航');
+  assert.deepEqual(data.items.map(item => item.mediaId), ['1', '2']);
+  assert.equal(data.hasMore, false);
+  assert.equal(data.nextOffset, 102);
+});
+
+test('can enumerate the whole Qishui playlist library and ignore repeated collections', async t => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  const calls = [];
+  globalThis.fetch = async url => {
+    const { pathname, searchParams } = new URL(url);
+    assert.equal(pathname, '/api/qishui/library/playlists');
+    assert.equal(searchParams.get('limit'), '100');
+    calls.push(Number(searchParams.get('offset')));
+    return Response.json(calls.length === 1
+      ? { items: [{ id: '151', name: '歌单一' }], hasMore: true, nextOffset: 100 }
+      : { items: [{ id: '151' }, { id: '156' }], hasMore: false });
+  };
+  const client = online.createClient({ baseUrl: 'http://127.0.0.1:8765' });
+  const library = await client.playlistsAll();
+  assert.deepEqual(calls, [0, 100]);
+  assert.deepEqual(library.items.map(playlist => playlist.id), ['151', '156']);
+  assert.equal(library.items[0].name, '歌单一');
+});
+
+test('loads past the first 50 liked tracks and retries only a temporarily unavailable page', async t => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  const calls = [], progress = [];
+  const snapshot = '123e4567-e89b-12d3-a456-426614174000';
+  let failed = false;
+  globalThis.fetch = async (url, options) => {
+    const { pathname, searchParams } = new URL(url);
+    assert.equal(pathname, '/api/qishui/library/liked');
+    assert.equal(options.credentials, 'omit');
+    const offset = Number(searchParams.get('offset'));
+    const limit = Number(searchParams.get('limit'));
+    calls.push(offset);
+    assert.equal(searchParams.get('snapshot'), offset ? snapshot : null);
+    assert.equal(searchParams.get('refresh'), offset ? null : '1');
+    if (offset === 50 && !failed) {
+      failed = true;
+      return Response.json({ error: '暂时无法读取' }, { status: 503 });
+    }
+    const total = 108, nextOffset = Math.min(total, offset + limit);
+    const items = Array.from({ length: nextOffset - offset }, (_, i) => ({
+      provider: 'qishui', mediaId: String(offset + i + 1), name: '收藏 '+ (offset + i + 1),
+    })).filter(track => track.mediaId !== '58');
+    return Response.json({ items, total, nextOffset, hasMore: nextOffset < total, snapshot, skipped: nextOffset - offset - items.length });
+  };
+  const client = online.createClient({ baseUrl: 'http://127.0.0.1:8765' });
+  const library = await client.likedAll({ onProgress: update => progress.push(update) });
+  assert.deepEqual(calls, [0, 25, 50, 50, 75, 100]);
+  assert.deepEqual(progress.map(update => update.scanned), [25, 50, 75, 100, 108]);
+  assert.equal(library.items.length, 107);
+  assert.equal(library.total, 108);
+  assert.equal(library.skipped, 1);
+  assert.equal(library.items.at(-1).mediaId, '108');
+  assert.ok(library.items.every(item => item.liked));
+});
+
+test('liked pagination rejects an old truncated response and does not retry expired sign-in or cancellation', async t => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  const client = online.createClient({ baseUrl: 'http://127.0.0.1:8765' });
+  globalThis.fetch = async () => Response.json({ items: [], hasMore: false, total: 60 });
+  await assert.rejects(client.likedAll(), /更新后重试/);
+
+  let calls = 0;
+  globalThis.fetch = async () => {
+    calls++;
+    return Response.json({ error: '请登录', code: 'auth-required' }, { status: 401 });
+  };
+  await assert.rejects(client.likedAll(), { status: 401 });
+  assert.equal(calls, 1);
+
+  const controller = new AbortController();
+  controller.abort();
+  await assert.rejects(client.likedAll({ signal: controller.signal }), { name: 'AbortError' });
+  assert.equal(calls, 1);
+});
+
+test('Qishui playlist reads reject a stalled offset and can be canceled between pages', async t => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  const client = online.createClient({ baseUrl: 'http://127.0.0.1:8765' });
+  const signal = new AbortController();
+  let calls = 0;
+  globalThis.fetch = async () => {
+    calls++;
+    return Response.json({ items: [], hasMore: true, nextOffset: 0 });
+  };
+  await assert.rejects(client.playlistAllTracks('8'), /翻页没有前进/);
+  assert.equal(calls, 1);
+  globalThis.fetch = async () => {
+    calls++;
+    signal.abort();
+    return Response.json({ items: [], hasMore: true, nextOffset: 100 });
+  };
+  await assert.rejects(client.playlistAllTracks('8', { signal: signal.signal }), { name: 'AbortError' });
+  assert.equal(calls, 2);
+});
+
 test('repairs legacy Qishui cover URLs and exposes the local cover route', () => {
   const track = online.normalizeTrack({
     provider: 'qishui',

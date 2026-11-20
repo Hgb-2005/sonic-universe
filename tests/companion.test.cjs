@@ -3,6 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
+  createQishuiProvider,
   coverUrl,
   krcToLrc,
   loginQrKey,
@@ -10,10 +11,12 @@ const {
   normalizePlaylist
 } = require('../companion/providers/qishui.cjs');
 const { parseRange, corsHeaders, isTrustedCoverUrl } = require('../companion/server.cjs');
-const { createPublicSearchProvider, normalizeNeteaseTrack, normalizeQqTrack, searchParams } = require('../companion/providers/public-search.cjs');
+const { createPublicSearchProvider, normalizeNeteaseTrack, normalizeQqTrack, normalizeKugouTrack, searchParams } = require('../companion/providers/public-search.cjs');
+const { createDiscoveryProvider } = require('../companion/providers/discovery.cjs');
 
 test('converts KRC character timing to ordinary LRC', () => {
   const output = krcToLrc('[14690,6530]<0,210,0>故<210,200,0>事');
+  assert.equal(krcToLrc('[14690,6530]<0,210,0>故<210,200,0>事', true), '[00:14.690]<00:14.690>故<00:14.900>事');
   assert.equal(output, '[00:14.69]故事');
 });
 
@@ -48,6 +51,176 @@ test('normalizes playlist fields and parses range headers', () => {
   assert.deepEqual(parseRange('bytes=2-9', 20), { start: 2, end: 9 });
   assert.deepEqual(parseRange('bytes=-5', 20), { start: 15, end: 19 });
   assert.deepEqual(parseRange('bytes=20-30', 20), { invalid: true });
+});
+
+test('Qishui playlist pages pass the owner and resume at the SDK cursor after 100 songs', async t => {
+  const fs = require('node:fs/promises');
+  const os = require('node:os');
+  const path = require('node:path');
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'sonic-qishui-playlist-'));
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const requests = [];
+  const track = id => ({ track_entity: { base_info: { id: String(id), name: `歌曲 ${id}` } } });
+  const provider = await createQishuiProvider({ dataDirectory: directory, fetch: async (url, request) => {
+    const { pathname } = new URL(url);
+    if (pathname.endsWith('/client/token/get/')) return Response.json({ client_token: 'fixture-token' });
+    assert.ok(pathname.endsWith('/playlist/detail/'));
+    const { cursor, playlist_id, owner_id, count } = JSON.parse(request.body);
+    requests.push({ cursor, playlist_id, owner_id, count });
+    if (cursor === '0') return Response.json({ data: {
+      playlist: { base_info: { id: '8', name: '夜航', track_count: 101 } },
+      media_entities: Array.from({ length: 100 }, (_, index) => track(index + 1)),
+      has_more: true, next_cursor: 'second_page',
+    } });
+    return Response.json({ data: { media_entities: [track(101)], has_more: false } });
+  } });
+  const first = await provider.playlist('8', { limit: '100', offset: '0', ownerId: 'owner_1' });
+  const second = await provider.playlist('8', { limit: '100', offset: String(first.nextOffset), ownerId: 'owner_1' });
+  assert.equal(first.items.length, 100);
+  assert.equal(first.hasMore, true);
+  assert.equal(first.playlist.name, '夜航');
+  assert.deepEqual(second.items.map(song => song.mediaId), ['101']);
+  assert.equal(second.hasMore, false);
+  assert.deepEqual(requests, [
+    { cursor: '0', playlist_id: '8', owner_id: 'owner_1', count: 100 },
+    { cursor: 'second_page', playlist_id: '8', owner_id: 'owner_1', count: 100 },
+  ]);
+});
+
+test('Qishui recommendations use a signed-in library and expose only normalized track metadata', async t => {
+  const fs = require('node:fs/promises');
+  const os = require('node:os');
+  const path = require('node:path');
+  const { createQishuiDeviceId } = require('qishui-music-api');
+  const { EncryptedQishuiSessionStore } = require('../companion/session-store.cjs');
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'sonic-qishui-discovery-'));
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const anonymous = await createQishuiProvider({ dataDirectory: directory, fetch: () => assert.fail('Network used before login') });
+  await assert.rejects(anonymous.discovery(), error => error.status === 401 && error.code === 'auth-required');
+  const session = await new EncryptedQishuiSessionStore({ directory }).init(createQishuiDeviceId);
+  session.set({ userId: '86420' });
+  await session.flush();
+
+  const requests = [];
+  const raw = { base_info: { id: '123', name: '晚风', duration_ms: 106000 }, player_info: { opaque: true } };
+  const provider = await createQishuiProvider({ dataDirectory: directory, fetch: async (url, options) => {
+    const { pathname } = new URL(url);
+    if (pathname.endsWith('/client/token/get/')) return Response.json({ client_token: 'fixture-token' });
+    if (pathname.startsWith('/s/')) {
+      assert.equal(options.redirect, 'manual');
+      const target = pathname === '/s/ValidShare/'
+        ? 'https://music.douyin.com/qishui/share/track?track_id=123'
+        : 'https://not-qishui.example/qishui/share/track?track_id=123';
+      return new Response(null, { status: 302, headers: { Location: target } });
+    }
+    const request = JSON.parse(options.body);
+    requests.push({ pathname, request });
+    if (pathname.endsWith('/feed/song-tab/')) return Response.json({ data: { items: [raw, raw] } });
+    assert.ok(pathname.endsWith('/media/mget/'));
+    return Response.json({ data: { media_list: [{ media_id: '123', track_entity: raw }] } });
+  } });
+  await assert.rejects(provider.discovery({ preference: 'anything' }), error => error.status === 400);
+  const discovery = await provider.discovery({ limit: 6, preference: 'fresh' });
+  assert.equal(discovery.mode, 'fresh');
+  assert.deepEqual(discovery.items.map(({ mediaId }) => mediaId), ['123']);
+  assert.equal(requests[0].request.feed_preference.preference_mode, 'fresh');
+  assert.equal(requests[0].request.common_params.user_id, '86420');
+  assert.equal(requests[0].request.count, 6);
+  const song = await provider.song('123');
+  assert.equal(song.item.player_info, undefined);
+  assert.equal(song.item.duration, 106);
+  await assert.rejects(provider.songFromShare('../rejected'), error => error.status === 400);
+  await assert.rejects(provider.songFromShare('WrongRedirect'), error => error.status === 404);
+  assert.equal((await provider.songFromShare('ValidShare')).item.mediaId, '123');
+});
+
+test('Qishui liked library paginates a complete account snapshot after 50 tracks', async t => {
+  const fs = require('node:fs/promises');
+  const os = require('node:os');
+  const path = require('node:path');
+  const { generateKeyPairSync } = require('node:crypto');
+  const { createQishuiDeviceId } = require('qishui-music-api');
+  const { EncryptedQishuiSessionStore } = require('../companion/session-store.cjs');
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'sonic-qishui-liked-'));
+  t.after(async () => {
+    await fs.unlink(path.join(directory, 'qishui-session.enc'));
+    await fs.unlink(path.join(directory, 'session-key'));
+    await fs.rmdir(directory);
+  });
+  const store = await new EncryptedQishuiSessionStore({ directory }).init(createQishuiDeviceId);
+  const { privateKey } = generateKeyPairSync('ec', { namedCurve: 'prime256v1' });
+  store.set({
+    userId: '12345', ticket: 'test-ticket', guardCert: 'test-cert', guardTsSign: 'test-sign',
+    guardKey: privateKey.export({ type: 'pkcs8', format: 'pem' }).toString(),
+  });
+  await store.flush();
+  const inventoryCursors = [], detailIds = [];
+  const track = id => ({ track_entity: { base_info: { id: String(id), name: '收藏 '+id } } });
+  const provider = await createQishuiProvider({ dataDirectory: directory, fetch: async (url, req) => {
+    const { pathname } = new URL(url);
+    if (pathname.endsWith('/client/token/get/')) return Response.json({ client_token: 'fixture-token' });
+    const body = JSON.parse(req.body);
+    if (pathname.endsWith('/me/playlist/')) {
+      return Response.json({ data: { playlists: [{ base_info: { id: '98', type: 1, owner_id: '12345' } }], has_more: false } });
+    }
+    if (pathname.endsWith('/playlist/detail/')) {
+      inventoryCursors.push(body.cursor);
+      assert.equal(body.playlist_id, '98');
+      const first = body.cursor === '';
+      return Response.json({ data: {
+        media_entities: first ? Array.from({ length: 100 }, (_, index) => track(index + 1)) : [track(100), track(101), track(102)],
+        has_more: first, next_cursor: first ? 'cursor-2' : '',
+      } });
+    }
+    assert.ok(pathname.endsWith('/media/mget/'));
+    const id = body.media_list[0].id;
+    detailIds.push(id);
+    return Response.json({ data: { media_list: id === '51' ? [] : [track(id)] } });
+  } });
+  await assert.rejects(provider.liked({ limit: 51 }), { status: 400, code: 'invalid-liked-page' });
+  const first = await provider.liked({ limit: 50, offset: 0, refresh: true });
+  const second = await provider.liked({ limit: 50, offset: first.nextOffset, snapshot: first.snapshot });
+  const last = await provider.liked({ limit: 50, offset: second.nextOffset, snapshot: first.snapshot });
+  assert.equal(first.hasMore, true);
+  assert.equal(first.nextOffset, 50);
+  assert.equal(first.total, 102);
+  assert.equal(second.nextOffset, 100);
+  assert.equal(second.items[0].mediaId, '52');
+  assert.equal(second.skipped, 1);
+  assert.equal(last.hasMore, false);
+  assert.equal(last.nextOffset, 102);
+  assert.deepEqual(last.items.map(item => [item.mediaId,item.liked]), [['101',true],['102',true]]);
+  assert.deepEqual(inventoryCursors, ['', 'cursor-2']);
+  assert.equal(detailIds.length, 102);
+  await assert.rejects(provider.liked({ offset: 50, snapshot: '123e4567-e89b-12d3-a456-426614174000' }), { status: 409, code: 'liked-list-changed' });
+});
+
+test('Apple charts and MV discovery use official links and do not expose promotional video streams', async () => {
+  const calls = [];
+  const provider = createDiscoveryProvider({ fetch: async (url, options) => {
+    const parsed = new URL(url);
+    calls.push(parsed.href);
+    assert.equal(options.redirect, 'error');
+    if (parsed.hostname === 'rss.marketingtools.apple.com') return Response.json({ feed: { title: '热门歌曲', results: [
+      { id: '123', name: '星光', artistName: '测试', url: 'https://music.apple.com/cn/album/test/1?i=123', artworkUrl100: 'https://is1-ssl.mzstatic.com/image.jpg' },
+      { id: '456', name: '无效链接', url: 'https://music.apple.com.bad.test/cn/album/test/2' },
+    ] } });
+    assert.equal(parsed.origin, 'https://itunes.apple.com');
+    assert.equal(parsed.searchParams.get('term'), '星光 & 夜晚');
+    assert.equal(parsed.searchParams.get('media'), 'musicVideo');
+    return Response.json({ results: [
+      { kind: 'music-video', trackId: 1, trackName: '夜晚', artistName: '作者', trackViewUrl: 'https://music.apple.com/cn/music-video/night/1', previewUrl: 'https://video-ssl.itunes.apple.com/preview.m4v' },
+      { kind: 'song', trackId: 2, trackName: '歌曲', trackViewUrl: 'https://music.apple.com/cn/song/test/2' },
+    ] });
+  } });
+  await assert.rejects(provider.charts({ country: '../bad' }), error => error.status === 400);
+  await assert.rejects(provider.musicVideos({ query: ' ' }), error => error.status === 400);
+  const charts = await provider.charts({ country: 'CN', limit: 8 });
+  assert.equal(calls[0], 'https://rss.marketingtools.apple.com/api/v2/cn/music/most-played/25/songs.json');
+  assert.equal(charts.title, '热门歌曲');
+  assert.deepEqual(charts.items.map(item => [item.mediaId, item.linkedOnly]), [['123', true]]);
+  const videos = await provider.musicVideos({ query: '星光 & 夜晚' });
+  assert.deepEqual(videos.items, [{ provider: 'apple', mediaId: '1', name: '夜晚', artist: '作者', externalUrl: 'https://music.apple.com/cn/music-video/night/1', linkedOnly: true }]);
 });
 
 test('allows only the local app and published site for cross-origin requests', () => {
@@ -141,6 +314,43 @@ test('QQ search encodes keywords and handles nonaligned offsets without duplicat
   assert.equal(data.hasMore, true);
 });
 
+test('Kugou returns metadata and first-party links from unsigned public search', async () => {
+  const calls = [];
+  const provider = createPublicSearchProvider('kugou', { fetch: async (value, options) => {
+    const url = new URL(value);
+    const page = Number(url.searchParams.get('page'));
+    assert.equal(url.origin + url.pathname, 'https://songsearch.kugou.com/song_search_v2');
+    assert.equal(url.searchParams.get('keyword'), '海 & 天');
+    assert.equal(url.searchParams.get('pagesize'), '2');
+    assert.equal(url.searchParams.get('platform'), 'WebFilter');
+    assert.deepEqual(options.headers, { Accept: 'application/json' });
+    calls.push(page);
+    const lists = Array.from({ length: 2 }, (_, index) => ({
+      MixSongID: String(2 * (page - 1) + index + 1),
+      SongName: '<em>海</em> & 天', SingerName: '歌手', AlbumName: '专辑', Duration: 195,
+      Image: 'http://imge.kugou.com/stdmusic/{size}/album.jpg',
+      EMixSongID: index ? 'abcd1234' : 'bad/path',
+      FileHash: 'must-not-be-exposed',
+    }));
+    return Response.json({ status: 1, data: { lists, total: 4 } });
+  } });
+  const data = await provider.search({ query: '海 & 天', limit: 2, offset: 1 });
+  assert.deepEqual(calls, [1, 2]);
+  assert.equal(data.nextOffset, 3);
+  assert.equal(data.hasMore, true);
+  assert.deepEqual(data.items[0], {
+    provider: 'kugou', mediaId: '2', name: '海 & 天', artist: '歌手', album: '专辑', duration: 195,
+    cover: 'https://imge.kugou.com/stdmusic/400/album.jpg',
+    externalUrl: 'https://www.kugou.com/mixsong/abcd1234.html',
+    linkedOnly: true,
+  });
+  const searchUrl = new URL(data.items[1].externalUrl);
+  assert.equal(searchUrl.origin + searchUrl.pathname, 'https://www.kugou.com/yy/html/search.html');
+  assert.equal(new URLSearchParams(searchUrl.hash.slice(1)).get('searchKeyWord'), '海 & 天 歌手');
+  assert.equal(normalizeKugouTrack({ ID: '../../x', SongName: '歌曲' }), null);
+  assert.equal(normalizeKugouTrack({ ID: 1, SongName: '歌曲', Image: 'https://imge.kugou.com.evil.example/image' }).cover, null);
+});
+
 test('Netease supplies page artwork in one optional metadata request and survives cover failure', async () => {
   for (const failCover of [false, true]) {
     const calls = [];
@@ -183,11 +393,11 @@ test('server exposes public searches and truthful capabilities even without Qish
   const http = require('node:http');
   const { createAppServer } = require('../companion/server.cjs');
   const inputs = [];
-  const providers = new Map([['netease', { search: async input => {
+  const providers = new Map(['netease', 'kugou'].map(provider => [provider, { search: async input => {
     inputs.push(input);
-    return { items: [{ provider: 'netease', mediaId: '1' }], hasMore: false, nextOffset: 20 };
-  } }]]);
-  const app = createAppServer({ providers });
+    return { items: [{ provider, mediaId: '1' }], hasMore: false, nextOffset: 20 };
+  } }]));
+  const app = createAppServer({ providers, discoveryFetch: async () => Response.json({ feed: { results: [] } }) });
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
   t.after(() => new Promise(resolve => app.server.close(resolve)));
   const request = (path, method = 'GET', body) => new Promise((resolve, reject) => {
@@ -201,15 +411,22 @@ test('server exposes public searches and truthful capabilities even without Qish
   });
   const health = await request('/health');
   assert.equal(health.data.musicApiVersion, 2);
-  assert.deepEqual(health.data.providers, ['netease']);
+  assert.deepEqual(health.data.providers, ['netease', 'kugou']);
   const capabilities = (await request('/api/providers')).data.items;
   assert.equal(capabilities.find(item => item.id === 'qishui').available, false);
   assert.equal(capabilities.find(item => item.id === 'netease').playback, 'external');
+  assert.equal(capabilities.find(item => item.id === 'kugou').available, true);
+  assert.equal(capabilities.find(item => item.id === 'kugou').playback, 'external');
   const search = await request('/api/netease/search', 'POST', { query: '星光' });
   assert.equal(search.status, 200);
   assert.equal(search.data.items[0].mediaId, '1');
-  assert.deepEqual(inputs, [{ query: '星光' }]);
+  const kugouSearch = await request('/api/kugou/search', 'POST', { query: '海阔天空' });
+  assert.equal(kugouSearch.status, 200);
+  assert.equal(kugouSearch.data.items[0].provider, 'kugou');
+  assert.deepEqual(inputs, [{ query: '星光' }, { query: '海阔天空' }]);
   assert.equal((await request('/api/netease/search')).status, 405);
   assert.equal((await request('/api/qq/search', 'POST', { query: '星光' })).status, 503);
   assert.equal((await request('/api/qq/audio', 'POST', {})).status, 405);
+  assert.equal((await request('/api/discovery/charts?country=cn')).data.provider, 'apple');
+  assert.equal((await request('/api/discovery/charts', 'POST')).status, 405);
 });

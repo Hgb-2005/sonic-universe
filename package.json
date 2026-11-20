@@ -1,0 +1,31 @@
+{
+  "name": "sonic-universe-desktop",
+  "version": "0.39.0",
+  "private": true,
+  "description": "A quiet music companion with desktop wallpaper and immersive lyrics",
+  "author": "Sonic Universe",
+  "main": "desktop/main.cjs",
+  "scripts": {
+    "prestart": "node scripts/stamp-assets.cjs && node scripts/build-wallpaper.cjs && node scripts/build-now-playing.cjs",
+    "start": "electron .",
+    "test": "node --test tests/*.test.cjs",
+    "desktop:pack": "electron-builder --win dir --x64",
+    "predesktop:pack": "node scripts/stamp-assets.cjs && node scripts/build-wallpaper.cjs && node scripts/build-now-playing.cjs",
+    "predesktop:build": "node scripts/stamp-assets.cjs && node scripts/build-wallpaper.cjs && node scripts/build-now-playing.cjs",
+    "desktop:build": "electron-builder --win nsis --x64"
+  },
+  "engines": { "node": ">=24" },
+  "dependencies": { "qishui-music-api": "0.2.2" },
+  "devDependencies": { "electron": "45.3.3", "electron-builder": "26.18.0", "playwright": "1.58.2" },
+  "build": {
+    "appId": "com.sonicuniverse.desktop",
+    "productName": "声波宇宙",
+    "directories": { "output": "release" },
+    "electronDist": "node_modules/electron/dist",
+    "files": ["desktop/**", "outputs/*.html", "outputs/*.js", "outputs/*.css", "outputs/interstellar-drift.mp3", "outputs/assets/**", "outputs/flight-preview.png", "companion/**", "package.json", "!desktop/native/*.cs", "!companion/node_modules/**", "!outputs/assets/reference/**", "!outputs/_*"],
+    "asarUnpack": ["desktop/native/WallpaperHost.exe", "desktop/native/NowPlayingHost.exe"],
+    "win": { "target": "nsis", "icon": "outputs/assets/sonic-icon.png", "signExecutable": false },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true, "createStartMenuShortcut": true },
+    "artifactName": "Sonic-Universe-${version}-${arch}.${ext}"
+  }
+}

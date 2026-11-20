@@ -7,6 +7,9 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { Readable } = require('node:stream');
 const { createProviders } = require('./providers/index.cjs');
+const { createDiscoveryProvider } = require('./providers/discovery.cjs');
+const { matchChartSong } = require('./providers/chart-playback.cjs');
+const { createPlayableVideoProvider } = require('./providers/playable-videos.cjs');
 
 const HOST = '127.0.0.1';
 const DEFAULT_PORT = 8765;
@@ -239,6 +242,11 @@ async function serveStatic(request, response, root, pathname) {
 function createAppServer(options = {}) {
   const port = Number(options.port || DEFAULT_PORT);
   const root = path.resolve(options.root || path.join(__dirname, '..', 'outputs'));
+  const discovery = createDiscoveryProvider({ fetch: options.discoveryFetch });
+  const playableVideos = createPlayableVideoProvider({
+    fetch: options.discoveryFetch,
+    youtubeApiKey: options.youtubeApiKey ?? process.env.SONIC_YOUTUBE_API_KEY,
+  });
   let providers = options.providers || null;
   let media = null;
   const ready = providers
@@ -247,7 +255,8 @@ function createAppServer(options = {}) {
 
   const server = http.createServer(async (request, response) => {
     const origin = request.headers.origin || '';
-    const cors = corsHeaders(origin, port);
+    const cors = options.allowPublishedOrigin === false && origin === 'https://hgb-2005.github.io'
+      ? {} : corsHeaders(origin, port);
     if (origin && !cors['Access-Control-Allow-Origin']) return sendJson(response, 403, { error: 'Origin is not allowed' });
     if (request.method === 'OPTIONS') return sendJson(response, 204, {}, cors);
     const host = String(request.headers.host || '').toLowerCase();
@@ -262,13 +271,33 @@ function createAppServer(options = {}) {
         { id: 'qishui', name: '汽水音乐', available: Boolean(qishui), capabilities: ['search', 'login', 'library', 'audio', 'lyrics'], playback: 'inline' },
         { id: 'netease', name: '网易云音乐', available: providers.has('netease'), capabilities: ['search', 'external-link'], playback: 'external' },
         { id: 'qq', name: 'QQ 音乐', available: providers.has('qq'), capabilities: ['search', 'external-link'], playback: 'external' },
+        { id: 'kugou', name: '酷狗音乐', available: providers.has('kugou'), capabilities: ['search', 'external-link'], playback: 'external' },
       ] }, cors);
-      const publicSearch = /^\/api\/(netease|qq)\/search$/.exec(url.pathname);
+      const publicSearch = /^\/api\/(netease|qq|kugou)\/search$/.exec(url.pathname);
       if (publicSearch) {
         if (request.method !== 'POST') return sendJson(response, 405, { error: 'Method not allowed' }, cors);
         const provider = providers.get(publicSearch[1]);
         if (!provider) return sendJson(response, 503, { error: '这个音乐平台暂时不可用，请换个平台搜索。', code: 'provider-unavailable' }, cors);
         return sendJson(response, 200, await provider.search(await readJson(request)), cors);
+      }
+      if (url.pathname === '/api/discovery/charts/match') {
+        if (request.method !== 'POST') return sendJson(response, 405, { error: 'Method not allowed' }, cors);
+        if (!qishui?.search) return sendJson(response, 503, { error: '汽水音乐入口暂不可用。', code: 'provider-unavailable' }, cors);
+        const result = await matchChartSong(input => qishui.search(input), await readJson(request));
+        return sendJson(response, 200, result, cors);
+      }
+      if (url.pathname === '/api/discovery/playable-videos') {
+        if (request.method !== 'GET') return sendJson(response, 405, { error: 'Method not allowed' }, cors);
+        const { searchParams } = url;
+        const result = await playableVideos.search({ query: searchParams.get('query'), source: searchParams.get('source') ?? undefined, limit: searchParams.get('limit') });
+        return sendJson(response, 200, result, cors);
+      }
+      if (url.pathname === '/api/discovery/charts' || url.pathname === '/api/discovery/music-videos') {
+        if (request.method !== 'GET') return sendJson(response, 405, { error: 'Method not allowed' }, cors);
+        const { searchParams } = url;
+        const input = { country: searchParams.get('country'), limit: searchParams.get('limit'), query: searchParams.get('query') };
+        const result = url.pathname.endsWith('/charts') ? await discovery.charts(input) : await discovery.musicVideos(input);
+        return sendJson(response, 200, result, cors);
       }
       if (!url.pathname.startsWith('/api/qishui/') && !url.pathname.startsWith('/media/')) {
         if (request.method !== 'GET' && request.method !== 'HEAD') return sendJson(response, 405, { error: 'Method not allowed' }, cors);
@@ -291,16 +320,39 @@ function createAppServer(options = {}) {
       }
       if (url.pathname === '/api/qishui/logout' && request.method === 'POST') return sendJson(response, 200, await qishui.logout(), cors);
       if (url.pathname === '/api/qishui/search' && request.method === 'POST') return sendJson(response, 200, await qishui.search(await readJson(request)), cors);
+      if (url.pathname === '/api/qishui/discovery' && request.method === 'GET') {
+        if (!qishui.discovery) return sendJson(response, 501, { error: '当前汽水音乐入口不支持推荐。', code: 'unsupported' }, cors);
+        const { searchParams } = url;
+        return sendJson(response, 200, await qishui.discovery({ limit: searchParams.get('limit'), preference: searchParams.get('preference') }), cors);
+      }
       if (url.pathname === '/api/qishui/library/liked' && request.method === 'GET') {
-        return sendJson(response, 200, await qishui.liked({ limit: url.searchParams.get('limit'), offset: url.searchParams.get('offset') }), cors);
+        const { searchParams } = url;
+        return sendJson(response, 200, await qishui.liked({
+          limit: searchParams.get('limit'), offset: searchParams.get('offset'),
+          snapshot: searchParams.get('snapshot'), refresh: searchParams.get('refresh') === '1',
+        }), cors);
       }
       if (url.pathname === '/api/qishui/library/playlists' && request.method === 'GET') {
         return sendJson(response, 200, await qishui.playlists({ limit: url.searchParams.get('limit'), offset: url.searchParams.get('offset') }), cors);
       }
       let match = /^\/api\/qishui\/playlists\/(\d{1,30})$/.exec(url.pathname);
-      if (match && request.method === 'GET') return sendJson(response, 200, await qishui.playlist(match[1], { limit: url.searchParams.get('limit'), offset: url.searchParams.get('offset') }), cors);
+      if (match && request.method === 'GET') {
+        const { searchParams } = url;
+        return sendJson(response, 200, await qishui.playlist(match[1], {
+          limit: searchParams.get('limit'), offset: searchParams.get('offset'), ownerId: searchParams.get('ownerId'),
+        }), cors);
+      }
       match = /^\/api\/qishui\/songs\/(\d{1,30})\/lyrics$/.exec(url.pathname);
       if (match && request.method === 'GET') return sendJson(response, 200, await qishui.lyrics(match[1]), cors);
+      if (url.pathname === '/api/qishui/songs/resolve' && request.method === 'GET') {
+        if (!qishui.songFromShare) return sendJson(response, 501, { error: '当前汽水音乐入口不支持短链接。', code: 'unsupported' }, cors);
+        return sendJson(response, 200, await qishui.songFromShare(url.searchParams.get('share') || ''), cors);
+      }
+      match = /^\/api\/qishui\/songs\/(\d{1,30})$/.exec(url.pathname);
+      if (match && request.method === 'GET') {
+        if (!qishui.song) return sendJson(response, 501, { error: '当前汽水音乐入口不支持歌曲详情。', code: 'unsupported' }, cors);
+        return sendJson(response, 200, await qishui.song(match[1]), cors);
+      }
       match = /^\/api\/qishui\/tracks\/(\d{1,30})\/cover$/.exec(url.pathname);
       if (match && request.method === 'GET') {
         const cover = await qishui.cover(match[1]);

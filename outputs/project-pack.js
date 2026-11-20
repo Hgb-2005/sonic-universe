@@ -5,7 +5,11 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function() {
   'use strict';
   const MAGIC = 'SONICPACK1\n', MAX = 1024 * 1024 * 1024, HEADER_MAX = 24 * 1024 * 1024;
-  const KEYS = ['session','preferences','film','instrument','refinement','drafts','visual-presets-v1','particle-engine'].map(k => 'sonic-universe-'+k);
+  const KEYS = [
+    ...['session','preferences','film','instrument','refinement','drafts','visual-presets-v1','particle-engine'].map(k => 'sonic-universe-'+k),
+    'sonic-listening-room-v1',
+    'sonic-library-recent-v1',
+  ];
   const STATES = ['library','atelier','background'];
   function validHeader(h) {
     if (!h || h.format !== 'sonic-universe-project' || h.version !== 1 || !Array.isArray(h.state) || !Array.isArray(h.media) || !Array.isArray(h.preferences) || h.media.length > 2000) throw Error('不是当前版本的声波宇宙备份。');

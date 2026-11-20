@@ -1,0 +1,7 @@
+{
+  "name": "sonic-local-metadata-build",
+  "private": true,
+  "scripts": { "build": "node build.cjs" },
+  "dependencies": { "music-metadata": "12.7.0" },
+  "devDependencies": { "esbuild": "0.25.12" }
+}

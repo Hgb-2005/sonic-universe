@@ -6,6 +6,7 @@ async function createProviders(options = {}) {
   const providers = new Map();
   providers.set('netease', createPublicSearchProvider('netease', options));
   providers.set('qq', createPublicSearchProvider('qq', options));
+  providers.set('kugou', createPublicSearchProvider('kugou', options));
   try {
     const { createQishuiProvider } = require('./qishui.cjs');
     const qishui = await createQishuiProvider(options);

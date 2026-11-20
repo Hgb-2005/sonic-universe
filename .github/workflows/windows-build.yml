@@ -1,0 +1,26 @@
+name: Build Sonic Universe for Windows
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  installer:
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm test
+      - run: node scripts/stamp-assets.cjs --check
+      - run: npm run desktop:build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sonic-universe-windows-x64
+          path: release/Sonic-Universe-*-x64.exe
+          if-no-files-found: error
