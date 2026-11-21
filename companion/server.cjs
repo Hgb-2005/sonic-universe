@@ -5,7 +5,8 @@ const fs = require('node:fs');
 const fsp = require('node:fs/promises');
 const path = require('node:path');
 const crypto = require('node:crypto');
-const { Readable } = require('node:stream');
+const { once } = require('node:events');
+const { pipeline } = require('node:stream/promises');
 const { createProviders } = require('./providers/index.cjs');
 const { createDiscoveryProvider } = require('./providers/discovery.cjs');
 const { matchChartSong } = require('./providers/chart-playback.cjs');
@@ -15,7 +16,9 @@ const HOST = '127.0.0.1';
 const DEFAULT_PORT = 8765;
 const BODY_LIMIT = 64 * 1024;
 const MEDIA_LIMIT = 256;
+const MEDIA_TIMEOUT = 12000;
 const COVER_LIMIT = 4 * 1024 * 1024;
+const COVER_TIMEOUT = 8000;
 const COVER_HOSTS = Object.freeze([
   'douyinpic.com',
   'douyinstatic.com',
@@ -57,6 +60,7 @@ function corsHeaders(origin, port) {
 }
 
 function sendJson(response, status, data, extra = {}) {
+  if (response.destroyed || response.writableEnded) return;
   const body = JSON.stringify(data);
   response.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
@@ -136,24 +140,64 @@ function createMediaCache(provider, options = {}) {
   };
 }
 
-async function proxyMedia(request, response, entry, extraHeaders = {}) {
-  const headers = { 'Accept': 'audio/*,application/octet-stream' };
+async function proxyMedia(request, response, entry, extraHeaders, timeout) {
+  const headers = { 'Accept': 'audio/*,application/octet-stream', 'Accept-Encoding': 'identity' };
   if (request.headers.range) headers.Range = request.headers.range;
-  const upstream = await fetch(entry.mediaUrl, { headers, redirect: 'follow' });
-  if (!upstream.ok && upstream.status !== 206) throw Object.assign(new Error('Media upstream failed'), { status: 502 });
-  const length = Number(upstream.headers.get('content-length'));
-  const finalHeaders = {
-    'Content-Type': upstream.headers.get('content-type') || 'audio/mpeg',
-    'Accept-Ranges': upstream.headers.get('accept-ranges') || 'bytes',
-    'Cache-Control': 'private, no-store',
-    'X-Content-Type-Options': 'nosniff',
-    ...extraHeaders,
-  };
-  if (Number.isFinite(length)) finalHeaders['Content-Length'] = String(length);
-  if (upstream.headers.get('content-range')) finalHeaders['Content-Range'] = upstream.headers.get('content-range');
-  response.writeHead(upstream.status, finalHeaders);
-  if (!upstream.body) return response.end();
-  Readable.fromWeb(upstream.body).on('error', () => response.destroy()).pipe(response);
+  const controller = new AbortController(), { signal } = controller;
+  const disconnected = () => controller.abort();
+  const deadline = () => setTimeout(() => controller.abort(Object.assign(
+    new Error('Media upstream timed out'), { status: 504, code: 'timeout' },
+  )), timeout);
+  let timer = deadline();
+  response.once('close', disconnected);
+  try {
+    const upstream = await fetch(entry.mediaUrl, { headers, redirect: 'follow', signal });
+    clearTimeout(timer);
+    const range = upstream.headers.get('content-range');
+    const finalHeaders = {
+      'Content-Type': upstream.headers.get('content-type') || 'audio/mpeg',
+      'Accept-Ranges': upstream.headers.get('accept-ranges') || 'bytes',
+      'Cache-Control': 'private, no-store',
+      'X-Content-Type-Options': 'nosniff',
+      ...extraHeaders,
+    };
+    if (range) finalHeaders['Content-Range'] = range;
+    if (upstream.status === 416) {
+      response.writeHead(416, finalHeaders).end();
+      return;
+    }
+    if (!upstream.ok) throw new Error('Media upstream failed');
+    const length = upstream.headers.get('content-length');
+    if (length !== null && !upstream.headers.get('content-encoding')) finalHeaders['Content-Length'] = length;
+    if (upstream.body) {
+      const reader = upstream.body.getReader();
+      try {
+        // Bound waiting for upstream data, while honoring downstream backpressure.
+        while (!signal.aborted) {
+          timer = deadline();
+          const { done, value } = await reader.read();
+          clearTimeout(timer);
+          if (done) break;
+          if (!response.headersSent) response.writeHead(upstream.status, finalHeaders);
+          if (!response.write(value)) await once(response, 'drain', { signal });
+        }
+      } finally {
+        reader.releaseLock();
+      }
+    }
+    signal.throwIfAborted();
+    if (!response.headersSent) response.writeHead(upstream.status, finalHeaders);
+    response.end();
+  } catch {
+    if (response.destroyed) return;
+    if (response.headersSent) { response.destroy(); return; }
+    if (signal.reason?.code === 'timeout') throw signal.reason;
+    throw Object.assign(new Error('Media upstream failed'), { status: 502, code: 'upstream-audio' });
+  } finally {
+    clearTimeout(timer);
+    response.off('close', disconnected);
+    controller.abort();
+  }
 }
 
 function isTrustedCoverUrl(value) {
@@ -168,51 +212,67 @@ function isTrustedCoverUrl(value) {
   }
 }
 
-async function proxyCover(response, sourceUrl, extraHeaders = {}) {
-  let current = String(sourceUrl || '');
-  let upstream = null;
-  for (let redirect = 0; redirect < 4; redirect++) {
-    if (!isTrustedCoverUrl(current)) {
-      throw Object.assign(new Error('Cover source is not trusted'), { status: 502 });
+async function proxyCover(response, sourceUrl, extraHeaders, timeout) {
+  const controller = new AbortController();
+  const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(timeout)]);
+  const disconnected = () => controller.abort();
+  response.once('close', disconnected);
+  try {
+    let current = String(sourceUrl || '');
+    let upstream = null;
+    for (let redirect = 0; redirect < 4; redirect++) {
+      if (!isTrustedCoverUrl(current)) throw new Error('Cover source is not trusted');
+      upstream = await fetch(current, {
+        redirect: 'manual',
+        signal,
+        headers: {
+          Accept: 'image/avif,image/webp,image/png,image/jpeg;q=0.9,*/*;q=0.1',
+          Referer: 'https://qishui.douyin.com/',
+          'User-Agent': 'Mozilla/5.0 SonicUniverse/31',
+        },
+      });
+      if (upstream.status < 300 || upstream.status >= 400) break;
+      const location = upstream.headers.get('location');
+      await upstream.body?.cancel();
+      if (!location) throw new Error('Cover redirect is incomplete');
+      current = new URL(location, current).toString();
+      upstream = null;
     }
-    upstream = await fetch(current, {
-      redirect: 'manual',
-      headers: {
-        Accept: 'image/avif,image/webp,image/png,image/jpeg;q=0.9,*/*;q=0.1',
-        Referer: 'https://qishui.douyin.com/',
-        'User-Agent': 'Mozilla/5.0 SonicUniverse/31',
-      },
+    if (!upstream?.ok || !upstream.body) throw new Error('Cover unavailable');
+    const contentType = String(upstream.headers.get('content-type') || '').toLowerCase().split(';')[0].trim();
+    if (!/^image\/(?:avif|gif|jpeg|png|webp)$/.test(contentType)) {
+      throw new Error('Cover upstream did not return an image');
+    }
+    if (Number(upstream.headers.get('content-length')) > COVER_LIMIT) throw new Error('Cover image is too large');
+    let size = 0;
+    const chunks = [];
+    for await (const chunk of upstream.body) {
+      size += chunk.byteLength;
+      if (size > COVER_LIMIT) throw new Error('Cover image is too large');
+      chunks.push(chunk);
+    }
+    signal.throwIfAborted();
+    if (!size) throw new Error('Cover image is empty');
+    response.writeHead(200, {
+      'Content-Type': contentType,
+      'Content-Length': String(size),
+      'Cache-Control': 'private, max-age=86400',
+      'Content-Security-Policy': "default-src 'none'",
+      'Cross-Origin-Resource-Policy': 'cross-origin',
+      'X-Content-Type-Options': 'nosniff',
+      ...extraHeaders,
     });
-    if (upstream.status < 300 || upstream.status >= 400) break;
-    const location = upstream.headers.get('location');
-    if (!location) throw Object.assign(new Error('Cover redirect is incomplete'), { status: 502 });
-    current = new URL(location, current).toString();
-    upstream = null;
+    response.end(Buffer.concat(chunks, size));
+  } catch {
+    if (response.destroyed) return;
+    if (signal.reason?.name === 'TimeoutError') {
+      throw Object.assign(new Error('Cover request timed out'), { status: 504, code: 'timeout' });
+    }
+    throw Object.assign(new Error('Cover unavailable'), { status: 502, code: 'cover-unavailable' });
+  } finally {
+    response.off('close', disconnected);
+    controller.abort();
   }
-  if (!upstream) throw Object.assign(new Error('Too many cover redirects'), { status: 502 });
-  if (!upstream.ok) throw Object.assign(new Error('Cover upstream failed'), { status: 502 });
-  const contentType = String(upstream.headers.get('content-type') || '').toLowerCase();
-  if (!/^image\/(?:avif|gif|jpeg|png|webp)(?:;|$)/.test(contentType)) {
-    throw Object.assign(new Error('Cover upstream did not return an image'), { status: 502 });
-  }
-  const declaredLength = Number(upstream.headers.get('content-length'));
-  if (Number.isFinite(declaredLength) && declaredLength > COVER_LIMIT) {
-    throw Object.assign(new Error('Cover image is too large'), { status: 502 });
-  }
-  const body = Buffer.from(await upstream.arrayBuffer());
-  if (!body.length || body.length > COVER_LIMIT) {
-    throw Object.assign(new Error('Cover image is invalid or too large'), { status: 502 });
-  }
-  response.writeHead(200, {
-    'Content-Type': contentType.split(';')[0],
-    'Content-Length': String(body.length),
-    'Cache-Control': 'private, max-age=86400',
-    'Content-Security-Policy': "default-src 'none'",
-    'Cross-Origin-Resource-Policy': 'cross-origin',
-    'X-Content-Type-Options': 'nosniff',
-    ...extraHeaders,
-  });
-  response.end(body);
 }
 
 async function serveStatic(request, response, root, pathname) {
@@ -232,9 +292,13 @@ async function serveStatic(request, response, root, pathname) {
       'X-Content-Type-Options': 'nosniff',
     });
     if (request.method === 'HEAD') return response.end();
-    fs.createReadStream(filename).pipe(response);
+    await pipeline(fs.createReadStream(filename), response);
     return true;
   } catch {
+    if (response.destroyed || response.headersSent) {
+      if (!response.destroyed) response.destroy();
+      return true;
+    }
     return false;
   }
 }
@@ -262,7 +326,9 @@ function createAppServer(options = {}) {
     const host = String(request.headers.host || '').toLowerCase();
     const validHost = host === `127.0.0.1:${port}` || host === `localhost:${port}`;
     if (!validHost) return sendJson(response, 403, { error: 'Invalid host' }, cors);
-    const url = new URL(request.url || '/', `http://${host}`);
+    let url;
+    try { url = new URL(request.url || '/', `http://${host}`); }
+    catch { return sendJson(response, 400, { error: 'Invalid request URL' }, cors); }
     try {
       if (!providers) providers = await ready;
       const qishui = providers.get('qishui');
@@ -310,7 +376,7 @@ function createAppServer(options = {}) {
         media ||= createMediaCache(qishui);
         const entry = media.get(url.pathname.slice('/media/'.length));
         if (!entry) return sendJson(response, 404, { error: 'Media token expired' }, cors);
-        return proxyMedia(request, response, entry, cors);
+        return await proxyMedia(request, response, entry, cors, options.mediaTimeoutMs ?? MEDIA_TIMEOUT);
       }
       if (url.pathname === '/api/qishui/login-status' && request.method === 'GET') return sendJson(response, 200, await qishui.authStatus(), cors);
       if (url.pathname === '/api/qishui/login/start' && request.method === 'POST') return sendJson(response, 200, await qishui.loginStart(), cors);
@@ -356,7 +422,7 @@ function createAppServer(options = {}) {
       match = /^\/api\/qishui\/tracks\/(\d{1,30})\/cover$/.exec(url.pathname);
       if (match && request.method === 'GET') {
         const cover = await qishui.cover(match[1]);
-        return proxyCover(response, cover.url, cors);
+        return await proxyCover(response, cover.url, cors, options.coverTimeoutMs ?? COVER_TIMEOUT);
       }
       match = /^\/api\/qishui\/tracks\/(\d{1,30})\/audio$/.exec(url.pathname);
       if (match && request.method === 'POST') {

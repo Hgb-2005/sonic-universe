@@ -2,6 +2,8 @@
 
 const SEARCH_PAGE_SIZE = 20;
 const SEARCH_PAGE_LIMIT = 3;
+const CANDIDATE_LIMIT = 15;
+const DURATION_TOLERANCE = 2;
 
 function chartText(value) {
   if (typeof value !== 'string' || value.length > 240 || /[\u0000-\u001f\u007f]/.test(value)) return '';
@@ -18,14 +20,44 @@ function artistKey(value) {
   return titleKey(value).replace(/\s*、\s*|\s+&\s+/g, '、');
 }
 
+function knownDuration(value) {
+  return Number.isFinite(value) && value > 0 && value <= 86400;
+}
+
+function recordingRank(track, duration, album) {
+  const hasDuration = knownDuration(track.duration);
+  const trackAlbum = titleKey(track.album);
+  if ((duration && hasDuration && Math.abs(track.duration - duration) > DURATION_TOLERANCE)
+    || (album && trackAlbum && trackAlbum !== album)) return 2;
+  if ((duration && !hasDuration) || (album && !trackAlbum)) return 1;
+  return 0;
+}
+
+function matchResult(matches, includeCandidates, incomplete = false) {
+  const ranked = [...matches.values()].sort((left, right) => left.rank - right.rank);
+  const compatible = ranked.filter(candidate => candidate.rank === 0);
+  const item = !incomplete && compatible.length === 1 ? compatible[0].track : null;
+  if (!includeCandidates) return { item };
+  const reason = incomplete ? 'incomplete' : item ? 'matched' : compatible.length > 1 ? 'ambiguous' : 'no-match';
+  return { item, reason, candidates: ranked.slice(0, CANDIDATE_LIMIT).map(candidate => candidate.track) };
+}
+
 async function matchChartSong(search, input) {
   const name = chartText(input?.name), artist = chartText(input?.artist);
   if (!name || !artist) {
     throw Object.assign(new Error('榜单歌曲需要有效的歌名和歌手。'), { status: 400, code: 'invalid-chart-song' });
   }
+  const duration = input.duration ?? 0;
+  const album = titleKey(input.album);
+  const invalidAlbum = input.album != null && !album
+    && (typeof input.album !== 'string' || input.album.trim() !== '');
+  if ((duration !== 0 && !knownDuration(duration)) || invalidAlbum) {
+    throw Object.assign(new Error('曲目时长或专辑格式不正确。'), { status: 400, code: 'invalid-chart-song' });
+  }
 
   const expectedTitle = titleKey(name), expectedArtist = artistKey(artist);
-  let match = null;
+  const includeCandidates = input.includeCandidates === true;
+  const matches = new Map();
   let offset = 0;
   for (let page = 0; page < SEARCH_PAGE_LIMIT; page++) {
     const result = await search({ query: `${name} ${artist}`, limit: SEARCH_PAGE_SIZE, offset });
@@ -35,17 +67,17 @@ async function matchChartSong(search, input) {
     for (const track of result.items) {
       if (track?.provider !== 'qishui' || typeof track.mediaId !== 'string' || !/^\d{1,30}$/.test(track.mediaId)) continue;
       if (titleKey(track.name) !== expectedTitle || artistKey(track.artist) !== expectedArtist) continue;
-      // Never choose between two editions with identical titles and credits.
-      if (match && match.mediaId !== track.mediaId) return { item: null };
-      match ||= track;
+      if (!matches.has(track.mediaId)) {
+        matches.set(track.mediaId, { track, rank: recordingRank(track, duration, album) });
+      }
     }
-    if (result.hasMore !== true) return { item: match };
-    if (!Number.isSafeInteger(result.nextOffset) || result.nextOffset <= offset) return { item: null };
+    if (result.hasMore !== true) return matchResult(matches, includeCandidates);
+    if (!Number.isSafeInteger(result.nextOffset) || result.nextOffset <= offset) break;
     offset = result.nextOffset;
   }
 
   // An incomplete result set cannot establish an unambiguous match.
-  return { item: null };
+  return matchResult(matches, includeCandidates, true);
 }
 
 module.exports = { matchChartSong };

@@ -436,8 +436,13 @@
         const params = new URLSearchParams({ country, limit: String(limit) });
         return requestFrom(baseUrl,'/api/discovery/charts?' + params,undefined,10000,signal);
       },
-      matchChartTrack({ name, artist }, { signal } = {}) {
-        return requestFrom(baseUrl,'/api/discovery/charts/match',{name,artist},10000,signal);
+      matchChartTrack({ name, artist, duration, album }, { signal, includeCandidates } = {}) {
+        const payload = { name, artist };
+        if (Number.isFinite(duration) && duration > 0) payload.duration = duration;
+        const albumName = typeof album === 'string' ? album.trim() : '';
+        if (albumName) payload.album = albumName;
+        if (includeCandidates === true) payload.includeCandidates = true;
+        return requestFrom(baseUrl, '/api/discovery/charts/match', payload, 10000, signal);
       },
       musicVideos(query, { country = 'cn', limit = 20, signal } = {}) {
         const params = new URLSearchParams({ query, country, limit: String(limit) });
@@ -447,9 +452,9 @@
         const params=new URLSearchParams({query,source,limit:String(limit)});
         return requestFrom(baseUrl,'/api/discovery/playable-videos?'+params,undefined,10000,signal);
       },
-      searchByProvider(provider, query) {
+      searchByProvider(provider, query, { signal } = {}) {
         if (provider !== PROVIDER && !Object.hasOwn(EXTERNAL_PROVIDERS, provider)) return Promise.reject(new Error('不支持这个音乐平台。'));
-        return request(`/api/${provider}/search`, { query, limit: 30, offset: 0 }, 12000);
+        return requestFrom(baseUrl, `/api/${provider}/search`, { query, limit: 30, offset: 0 }, 12000, signal);
       },
       liked: () => request('/api/qishui/library/liked?limit=50&offset=0', undefined, 12000),
       likedAll,
@@ -457,7 +462,7 @@
       playlistsAll,
       playlist: id => playlistPage(id),
       playlistAllTracks,
-      lyrics: id => request(`/api/qishui/songs/${encodeURIComponent(id)}/lyrics`, undefined, 10000),
+      lyrics: (id,{signal}={}) => requestFrom(baseUrl,`/api/qishui/songs/${encodeURIComponent(id)}/lyrics`,undefined,10000,signal),
       audio: (mediaId, { signal } = {}) => requestFrom(baseUrl, `/api/qishui/tracks/${encodeURIComponent(mediaId)}/audio`, {}, 15000, signal),
       coverUrl,
       like: (mediaId, liked) => request('/api/qishui/like', { id: mediaId, liked }, 12000),

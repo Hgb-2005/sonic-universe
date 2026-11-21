@@ -5,6 +5,7 @@ const { createQishuiApi, createQishuiDeviceId } = require('qishui-music-api');
 const { EncryptedQishuiSessionStore } = require('../session-store.cjs');
 
 const MAX_TEXT = 180;
+const MAX_LYRIC_LENGTH = 250000;
 const DEFAULT_COVER_TEMPLATE = 'tplv-b829550vbb';
 const COVER_SIZE = 360;
 const LIKED_SNAPSHOT_TTL = 5 * 60 * 1000;
@@ -139,11 +140,14 @@ function lyricData(value) {
   const content = entity.content || entity.lyric_content || info?.content || '';
   const type = text(entity.type || info?.type).toLowerCase();
   const raw = typeof content === 'string' ? content : '';
+  const generic = type !== 'lrc' && raw.length <= MAX_LYRIC_LENGTH
+    && /^\s*(?:<|WEBVTT(?:\s|$))/.test(raw);
   return {
     type,
     lrc: type === 'lrc' ? raw : krcToLrc(raw),
     timedLrc: type === 'lrc' ? undefined : krcToLrc(raw, true),
-    krc: type !== 'lrc' && /^\s*\[\d{1,10},\d{1,10}\]/m.test(raw) ? raw.slice(0, 250000) : undefined,
+    krc: type !== 'lrc' && /^\s*\[\d{1,10},\d{1,10}\]/m.test(raw) ? raw.slice(0, MAX_LYRIC_LENGTH) : undefined,
+    ...(generic ? { raw } : {}),
   };
 }
 

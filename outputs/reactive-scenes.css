@@ -94,6 +94,8 @@
 #listeningRoom .lr-scene-preferences { margin-top: 15px; padding-top: 13px; border-top: 1px solid #d7e4ff21; }
 #listeningRoom .lr-scene-preferences .lr-check { margin: 0; }
 @media (max-width: 700px) {
+  #listeningRoom .lr-visual-view { flex-wrap: wrap; justify-content: center; }
+  #listeningRoom .lr-visual-view .lr-view-links { justify-content: center; }
   #listeningRoom .lr-tabs { max-width: 100%; }
   #listeningRoom .lr-tab { padding-inline: 8px; gap: 4px; }
   #listeningRoom[data-mode=visual] .lr-stage, #listeningRoom[data-mode=listen]:is([data-lyric-style=fly],[data-lyric-style=effects]) .lr-stage { width: calc(100% - 28px); min-height: 51svh; }

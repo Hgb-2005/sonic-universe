@@ -19,6 +19,18 @@ jobs:
       - run: npm test
       - run: node scripts/stamp-assets.cjs --check
       - run: npm run desktop:build
+      - name: Verify packaged wallpaper quarantine
+        run: node scripts/desktop-smoke.cjs --packaged --quarantine-only
+      - name: Verify packaged desktop recovery
+        run: node scripts/desktop-lifecycle-smoke.cjs --packaged
+      - name: Verify packaged playback queue
+        run: node scripts/queue-smoke.cjs --packaged
+      - name: Verify packaged online playback
+        run: node scripts/music-upgrade-smoke.cjs --packaged
+      - name: Verify packaged library search
+        run: node scripts/library-search-smoke.cjs --packaged
+      - name: Verify packaged lyrics
+        run: node scripts/now-playing-smoke.cjs --packaged
       - uses: actions/upload-artifact@v4
         with:
           name: sonic-universe-windows-x64

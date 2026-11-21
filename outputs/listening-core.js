@@ -6,7 +6,7 @@
 })(typeof globalThis === 'object' ? globalThis : this, function () {
   'use strict';
   const clamp = (value, min, max) => Math.min(max, Math.max(min, Number.isFinite(value) ? value : min));
-  const defaults = Object.freeze({ mode: 'work', lyricStyle:'stage', lyricEffect:'orbit', background: 'geometry', visualScene:'auto', reactiveBackdrop:false, beatClock:true, beatRatio:1, color: 'lilac', brightness: 55, response: 35, desktopLyrics: true, energySaver: true });
+  const defaults = Object.freeze({ mode: 'work', lyricStyle:'list', lyricEffect:'orbit', background: 'geometry', visualScene:'auto', reactiveBackdrop:false, beatClock:true, beatRatio:1, color: 'lilac', brightness: 55, response: 35, desktopLyrics: true, energySaver: true });
   function normalize(value) {
     const source = value && typeof value === 'object' ? value : {};
     return {

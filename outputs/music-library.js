@@ -20,7 +20,6 @@
         </nav>
         <div class="sl-sidebar-title"><h2>我的歌单</h2><button class="lr-icon" data-sl-command="new" aria-label="新建歌单" title="新建歌单">＋</button></div>
         <nav class="sl-playlists" data-sl-playlists aria-label="我的歌单"></nav>
-        <button class="sl-sidebar-action" data-action="online">${icon('music')}搜索在线音乐 ${icon('arrow')}</button>
       </aside>
       <section class="sl-content" aria-labelledby="sl-title">
         <div class="sl-heading">
@@ -31,13 +30,38 @@
           </div>
         </div>
         <div class="sl-tools">
-          <button class="sl-button sl-play-all" data-sl-command="play-all">${icon('play')}播放列表</button>
+          <button class="sl-button sl-play-all" data-sl-command="play-all">${icon('play')}<span>播放列表</span></button>
           <button class="sl-button sl-queue-shortcut" data-action="queue">${icon('queue')}播放队列</button>
           <button class="sl-button" data-sl-command="rename" hidden>重命名歌单</button>
           <button class="sl-button" data-sl-command="refresh-synced" hidden>从汽水刷新</button>
           <button class="sl-button" data-sl-command="enrich" hidden>批量补全</button>
-          <label class="sl-search"><span aria-hidden="true">⌕</span><input type="search" data-sl-search aria-label="搜索曲库" placeholder="搜索歌名、歌手或专辑" autocomplete="off"></label>
+          <button class="sl-button" type="button" data-sl-command="select" aria-pressed="false" aria-controls="sl-selection">选择歌曲</button>
+          <div class="sl-search-tools" role="search" aria-label="音乐搜索">
+            <label class="sl-search"><span aria-hidden="true">⌕</span><input type="search" data-sl-search aria-label="搜索曲库" placeholder="搜索歌名、歌手或专辑" maxlength="100" autocomplete="off"></label>
+            <button class="sl-button" type="button" data-action="online">搜在线</button>
+          </div>
           <select class="sl-sort" data-sl-sort aria-label="排序方式"><option value="default">默认顺序</option><option value="name">按歌名</option><option value="artist">按歌手</option><option value="duration">按时长</option></select>
+        </div>
+        <div class="sl-selection" id="sl-selection" hidden>
+          <button class="sl-button" type="button" data-sl-command="select-page">选择已显示歌曲</button>
+          <button class="sl-button" type="button" data-sl-command="select-clear">清除选择</button>
+          <button class="sl-button" type="button" data-sl-command="batch-add" aria-haspopup="dialog">加入歌单</button>
+          <button class="sl-button" type="button" data-sl-command="batch-remove" hidden>移出当前歌单</button>
+          <button class="sl-button" type="button" data-sl-command="move-up" hidden>上移</button>
+          <button class="sl-button" type="button" data-sl-command="move-down" hidden>下移</button>
+          <span class="sl-selection-count" role="status" data-sl-selection-count></span>
+        </div>
+        <div class="sl-selection-feedback">
+          <span role="status" data-sl-save-status></span>
+          <button class="sl-button" type="button" data-sl-command="retry-save" hidden>重试保存</button>
+        </div>
+        <div class="sl-selection-feedback" data-sl-read-failed hidden>
+          <span role="status">暂时无法读取本机曲库，已保留原有内容。</span>
+          <button class="sl-button" type="button" data-sl-command="retry-read">重试读取曲库</button>
+        </div>
+        <div class="sl-selection-feedback" data-sl-write-failed hidden>
+          <span role="status">曲库更改尚未保存，请保留当前应用。</span>
+          <button class="sl-button" type="button" data-sl-command="retry-library-save">重试保存</button>
         </div>
         <div class="sl-table-head" aria-hidden="true"><span>歌曲</span><span>专辑</span><span>来源</span><span>时长</span><span></span></div>
         <ol class="sl-tracks" data-sl-tracks></ol>
@@ -54,6 +78,11 @@
         <div class="sl-member-options" data-sl-member-options></div>
         <div class="sl-dialog-actions"><button class="sl-button" type="button" data-sl-command="new">新建歌单</button><button class="sl-button sl-play-all" type="submit">保存选择</button></div>
       </form></dialog>
+      <dialog class="lr-dialog" data-sl-batch-add aria-labelledby="sl-batch-title"><form>
+        <div class="lr-dialog-heading"><h2 id="sl-batch-title">加入歌单</h2><button class="lr-icon" type="button" data-sl-close aria-label="关闭加入歌单">${icon('close')}</button></div>
+        <label class="lr-field"><span class="lr-field-title">选择歌单</span><select class="lr-search-input" name="playlistId" required></select></label>
+        <div class="sl-dialog-actions"><button class="sl-button" type="button" data-sl-close>取消</button><button class="sl-button sl-play-all" type="submit">加入</button></div>
+      </form></dialog>
       <dialog class="lr-dialog" data-sl-queue aria-labelledby="sl-queue-title">
         <div class="lr-dialog-heading"><div><h2 id="sl-queue-title">歌曲选项</h2><p data-sl-queue-song></p></div><button class="lr-icon" type="button" data-sl-close aria-label="关闭歌曲选项">${icon('close')}</button></div>
         <div class="sl-dialog-actions"><button class="sl-button" type="button" data-sl-command="track-details" hidden>编辑歌曲资料</button><button class="sl-button sl-play-all" type="button" data-sl-command="queue-next">下一首播放</button><button class="sl-button" type="button" data-sl-command="queue-end">加入队列末尾</button></div>
@@ -67,7 +96,12 @@
 
     const $=selector=>root.querySelector(selector);
     const tracksList=$('[data-sl-tracks]'), search=$('[data-sl-search]'), sort=$('[data-sl-sort]');
+    const player=root.closest('#listeningRoom')?.querySelector('.lr-player-wrap');
+    const playerResize=player&&new ResizeObserver(()=>{
+      root.parentElement.style.setProperty('--sl-player-clearance',(player.offsetHeight+28)+'px');
+    });
     const edit=$('[data-sl-edit]'), membership=$('[data-sl-membership]'), queueOptions=$('[data-sl-queue]');
+    const batchAdd=$('[data-sl-batch-add]'), selection=$('#sl-selection');
     const enrich=$('[data-sl-enrich]'), enrichStatus=$('[data-sl-enrich-status]'), enrichResults=$('[data-sl-enrich-results]');
     const scanButton=$('[data-sl-command="scan-enrich"]'), applyButton=$('[data-sl-command="apply-enrich"]');
     const details=window.SonicTrackDetails.mount(root,api);
@@ -76,6 +110,8 @@
     let database, view='all', shown=pageSize, filtered=[];
     let playback, playbackKey=[], editId=null, memberId=null, addingToNew=false, queueTrackId=null;
     let enrichJob, enrichIds=[], matches=[];
+    let selectionMode=false, playlistSaving=false, playlistSaveFailed=false;
+    const selected=new Set();
 
     function viewTracks() {
       const byId=ids=>{
@@ -89,9 +125,10 @@
       return playlist?byId(playlist.trackIds):database.tracks;
     }
 
-    function setView(value) {
+    function setView(value,query='') {
+      if(view!==value){selectionMode=false;selected.clear();}
       view=value;
-      search.value='';sort.value='default';shown=pageSize;
+      search.value=query;sort.value='default';shown=pageSize;
       render();
       root.querySelector('[data-sl-view="'+CSS.escape(view)+'"]')?.focus({preventScroll:true});
     }
@@ -117,7 +154,8 @@
     function makeTrack(track) {
       const row=document.createElement('li');
       row.className='sl-track';row.dataset.slId=track.id;
-      row.innerHTML=`<button type="button" class="sl-song" data-sl-command="play"><span class="sl-art">${icon('music')}</span><span class="sl-song-copy"><strong></strong><small></small></span><span class="sl-active" aria-hidden="true">${icon('sound')}</span></button><span class="sl-album"></span><span class="sl-source"></span><span class="sl-duration"></span><div class="sl-track-actions"><button type="button" class="lr-icon" data-sl-command="favorite">${icon('heart')}</button><button type="button" class="lr-icon" data-sl-command="membership">＋</button><button type="button" class="lr-icon" data-sl-command="queue" aria-haspopup="dialog">${icon('queueAdd')}</button></div>`;
+      row.innerHTML=`<div class="sl-track-name"><input type="checkbox" class="sl-track-check" data-sl-command="check" hidden><button type="button" class="sl-song" data-sl-command="play"><span class="sl-art">${icon('music')}</span><span class="sl-song-copy"><strong></strong><small></small></span><span class="sl-active" aria-hidden="true">${icon('sound')}</span></button></div><span class="sl-album"></span><span class="sl-source"></span><span class="sl-duration"></span><div class="sl-track-actions"><button type="button" class="lr-icon" data-sl-command="favorite">${icon('heart')}</button><button type="button" class="lr-icon" data-sl-command="membership">＋</button><button type="button" class="lr-icon" data-sl-command="queue" aria-haspopup="dialog">${icon('queueAdd')}</button></div>`;
+      row.querySelector('[data-sl-command="check"]').setAttribute('aria-label','选择 '+track.name);
       const artist=track.artist||sourceNames[track.kind]||'未知歌手';
       row.querySelector('strong').textContent=track.name;
       row.querySelector('.sl-song-copy small').textContent=artist;
@@ -135,6 +173,7 @@
       favorite.title=track.favorite?'取消收藏':'收藏歌曲';
       const add=row.querySelector('[data-sl-command="membership"]');
       add.setAttribute('aria-label','管理 '+track.name+' 的所属歌单');add.title='管理所属歌单';
+      favorite.disabled=add.disabled=database.readFailed;
       const enqueue=row.querySelector('[data-sl-command="queue"]');
       enqueue.setAttribute('aria-label','将 '+track.name+' 加入播放队列');enqueue.title='加入播放队列';
       enqueue.hidden=track.kind==='soda';
@@ -151,33 +190,89 @@
 
     function renderTracks() {
       const list=viewTracks(),query=search.value.trim().toLocaleLowerCase();
-      filtered=list.filter(track=>[track.name,track.artist,track.album,track.sourcePath].join(' ').toLocaleLowerCase().includes(query));
-      $('[data-sl-command="enrich"]').hidden=!filtered.some(track=>track.kind==='file');
-      if(sort.value==='duration')filtered.sort((a,b)=>(b.duration||0)-(a.duration||0));
-      else if(sort.value!=='default')filtered.sort((a,b)=>collate.compare(a[sort.value]||'',b[sort.value]||''));
+      const visibleIds=new Set(list.map(track=>track.id));
+      for(const id of selected)if(!visibleIds.has(id))selected.delete(id);
+      filtered=sortTracks(list.filter(track=>[track.name,track.artist,track.album,track.sourcePath].join(' ').toLocaleLowerCase().includes(query)));
+      $('[data-sl-command="enrich"]').hidden=database.readFailed||!filtered.some(track=>track.kind==='file');
       const active=document.activeElement;
       const focus=tracksList.contains(active)?[active.closest('[data-sl-id]').dataset.slId,active.dataset.slCommand]:null;
       tracksList.replaceChildren(...filtered.slice(0,shown).map(makeTrack));
-      if(focus){const row=tracksList.querySelector('[data-sl-id="'+CSS.escape(focus[0])+'"]');(row?.querySelector('[data-sl-command="'+CSS.escape(focus[1])+'"]')||search).focus({preventScroll:true});}
+      renderSelection();
+      if(focus){
+        const row=tracksList.querySelector('[data-sl-id="'+CSS.escape(focus[0])+'"]');
+        const control=row?.querySelector('[data-sl-command="'+CSS.escape(focus[1])+'"]');
+        (control&&!control.disabled?control:search).focus({preventScroll:true});
+      }
       $('[data-sl-total]').textContent=query?`找到 ${filtered.length} / ${list.length} 首`:`${list.length} 首歌曲`;
       $('[data-sl-empty]').hidden=filtered.length>0;
       $('[data-sl-empty-text]').textContent=!database.ready?'正在读取音乐库':query?'没有找到匹配的歌曲':emptyMessages[view]||'通过歌曲旁的「＋」把它加入这个歌单。';
       $('[data-sl-command="more"]').hidden=shown>=filtered.length;
       const playAll=$('[data-sl-command="play-all"]');
-      playAll.hidden=view==='recent'||Boolean(query)||sort.value!=='default';
+      playAll.querySelector('span').textContent=usesVisibleOrder()?'播放当前结果':'播放列表';
       updatePlayback(playback,true);
+    }
+
+    function sortTracks(list) {
+      if(sort.value==='duration')return list.sort((a,b)=>(b.duration||0)-(a.duration||0));
+      if(sort.value!=='default')return list.sort((a,b)=>collate.compare(a[sort.value]||'',b[sort.value]||''));
+      return list;
+    }
+
+    function renderSelection() {
+      selection.hidden=!selectionMode;
+      const toggle=$('[data-sl-command="select"]');
+      toggle.setAttribute('aria-pressed',String(selectionMode));
+      toggle.disabled=database.readFailed||playlistSaving||(!selectionMode&&!filtered.length);
+      const playlist=database.playlists.find(item=>item.id===view);
+      const reorder=playlist&&!search.value.trim()&&sort.value==='default';
+      const displayed=filtered.slice(0,shown);
+      const hiddenCount=selected.size-displayed.filter(track=>selected.has(track.id)).length;
+      $('[data-sl-selection-count]').textContent='已选 '+selected.size+' 首'+(hiddenCount?'（'+hiddenCount+' 首未在当前显示）':'');
+      $('[data-sl-command="select-page"]').disabled=playlistSaving||!displayed.some(track=>!selected.has(track.id));
+      $('[data-sl-command="select-clear"]').disabled=playlistSaving||!selected.size;
+      $('[data-sl-command="batch-add"]').disabled=playlistSaving||!selected.size||!database.playlists.length;
+      const remove=$('[data-sl-command="batch-remove"]');
+      remove.hidden=!playlist;
+      remove.disabled=playlistSaving||!selected.size;
+      for(const [direction,name] of [[-1,'move-up'],[1,'move-down']]){
+        const button=$('[data-sl-command="'+name+'"]');
+        button.hidden=!reorder;
+        button.disabled=playlistSaving||!reorder||!playlist.trackIds.some((id,index)=>selected.has(id)&&playlist.trackIds[index+direction]&&!selected.has(playlist.trackIds[index+direction]));
+      }
+      const retry=$('[data-sl-command="retry-save"]');
+      retry.hidden=!playlistSaveFailed;
+      retry.disabled=playlistSaving;
+      $('[data-sl-write-failed]').hidden=!database.saveFailed||playlistSaveFailed;
+      $('[data-sl-command="retry-library-save"]').disabled=playlistSaving;
+      for(const input of tracksList.querySelectorAll('.sl-track-check')){
+        const row=input.closest('[data-sl-id]');
+        input.hidden=!selectionMode;
+        input.disabled=playlistSaving;
+        input.checked=selected.has(row.dataset.slId);
+        row.classList.toggle('sl-selected',selectionMode&&input.checked);
+      }
+    }
+
+    function usesVisibleOrder() {
+      return view==='recent'||Boolean(search.value.trim())||sort.value!=='default';
+    }
+
+    function playResult(id,keepPlaying=false) {
+      const resultIds=usesVisibleOrder()?filtered.map(track=>track.id):null;
+      Promise.resolve(api.playFromLibrary(id,view,keepPlaying,resultIds)).catch(error=>api.toast(error.message,true));
     }
 
     function render() {
       if(root.hidden)return;
       database=api.library();
       const playlist=database.playlists.find(item=>item.id===view);
-      if(!playlist&&!sections[view])view='all';
+      if(!playlist&&!sections[view]){view='all';selectionMode=false;selected.clear();}
       $('#sl-title').textContent=playlist?.name||sections[view];
+      $('[data-sl-read-failed]').hidden=!database.readFailed;
       $('[data-sl-command="rename"]').hidden=!playlist;
       $('[data-sl-command="refresh-synced"]').hidden=!playlist?.synced;
-      root.querySelectorAll('.sl-heading-actions button').forEach(button=>button.disabled=!database.ready||database.importing);
-      root.querySelectorAll('[data-sl-command="new"]').forEach(button=>button.disabled=!database.ready);
+      root.querySelectorAll('.sl-heading-actions button').forEach(button=>button.disabled=!database.ready||database.readFailed||database.importing);
+      root.querySelectorAll('[data-sl-command="new"]').forEach(button=>button.disabled=!database.ready||database.readFailed);
       renderNavigation();renderTracks();
     }
 
@@ -246,6 +341,42 @@
       membership.showModal();
     }
 
+    function openBatchAdd() {
+      const select=batchAdd.querySelector('select');
+      select.replaceChildren(...database.playlists.map(playlist=>new Option(playlist.name,playlist.id)));
+      if(!select.options.length)return;
+      batchAdd.showModal();
+      select.focus();
+    }
+
+    async function saveSelection(operation,message,button) {
+      if(playlistSaving)return;
+      const originalView=view;
+      playlistSaving=true;
+      renderSelection();
+      const status=$('[data-sl-save-status]');
+      status.textContent='正在保存歌单…';
+      try {
+        const {saved,changed}=await operation();
+        playlistSaveFailed=!saved&&(changed>0||playlistSaveFailed);
+        const failure=button.dataset.slCommand==='retry-library-save'?'曲库仍未保存，可以重试。':
+          playlistSaveFailed?'歌单保存未完成，可以重试。':'歌单当前不可用，请重新选择。';
+        status.textContent=saved?message(changed):failure;
+      } catch {
+        status.textContent='歌单保存遇到问题，请重试。';
+      } finally {
+        playlistSaving=false;
+        if(!root.hidden){
+          database=api.library();
+          renderSelection();
+        }
+        if(!root.hidden&&view===originalView&&document.activeElement===document.body){
+          const next=playlistSaveFailed?$('[data-sl-command="retry-save"]'):button;
+          (next.disabled||!next.getClientRects().length?tracksList.querySelector('.sl-track-check:checked:not([hidden])')||$('[data-sl-command="select"]'):next).focus({preventScroll:true});
+        }
+      }
+    }
+
     function openEnrichment(){
       enrichIds=api.localEnrichmentCandidates(filtered.map(track=>track.id));
       matches=[];enrichResults.replaceChildren();applyButton.disabled=true;
@@ -299,11 +430,42 @@
         },error=>{enrichStatus.textContent=error.message;button.disabled=false;});
       }
       if(command==='more'){shown+=pageSize;renderTracks();const next=tracksList.children[shown-pageSize];next?.querySelector('button').focus({preventScroll:true});}
-      if(command==='play')Promise.resolve(api.playFromLibrary(id,view)).catch(error=>api.toast(error.message,true));
+      if(command==='play')playResult(id);
       if(command==='play-all') {
         const first=filtered.find(track=>track.kind!=='soda');
-        if(first)Promise.resolve(api.playFromLibrary(first.id,view,true)).catch(error=>api.toast(error.message,true));
+        if(first)playResult(first.id,true);
       }
+      if(command==='select'){
+        selectionMode=!selectionMode;
+        if(!selectionMode)selected.clear();
+        renderSelection();
+      }
+      if(command==='select-page'){
+        for(const track of filtered.slice(0,shown))selected.add(track.id);
+        renderSelection();
+        $('[data-sl-command="select-clear"]').focus();
+      }
+      if(command==='select-clear'){
+        selected.clear();
+        renderSelection();
+        $('[data-sl-command="select-page"]').focus();
+      }
+      if(command==='batch-add')openBatchAdd();
+      if(command==='batch-remove'){
+        const items=[...selected];
+        void saveSelection(()=>api.editPlaylistMembership(view,items,false),count=>count?'已从当前歌单移出 '+count+' 首。':'当前歌单没有这些歌曲。',button);
+      }
+      if(command==='move-up'||command==='move-down'){
+        const items=[...selected];
+        void saveSelection(()=>api.movePlaylistTracks(view,items,command==='move-up'?-1:1),()=> '已保存歌单顺序。',button);
+      }
+      if(command==='retry-save'){
+        void saveSelection(async()=>({saved:await api.retryPlaylistSave(),changed:1}),()=> '已保存歌单。',button);
+      }
+      if(command==='retry-library-save'){
+        void saveSelection(async()=>({saved:await api.retryPlaylistSave(),changed:0}),()=> '已保存曲库。',button);
+      }
+      if(command==='retry-read')api.retryLibraryRead();
       if(command==='favorite')api.toggleFavorite(id);
       if(command==='membership')openMembership(id);
       if(command==='queue')openQueueOptions(id);
@@ -315,6 +477,18 @@
         button.disabled=true;
         Promise.resolve(api.refreshSyncedPlaylist(view)).catch(error=>api.toast(error.message,true)).finally(()=>button.disabled=false);
       }
+    });
+    tracksList.addEventListener('change',event=>{
+      const input=event.target;
+      if(!input.matches('.sl-track-check')||!selectionMode||playlistSaving)return;
+      const id=input.closest('[data-sl-id]').dataset.slId;
+      if(input.checked)selected.add(id);else selected.delete(id);
+      renderSelection();
+    });
+    tracksList.addEventListener('focusin',event=>{
+      if(!player||!event.target.matches(':focus-visible'))return;
+      const overlap=event.target.getBoundingClientRect().bottom-player.getBoundingClientRect().top+8;
+      if(overlap>0)window.scrollBy({top:overlap,behavior:'instant'});
     });
     search.addEventListener('input',()=>{shown=pageSize;renderTracks();});
     sort.addEventListener('change',()=>{shown=pageSize;renderTracks();});
@@ -335,14 +509,30 @@
       api.setMembership(memberId,[...membership.querySelectorAll('input:checked')].map(input=>input.value));
       membership.close();
     });
+    batchAdd.addEventListener('submit',event=>{
+      event.preventDefault();
+      const target=batchAdd.querySelector('select').value;
+      const items=sortTracks(viewTracks()).filter(track=>selected.has(track.id)).map(track=>track.id);
+      batchAdd.close();
+      if(target&&items.length){
+        void saveSelection(()=>api.editPlaylistMembership(target,items,true),count=>count?'已加入 '+count+' 首歌曲。':'所选歌曲均已在歌单中。',$('[data-sl-command="batch-add"]'));
+      }
+    });
     window.addEventListener('sonic:library-change',render);
     return {
       setVisible(visible) {
         root.hidden=!visible;
-        if(visible)render();
-        else for(const dialog of root.querySelectorAll('dialog[open]'))dialog.close();
+        if(visible){
+          playerResize?.observe(player,{box:'border-box'});
+          render();
+        }else{
+          playerResize?.disconnect();
+          for(const dialog of root.querySelectorAll('dialog[open]'))dialog.close();
+        }
       },
       updatePlayback,
+      searchQuery:()=>search.value.trim(),
+      searchLocal(query){setView('local',query);search.focus({preventScroll:true});},
     };
   }
 

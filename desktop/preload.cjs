@@ -31,6 +31,6 @@ contextBridge.exposeInMainWorld('sonicDesktop', Object.freeze({
   publish: state => ipcRenderer.send('sonic:state', state),
   command: command => ipcRenderer.send('sonic:command', command),
   onCommand: subscribe('sonic:command'), onVisibility: subscribe('sonic:visibility'),
-  onWallpaper: subscribe('sonic:wallpaper-state'), onPlayerState: subscribe('sonic:player-state'),
+  onPlayerState: subscribe('sonic:player-state'),
   onDesktopLyricsState: subscribe('sonic:desktop-lyrics-state'),
 }));

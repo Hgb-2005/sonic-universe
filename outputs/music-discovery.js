@@ -73,8 +73,11 @@
   function status(message,error=false) {
     const node=get('[data-discovery-status]');node.textContent=message;node.dataset.error=String(error);
   }
-  function chooseTab(value) {
+  function abortChartMatch() {
     chartMatch?.abort();chartMatch=null;
+  }
+  function chooseTab(value) {
+    abortChartMatch();
     tab=value;
     get('[data-discovery-retry]').hidden=true;
     for(const item of dialog.querySelectorAll('[data-discovery-tab]'))item.setAttribute('aria-pressed',String(item.dataset.discoveryTab===value));
@@ -90,26 +93,100 @@
       status(value==='resolve'?'支持汽水歌曲详情与官方音乐链接。':'输入歌名或歌手，搜索可在这里播放的 MV。');
     }
   }
-  async function playChartTrack(item,control,label) {
-    chartMatch?.abort();
+  async function playChartTrack(item,control,label,showResult) {
+    abortChartMatch();
     const request=new AbortController();chartMatch=request;
-    control.disabled=true;label.textContent='匹配中…';
-    status('正在汽水音乐中匹配「'+item.name+'」…');
+    const idleLabel=label.textContent;
+    const matching=item.provider!=='qishui';
+    control.disabled=true;control.setAttribute('aria-busy','true');
+    label.textContent=matching?'匹配中…':'正在打开…';
+    status(matching?'正在汽水音乐中匹配「'+item.name+'」…':'正在打开所选汽水版本「'+item.name+'」…');
+    let result;
     try {
-      const result=await client.matchChartTrack(item,{signal:request.signal});
-      if(chartMatch!==request||request.signal.aborted)return;
-      if(!result?.item){status('汽水音乐暂无可确认的同名同歌手版本。',true);return}
-      const started=await player.playOnlineList([result.item],'热门榜单 · 汽水音乐',result.item.mediaId);
-      if(chartMatch!==request||request.signal.aborted)return;
-      status(started?'正在播放「'+result.item.name+'」 · 汽水音乐':'已匹配曲目，汽水音乐当前无法播放该版本。',!started);
+      result=await player.playRecording(item,{signal:request.signal,label:'热门榜单 · 汽水音乐'});
     } catch(error) {
-      if(chartMatch===request&&!request.signal.aborted)status(error?.status===401?'请先在在线搜索中登录汽水音乐。':error.message||'匹配失败，请重试。',true);
+      const state=error?.status===401||error?.code==='auth-required'?'auth-required':error?.name==='AbortError'?'cancelled':'failed';
+      result={status:state};
     } finally {
-      control.disabled=false;label.textContent='播放';
-      if(chartMatch===request)chartMatch=null;
+      control.disabled=false;control.removeAttribute('aria-busy');label.textContent=idleLabel;
+      if(chartMatch===request){
+        chartMatch=null;
+        if(!request.signal.aborted&&dialog.open&&tab==='charts'&&control.isConnected)showResult(result,item);
+      }
+    }
+  }
+  function playableRow(info,label,kind,play) {
+    const action=document.createElement('span');action.className='sd-row-action';action.textContent=label;
+    const control=button('',()=>play(control,action));
+    control.className='sd-play-row';control.setAttribute('data-discovery-play-'+kind,'');
+    control.append(info,action);
+    return control;
+  }
+  function chartPlayback(row,item,info) {
+    const content=document.createElement('div');content.className='sd-row-info';content.style.flex='1';
+    const message=document.createElement('p');message.className='lr-status';message.style.marginTop='0';message.hidden=true;
+    const choices=document.createElement('details'),summary=document.createElement('summary'),versions=document.createElement('div');
+    choices.dataset.discoveryChartCandidates='';choices.hidden=true;
+    summary.className='lr-choice';choices.append(summary,versions);
+    const online=button('打开汽水音乐搜索',()=>{dialog.close();player.openOnline();});online.hidden=true;
+    const main=playableRow(info,'播放','chart',(control,label)=>void playChartTrack(item,control,label,showResult));
+    content.append(main,message,choices,online);row.append(content);
+
+    const url=officialUrl(item.externalUrl,['music.apple.com','itunes.apple.com','geo.itunes.apple.com']);
+    if(url){
+      const original=document.createElement('a');original.className='lr-choice';
+      original.href=url.href;original.target='_blank';original.rel='noopener noreferrer';
+      original.textContent='打开官方歌曲';original.setAttribute('aria-label','在 Apple Music 打开「'+item.name+'」');
+      original.style.cssText='flex:0 0 auto;align-self:flex-start;text-decoration:none';
+      row.append(original);
+    }
+
+    function showResult(result,target) {
+      const state=result?.status||'failed', title=result?.track?.name||target.name;
+      const error=!['full','preview','cancelled'].includes(state);
+      const actions={
+        unmatched:'汽水音乐暂无可确认的同一录音版本。',
+        'auth-required':'请登录汽水音乐后重试。',
+        unavailable:'本机音乐入口暂不可用，请重新连接后重试。',
+        failed:'这个汽水版本暂时无法播放，可以重试或选择其他版本。',
+      };
+      const text=state==='full'?'已开始播放完整歌曲「'+title+'」。':
+        state==='preview'?'已开始试听「'+title+'」，当前版本仅提供试听片段。':
+        state==='cancelled'?'已取消这次播放。':result?.message||actions[state]||actions.failed;
+      message.textContent=text;message.dataset.error=String(error);message.hidden=false;
+      status(text,error);
+
+      const tracks=new Map();
+      for(const input of Array.isArray(result?.candidates)?result.candidates:[]){
+        const track=window.SonicOnlineMusic.normalizeTrack(input);
+        if(track&&!tracks.has(track.mediaId))tracks.set(track.mediaId,track);
+      }
+      if(tracks.size){
+        const available=[...tracks.values()].slice(0,15);
+        summary.textContent='选择汽水版本（'+available.length+'）';
+        versions.replaceChildren(...available.map(track=>{
+          const info=document.createElement('span'),name=document.createElement('strong'),meta=document.createElement('small');
+          info.className='sd-row-info';name.textContent=track.name;
+          const duration=track.duration>0?window.SonicListeningCore.formatTime(track.duration):'时长未知';
+          meta.textContent=[track.artist||'歌手未知',track.album||'专辑未知',duration].join(' · ');
+          meta.style.whiteSpace='normal';
+          info.append(name,meta);
+          return playableRow(info,'播放','chart-candidate',(control,label)=>void playChartTrack(track,control,label,showResult));
+        }));
+      }
+      const focusInChoices=choices.contains(document.activeElement);
+      choices.hidden=!versions.childElementCount||state==='auth-required'||state==='full';
+      if(!choices.hidden&&(state==='unmatched'||state==='failed'))choices.open=true;
+      if(choices.hidden&&focusInChoices)main.focus();
+      const needsSearch=choices.hidden&&(state==='unmatched'||state==='failed');
+      online.hidden=typeof player.openOnline!=='function'||!(state==='auth-required'||needsSearch);
+      online.textContent=state==='auth-required'?'去汽水音乐登录':'打开汽水音乐搜索';
+      const action=main.querySelector('.sd-row-action');
+      if(!main.disabled)action.textContent=error?'重试':'播放';
     }
   }
   function showItems(items,kind,title) {
+    abortChartMatch();
     const root=get('[data-discovery-items]');root.replaceChildren();
     if(!items.length){status('暂时没有相关内容。');return}
     status(title||'已找到 '+items.length+' 条结果。');
@@ -119,12 +196,17 @@
     }
     if(kind==='charts'){
       const playAll=button('播放整榜',async()=>{
+        abortChartMatch();
+        const request=new AbortController();chartMatch=request;
         playAll.disabled=true;
         status('已建立榜单队列，正在匹配第一首可播放的歌曲…');
         try{
           const started=await player.playChartList(items,'热门榜单 · 汽水音乐');
-          if(playAll.isConnected)status(started?'已开始整榜连播。尚未匹配的歌曲会在轮到时查找。':'暂时无法开始榜单连播，请检查汽水登录或换一个榜单。',!started);
-        }finally{playAll.disabled=false;}
+          if(chartMatch===request&&playAll.isConnected)status(started?'已开始整榜连播。尚未匹配的歌曲会在轮到时查找。':'暂时无法开始榜单连播，请检查汽水登录或换一个榜单。',!started);
+        }finally{
+          playAll.disabled=false;
+          if(chartMatch===request)chartMatch=null;
+        }
       });
       playAll.className='lr-primary';root.append(playAll);
     }
@@ -134,14 +216,11 @@
       name.textContent=item.name||'未命名歌曲';artist.textContent=[item.artist,item.album].filter(Boolean).join(' · ');
       info.className='sd-row-info';info.append(name,artist);row.append(info);
       function makePlayable(label,kind,play) {
-        const action=document.createElement('span');action.className='sd-row-action';action.textContent=label;
-        const control=button('',()=>play(control,action));
-        control.className='sd-play-row';control.setAttribute('data-discovery-play-'+kind,'');
-        control.append(info,action);row.append(control);
+        row.append(playableRow(info,label,kind,play));
       }
       if(item.provider==='qishui')row.append(button(kind==='resolve'?'播放这首':'从这里播放',()=>void player.playOnlineList(items,title||'汽水音乐',item.mediaId)));
       else if(kind==='charts'){
-        makePlayable('播放','chart',(control,label)=>void playChartTrack(item,control,label));
+        chartPlayback(row,item,info);
       }else if(kind==='mv'&&item.provider==='commons'){
         const video=officialUrl(item.videoUrl,['upload.wikimedia.org']);
         if(video&&video.pathname.startsWith('/wikipedia/commons/')){
@@ -315,7 +394,7 @@
       if(!dialog.open||!get('video').getAttribute('src'))return;
       stopVideo(true);status('视频无法播放，请检查格式和访问权限。',true);
     });
-    dialog.addEventListener('close',()=>{controller?.abort();controller=null;chartMatch?.abort();chartMatch=null;stopVideo(true)});
+    dialog.addEventListener('close',()=>{controller?.abort();controller=null;abortChartMatch();stopVideo(true)});
     root.append(dialog);
   }
   function open(root,companion,playback) {

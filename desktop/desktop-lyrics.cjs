@@ -43,7 +43,9 @@ function createDesktopLyrics({ onState }) {
   }
 
   function sendState() {
-    if (overlay && !overlay.isDestroyed()) overlay.webContents.send('sonic:desktop-lyrics-render', { ...state, locked });
+    if (!overlay || overlay.isDestroyed()) return;
+    const contents = overlay.webContents;
+    if (!contents.isDestroyed() && !contents.isCrashed()) contents.send('sonic:desktop-lyrics-render', { ...state, locked });
   }
 
   function syncVisibility() {
@@ -90,6 +92,9 @@ function createDesktopLyrics({ onState }) {
     overlay = candidate;
     candidate.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     candidate.webContents.on('will-navigate', event => event.preventDefault());
+    candidate.webContents.on('render-process-gone', () => {
+      if (!candidate.isDestroyed()) candidate.destroy();
+    });
     candidate.on('close', event => {
       if (disposed) return;
       event.preventDefault();

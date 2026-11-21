@@ -9,6 +9,7 @@ const {
   createQishuiProvider,
   coverUrl,
   krcToLrc,
+  lyricData,
   loginQrKey,
   normalizeTrack,
   normalizePlaylist
@@ -21,6 +22,22 @@ test('converts KRC character timing to ordinary LRC', () => {
   const output = krcToLrc('[14690,6530]<0,210,0>故<210,200,0>事');
   assert.equal(krcToLrc('[14690,6530]<0,210,0>故<210,200,0>事', true), '[00:14.690]<00:14.690>故<00:14.900>事');
   assert.equal(output, '[00:14.69]故事');
+});
+
+test('keeps bounded WebVTT and XML lyric sources alongside the existing LRC/KRC fields', () => {
+  const normalize = (type, content) => lyricData({ lyric_info: { lyric_entity: { type, content } } });
+  const vtt = 'WEBVTT\n\n00:01.000 --> 00:02.000\n故事';
+  const ttml = '<tt><body><p begin="1s" end="2s">故事</p></body></tt>';
+  assert.deepEqual(normalize('vtt', vtt), { type: 'vtt', lrc: '', timedLrc: '', krc: undefined, raw: vtt });
+  assert.equal(normalize('krc', ttml).raw, ttml);
+  assert.equal(normalize('vtt', vtt + ' '.repeat(250000)).raw, undefined);
+  assert.deepEqual(normalize('lrc', '[00:01.00]故事'), {
+    type: 'lrc', lrc: '[00:01.00]故事', timedLrc: undefined, krc: undefined,
+  });
+  const krc = '[1000,500]<0,210,0>故<210,290,0>事';
+  assert.deepEqual(normalize('krc', krc), {
+    type: 'krc', lrc: '[00:01.00]故事', timedLrc: '[00:01.000]<00:01.000>故<00:01.210>事', krc,
+  });
 });
 
 test('extracts the QR session key from the provider response envelope', () => {
@@ -430,4 +447,139 @@ test('server exposes public searches and truthful capabilities even without Qish
   assert.equal((await request('/api/qq/audio', 'POST', {})).status, 405);
   assert.equal((await request('/api/discovery/charts?country=cn')).data.provider, 'apple');
   assert.equal((await request('/api/discovery/charts', 'POST')).status, 405);
+});
+
+test('cover errors, body limits and timeouts leave the music service running', { timeout:5000 }, async t => {
+  const http = require('node:http');
+  const { once } = require('node:events');
+  const { createAppServer } = require('../companion/server.cjs');
+  const art = Buffer.from([1, 2, 3]);
+  let oversizedCancelled = false;
+  t.mock.method(globalThis, 'fetch', async (url, { signal }) => {
+    const { hostname, pathname } = new URL(url);
+    assert.equal(hostname, 'assets.douyinpic.com');
+    if (pathname === '/2.png') return new Response(null, { status:302, headers:{ Location:'/image.png' } });
+    if (pathname === '/image.png') return new Response(art, { headers:{ 'Content-Type':'image/png' } });
+    if (pathname === '/3.png') {
+      return new Promise((_resolve, reject) => {
+        signal.addEventListener('abort', () => reject(signal.reason), { once:true });
+      });
+    }
+    assert.equal(pathname, '/4.png');
+    const body = new ReadableStream({
+      pull(controller) { controller.enqueue(new Uint8Array(1024 * 1024)); },
+      cancel() { oversizedCancelled = true; },
+    });
+    return new Response(body, { headers:{ 'Content-Type':'image/png' } });
+  });
+  const providers = new Map([['qishui', {
+    cover: async id => ({
+      url:id === '1' ? 'https://cover.example.invalid/art.png' : `https://assets.douyinpic.com/${id}.png`,
+    }),
+  }]]);
+  const { server } = createAppServer({ providers, coverTimeoutMs:150 });
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  t.after(() => new Promise(resolve => {
+    server.close(resolve);
+    server.closeAllConnections();
+  }));
+  const get = endpoint => new Promise((resolve, reject) => {
+    const request = http.get({
+      hostname:'127.0.0.1', port:server.address().port, path:endpoint,
+      headers:{ Host:'127.0.0.1:8765' },
+    }, async response => {
+      try {
+        const chunks = [];
+        for await (const chunk of response) chunks.push(chunk);
+        const bytes = Buffer.concat(chunks);
+        const type = response.headers['content-type'];
+        resolve({ status:response.statusCode, type, body:type.startsWith('application/json') ? JSON.parse(bytes.toString()) : bytes });
+      } catch (error) { reject(error); }
+    });
+    request.setTimeout(1000, () => request.destroy(new Error('Companion did not respond')));
+    request.once('error', reject);
+  });
+  assert.equal((await get('/api/qishui/tracks/1/cover')).status, 502);
+  assert.deepEqual(await get('/api/qishui/tracks/2/cover'), { status:200, type:'image/png', body:art });
+  assert.equal((await get('/api/qishui/tracks/3/cover')).status, 504);
+  assert.equal((await get('/api/qishui/tracks/4/cover')).status, 502);
+  assert.equal(oversizedCancelled, true);
+  const health = await get('/health');
+  assert.equal(health.status, 200);
+  assert.deepEqual(health.body, { ok:true, companion:true, musicApiVersion:2, providers:['qishui'] });
+});
+
+test('audio proxy forwards ranges and bounds stalled or abandoned upstream requests', { timeout:10000 }, async t => {
+  const http = require('node:http');
+  const { once } = require('node:events');
+  const { createAppServer } = require('../companion/server.cjs');
+  let onUpstreamClose;
+  const upstream = http.createServer((request, response) => {
+    if (request.url === '/1') {
+      assert.equal(request.headers.range, 'bytes=1-3');
+      response.writeHead(206, { 'content-range':'bytes 1-3/5', 'content-type':'audio/mpeg' });
+      response.end('abc');
+    } else if (request.url === '/2') {
+      response.writeHead(416, { 'content-range':'bytes */5' }).end();
+    } else {
+      if (request.url !== '/3') response.writeHead(200, { 'content-type':'audio/mpeg' }).write('a');
+      response.once('close', () => onUpstreamClose?.(request.url));
+    }
+  });
+  const listen = async server => {
+    server.listen(0, '127.0.0.1');
+    await once(server, 'listening');
+    t.after(() => new Promise(resolve => {
+      server.close(resolve);
+      server.closeAllConnections();
+    }));
+    return server.address().port;
+  };
+  const upstreamPort = await listen(upstream);
+  const app = createAppServer({
+    mediaTimeoutMs:250,
+    providers:new Map([['qishui', { audio:async id => ({
+      mediaUrl:`http://127.0.0.1:${upstreamPort}/${id}`,
+    }) }]]),
+  });
+  const port = await listen(app.server);
+  const request = (path, method = 'GET', headers = {}) => new Promise((resolve, reject) => {
+    const client = http.request({ host:'127.0.0.1', port, path, method,
+      headers:{ Host:'127.0.0.1:8765', ...headers } }, resolve);
+    client.once('error', reject);
+    client.end();
+  });
+  const body = async response => {
+    const chunks = [];
+    for await (const chunk of response) chunks.push(chunk);
+    return Buffer.concat(chunks).toString();
+  };
+  const ticket = async id => JSON.parse(await body(await request(`/api/qishui/tracks/${id}/audio`, 'POST'))).streamPath;
+
+  const partial = await request(await ticket(1), 'GET', { Range:'bytes=1-3' });
+  assert.equal(partial.statusCode, 206);
+  assert.equal(partial.headers['content-range'], 'bytes 1-3/5');
+  assert.equal(await body(partial), 'abc');
+  const invalid = await request(await ticket(2), 'GET', { Range:'bytes=99-' });
+  assert.equal(invalid.statusCode, 416);
+  assert.equal(invalid.headers['content-range'], 'bytes */5');
+  await body(invalid);
+
+  let closed = new Promise(resolve => onUpstreamClose = resolve);
+  const timeout = await request(await ticket(3));
+  assert.equal(timeout.statusCode, 504);
+  assert.equal(JSON.parse(await body(timeout)).code, 'timeout');
+  assert.equal(await closed, '/3');
+
+  closed = new Promise(resolve => onUpstreamClose = resolve);
+  const stalled = await request(await ticket(4));
+  assert.equal(stalled.statusCode, 200);
+  await assert.rejects(body(stalled), /aborted|reset/i);
+  assert.equal(await closed, '/4');
+
+  closed = new Promise(resolve => onUpstreamClose = resolve);
+  const abandoned = await request(await ticket(5));
+  abandoned.destroy();
+  assert.equal(await closed, '/5');
 });

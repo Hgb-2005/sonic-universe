@@ -106,6 +106,51 @@ test('discovery requests use local routes and parse official Qishui song links',
   assert.equal(calls[4].searchParams.get('query'), '测试 & MV');
 });
 
+test('chart matching forwards supplied recording hints and opts into candidates explicitly', async t => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  const calls = [];
+  const legacy = { item: null };
+  const detailed = { item: null, reason: 'ambiguous', candidates: [{ mediaId: '123' }] };
+  globalThis.fetch = async (url, options) => {
+    assert.equal(url, 'http://127.0.0.1:8765/api/discovery/charts/match');
+    assert.equal(options.method, 'POST');
+    const payload = JSON.parse(options.body);
+    calls.push(payload);
+    return Response.json(payload.includeCandidates ? detailed : legacy);
+  };
+
+  const client = online.createClient({ baseUrl: 'http://127.0.0.1:8765' });
+  const identity = { name: '夜曲', artist: '周杰伦' };
+  assert.deepEqual(await client.matchChartTrack(identity), legacy);
+  await client.matchChartTrack({ ...identity, duration: Infinity, album: '   ' }, { includeCandidates: false });
+  await client.matchChartTrack({ ...identity, duration: 226.36, album: ' 十一月的萧邦 ' });
+  assert.deepEqual(await client.matchChartTrack(identity, { includeCandidates: true }), detailed);
+  assert.deepEqual(calls, [
+    identity,
+    identity,
+    { ...identity, duration: 226.36, album: '十一月的萧邦' },
+    { ...identity, includeCandidates: true },
+  ]);
+});
+
+test('canceling a chart match aborts the in-flight Companion request', async t => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  let fetchSignal;
+  globalThis.fetch = (_url, options) => {
+    fetchSignal = options.signal;
+    return new Promise(() => {});
+  };
+
+  const client = online.createClient();
+  const controller = new AbortController();
+  const match = client.matchChartTrack({ name: '夜曲', artist: '周杰伦' }, { signal: controller.signal });
+  controller.abort();
+  await assert.rejects(match, { name: 'AbortError' });
+  assert.equal(fetchSignal?.aborted, true);
+});
+
 test('loads every Qishui playlist page in source order using server offsets', async t => {
   const originalFetch = globalThis.fetch;
   t.after(() => { globalThis.fetch = originalFetch; });

@@ -38,6 +38,10 @@ const longTags = {
   album:'Existing album ' + 'b'.repeat(167) + ' ending',
 };
 const longTagsFile = 'legacy-tags.wav';
+const onlineLyricsFile = 'online-lyrics.wav';
+const onlineLyricsTags = {name:'Online lyric fixture',artist:'Local performer',album:''};
+const verifiedSidecarFile = 'online-lyrics.lrc';
+const verifiedSidecar = '[00:02.00]本机时间轴优先';
 
 function audioFixture() {
   const sampleRate = 8000;
@@ -58,9 +62,9 @@ function audioFixture() {
   return wav;
 }
 
-function longTagAudioFixture() {
+function longTagAudioFixture(tags=longTags) {
   const wav = audioFixture();
-  const fields = [['INAM',longTags.name],['IART',longTags.artist],['IPRD',longTags.album]];
+  const fields = [['INAM',tags.name],['IART',tags.artist],['IPRD',tags.album]];
   const chunks = fields.map(([tag,value]) => {
     const data = Buffer.from(value + '\0');
     const chunk = Buffer.alloc(8 + data.length + data.length % 2);
@@ -100,9 +104,11 @@ async function verifyNowPlaying(page, folder, app) {
   await page.route('**/api/discovery/charts/match', route => {
     const request = route.request();
     assert.equal(request.method(),'POST');
-    matchRequests.push(request.postDataJSON());
+    const query=request.postDataJSON();
+    matchRequests.push(query);
+    const track=query.name===onlineLyricsTags.name?onlineLyricsTags:edited;
     return route.fulfill({ json:{ item:{
-      provider:'qishui',mediaId:enrichment.mediaId,name:edited.name,artist:edited.artist,album:enrichment.album,duration:25,
+      provider:'qishui',mediaId:enrichment.mediaId,name:track.name,artist:track.artist,album:enrichment.album,duration:25,
     } } });
   });
   await page.route(`**/api/qishui/songs/${enrichment.mediaId}/lyrics`, route => {
@@ -179,7 +185,7 @@ async function verifyNowPlaying(page, folder, app) {
   assert.ok(Math.abs(await page.evaluate(() => SonicPlayback.snapshot().position) - 9) < .2);
   await room.locator('button[data-lyric-style="fly"]').click();
   assert.equal(await room.getAttribute('data-lyric-style'),'fly');
-  const flightRows = room.locator('[data-lyric-timeline] .lr-lyric-row');
+  const flightRows = room.locator('[data-lyric-timeline] .lr-lyric-row:visible');
   assert.deepEqual(await flightRows.allTextContents(),['普通整行']);
   const centerOffset = await flightRows.evaluate(row => {
     const lyric = row.getBoundingClientRect(), stage = row.parentElement.getBoundingClientRect();
@@ -214,6 +220,8 @@ async function verifyNowPlaying(page, folder, app) {
   const effectPicker=room.getByRole('dialog',{name:'歌词动效'});
   const effectChoices=effectPicker.locator('[data-effect-choice]');
   const stage=room.locator('[data-effect-stage]');
+  const effectCanvas=room.locator('[data-effect-surface] canvas:visible');
+  const currentEffectLyric=flightRows.and(room.locator('[data-current-line]'));
   await effectButton.click();
   assert.equal(await effectChoices.count(),18);
   const ids=await effectChoices.evaluateAll(nodes=>nodes.map(node=>node.dataset.effectChoice));
@@ -226,32 +234,65 @@ async function verifyNowPlaying(page, folder, app) {
     assert.deepEqual(await flightRows.allTextContents(),['普通整行']);
     assert.equal(await flightRows.getAttribute('data-lyric-timing'),'line');
   }
+  assert.equal(await currentEffectLyric.getAttribute('aria-current'),'true');
+
+  const captureEffect=()=>effectCanvas.screenshot({
+    omitBackground:true,
+    style:'* { background: transparent !important; visibility: hidden !important; } [data-effect-surface] canvas { visibility: visible !important; }',
+  });
+  const seekEffect=async position=>{
+    await page.evaluate(time=>SonicPlayback.seek(time),position);
+    await page.waitForFunction(time=>{
+      const state=SonicPlayback.snapshot();
+      return state.playing && Math.abs(state.lyricPosition-time)<.3;
+    },position);
+  };
   await effectButton.click();
   await effectPicker.getByRole('button',{name:'重拍',exact:true}).click();
   await page.evaluate(()=>SonicPlayback.seek(1.6));
   await play.click();
-  await page.waitForFunction(()=>{
-    const row=document.querySelector('[data-lyric-timeline] [data-current-line]');
-    const token=row?.querySelector('.lr-effect-word');
-    return row?.textContent==='逐字推进' && row.dataset.lyricTiming==='word' &&
-      Number(token?.style.getPropertyValue('--fx-rest'))>0 && getComputedStyle(token).transform!=='none';
-  });
+  await currentEffectLyric.filter({hasText:/^逐字推进$/}).waitFor();
+  await effectCanvas.waitFor();
+  assert.match(await room.getAttribute('data-lyric-renderer'),/^(webgl|canvas2d)$/);
+  assert.equal(await currentEffectLyric.getAttribute('data-lyric-timing'),'word');
+  assert.deepEqual(await flightRows.allTextContents(),['逐字推进']);
+
+  await seekEffect(2.2);
+  const early=await captureEffect();
+  const visiblePixels=await page.evaluate(async png=>{
+    const image=await createImageBitmap(new Blob([Uint8Array.from(atob(png),char=>char.charCodeAt(0))],{type:'image/png'}));
+    const paint=new OffscreenCanvas(image.width,image.height).getContext('2d');
+    paint.drawImage(image,0,0);
+    const pixels=paint.getImageData(0,0,image.width,image.height).data;
+    return pixels.some((value,index)=>index%4===3&&value>64);
+  },early.toString('base64'));
+  assert.ok(visiblePixels,'The graphics surface should paint the current lyric');
+  await seekEffect(3.1);
+  const later=await captureEffect();
+  assert.notDeepEqual(later,early,'The same lyric should redraw at a later word time');
+  await seekEffect(2.42);
+  assert.notDeepEqual(await captureEffect(),later,'Seeking backwards should render the earlier word state');
+  assert.deepEqual(await flightRows.allTextContents(),['逐字推进']);
+
+  await seekEffect(5.2);
+  await currentEffectLyric.filter({hasText:/^夜色$/}).waitFor();
+  assert.deepEqual(await flightRows.allTextContents(),['夜色']);
   await page.emulateMedia({reducedMotion:'reduce'});
-  await page.waitForFunction(()=>{
-    const token=document.querySelector('[data-current-line] .lr-effect-word');
-    return token && getComputedStyle(token).transform==='none';
-  });
-  await page.evaluate(()=>{
-    SonicPlayback.toggle();
-    SonicPlayback.seek(9);
-  });
+  await effectCanvas.waitFor({state:'hidden'});
+  await page.waitForFunction(()=>document.querySelector('#listeningRoom')?.dataset.lyricRenderer==='text');
+  assert.equal(await currentEffectLyric.getAttribute('aria-current'),'true');
+  await currentEffectLyric.filter({hasText:/^夜色$/}).waitFor();
+  await play.click();
+  await page.waitForFunction(()=>!SonicPlayback.snapshot().playing);
+  await page.evaluate(()=>SonicPlayback.seek(9));
+  await currentEffectLyric.filter({hasText:/^普通整行$/}).waitFor();
   await page.emulateMedia({reducedMotion:'no-preference'});
   await closeLyrics();
   await openLyrics();
   assert.equal(await room.getAttribute('data-lyric-effect'),'impact');
   await room.locator('button[data-lyric-style="list"]').click();
   await closeLyrics();
-  console.log('PASS all 18 lyric looks select a single line, timed words animate, and reduced motion stays readable');
+  console.log('PASS all 18 lyric looks, rendered canvas pixels, timed seeks and reduced motion');
 
   if (desktop) {
     await openLyrics();
@@ -312,16 +353,19 @@ async function verifyNowPlaying(page, folder, app) {
   await details.locator('textarea[name="lyrics"]').fill('');
   await page.waitForFunction(() => SonicPlayback.snapshot().onlineReady);
   await details.getByRole('button',{ name:'在线补全', exact:true }).click();
-  await details.getByText('已填入专辑、歌词，核对后保存。',{ exact:true }).waitFor();
-  assert.deepEqual(matchRequests,[{ name:edited.name, artist:edited.artist }]);
-  assert.equal(lyricRequests,1);
+  await details.getByText('已填入专辑，核对后保存。',{ exact:true }).waitFor();
+  assert.deepEqual(matchRequests,[{ name:edited.name, artist:edited.artist, duration:25 }]);
+  assert.equal(lyricRequests,0);
   assert.equal(await details.locator('input[name="album"]').inputValue(),enrichment.album);
-  assert.equal(await details.locator('textarea[name="lyrics"]').inputValue(),enrichment.krc);
+  assert.equal(await details.locator('textarea[name="lyrics"]').inputValue(),'');
   assert.equal(await page.evaluate(async id => (await SonicPlayback.localTrackDetails(id)).lyricsRaw,id),originalLyrics);
-  console.log('PASS matching Qishui fixture fills album and timed lyrics in the editor draft');
+  console.log('PASS online metadata suggestions leave a deliberately emptied lyric draft blank');
 
   await details.locator('input[name="album"]').fill(edited.album);
-  await details.locator('textarea[name="lyrics"]').fill(edited.lyricsRaw);
+  await details.locator('[data-detail-lyrics-file="lyrics"]').setInputFiles({
+    name:'manual.lrc',mimeType:'text/plain',buffer:Buffer.from(edited.lyricsRaw),
+  });
+  await details.getByText('已读取文件，保存后应用。',{ exact:true }).waitFor();
   await details.locator('[data-detail-artwork]').setInputFiles(path.join(root,'outputs','assets','sonic-icon.png'));
   await details.getByText('已选封面，保存后应用。',{ exact:true }).waitFor();
   const artwork = details.locator('[data-detail-cover]');
@@ -362,6 +406,7 @@ async function verifyNowPlaying(page, folder, app) {
   },longTags.name).then(handle => handle.jsonValue());
   await setMode('library');
   await room.locator('[data-sl-view="local"]').click();
+  let fallbackRequests=0;
   await page.route('https://lrclib.net/api/get?*',route=>{
     const query=new URL(route.request().url()).searchParams;
     assert.equal(query.get('track_name'),longTags.name);
@@ -369,6 +414,7 @@ async function verifyNowPlaying(page, folder, app) {
     assert.equal(query.get('album_name'),longTags.album);
     const headers={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'Lrclib-Client'};
     if(route.request().method()==='OPTIONS')return route.fulfill({status:204,headers});
+    fallbackRequests++;
     return route.fulfill({json:{trackName:longTags.name,artistName:longTags.artist,albumName:longTags.album,duration:25,syncedLyrics:'[00:02.00]验收批量补全'},headers});
   });
   await room.getByRole('button',{name:'批量补全',exact:true}).click();
@@ -379,8 +425,39 @@ async function verifyNowPlaying(page, folder, app) {
   await bulk.getByRole('button',{name:'保存勾选项'}).click();
   await bulk.waitFor({state:'hidden'});
   assert.equal((await savedDetails(page,longId)).lyricsRaw,'[00:02.00]验收批量补全');
+  assert.equal(await page.evaluate(async id=>(await SonicPlayback.localTrackDetails(id)).lyricsOrigin,longId),'online');
   console.log('PASS batch enrichment previews its exact LRCLIB match and persists only after approval');
+
+  const playLocal=id=>room.locator(`[data-sl-id="${id}"] [data-sl-command="play"]`).click();
+  const waitForLocal=id=>page.waitForFunction(id=>SonicPlayback.snapshot().track?.id===id&&!SonicPlayback.snapshot().busy,id);
+  await playLocal(longId);
+  await waitForLocal(longId);
+  await playLocal(id);
+  await waitForLocal(id);
   await openTrackDetails(longId);
+  await details.locator('textarea[name="lyrics"]').fill('');
+  await saveTrackDetails();
+  await page.reload();
+  await page.waitForFunction(()=>window.SonicPlayback?.library().ready);
+  const cleared=await page.evaluate(id=>SonicPlayback.localTrackDetails(id),longId);
+  assert.equal(cleared.lyricsRaw,'');
+  assert.equal(cleared.lyricsOrigin,'manual');
+  await setMode('library');
+  await room.locator('[data-sl-view="local"]').click();
+  await page.waitForFunction(()=>SonicPlayback.snapshot().onlineReady);
+  const lyricChecks=[lyricRequests,fallbackRequests];
+  await openTrackDetails(longId);
+  await details.getByRole('button',{name:'在线补全',exact:true}).click();
+  await details.getByText('未找到能确认是同一版本的歌曲，可以手动修改资料。',{exact:true}).waitFor();
+  assert.equal(await details.locator('textarea[name="lyrics"]').inputValue(),'');
+  assert.deepEqual(await page.evaluate(async draft=>{
+    const preview=await SonicPlayback.previewLocalEnrichment(draft.id);
+    const stale=await SonicPlayback.applyLocalEnrichment([{draft,lyricsRaw:'[00:02.00]过时的已批准结果'}]);
+    return {preview,applied:stale.count};
+  },cleared),{preview:null,applied:0});
+  assert.deepEqual([lyricRequests,fallbackRequests],lyricChecks);
+  console.log('PASS an inactive song’s manual clear survives reload, single enrichment, and stale bulk approval');
+
   assert.equal(await details.locator('input[name="title"]').inputValue(),longTags.name);
   assert.equal(await details.locator('input[name="artist"]').inputValue(),longTags.artist);
   assert.equal(await details.locator('input[name="album"]').inputValue(),longTags.album);
@@ -405,8 +482,37 @@ async function verifyNowPlaying(page, folder, app) {
     assert.deepEqual(library.playlists.find(item=>item.id===playlist).trackIds,[id]);
     console.log('PASS desktop rescan replaces changed audio, preserves manual data and playlist membership, and labels removed originals');
   }
+  await fs.writeFile(path.join(folder,onlineLyricsFile),longTagAudioFixture(onlineLyricsTags));
+  await folderInput.setInputFiles(folder);
+  const autoId=await page.waitForFunction(file=>{
+    const library=SonicPlayback.library();
+    return !library.importing&&library.tracks.find(track=>track.sourcePath.endsWith(file))?.id;
+  },onlineLyricsFile).then(handle=>handle.jsonValue());
+  await openTrackDetails(autoId);
+  await details.getByRole('button',{name:'在线补全',exact:true}).click();
+  await details.getByText(/已填入专辑、歌词/).waitFor();
+  assert.equal(await details.locator('textarea[name="lyrics"]').inputValue(),enrichment.krc);
+  await saveTrackDetails();
+  assert.equal(await page.evaluate(async id=>(await SonicPlayback.localTrackDetails(id)).lyricsOrigin,autoId),'online');
+  await playLocal(autoId);
+  await waitForLocal(autoId);
+  assert.equal(await page.evaluate(()=>SonicPlayback.nudgeLyrics(.1)),.1);
+  await fs.writeFile(path.join(folder,verifiedSidecarFile),verifiedSidecar);
+  await folderInput.setInputFiles(folder);
+  await page.waitForFunction(id=>{
+    const snapshot=SonicPlayback.snapshot();
+    return !SonicPlayback.library().importing&&snapshot.track?.id===id&&snapshot.lyrics[0]?.text==='本机时间轴优先';
+  },autoId);
+  const autoSource=await page.evaluate(async id=>({
+    origin:(await SonicPlayback.localTrackDetails(id)).lyricsOrigin,
+    offset:SonicPlayback.snapshot().lyricOffset,
+  }),autoId);
+  assert.deepEqual(autoSource,{origin:'sidecar',offset:.1});
+  console.log('PASS saving an untouched online suggestion preserves provenance, and verified sidecar takes priority without changing offset');
   assert.deepEqual(errors,[]);
-  return [{ id, data:{ ...expected, ids:allIds } },{ id:longId, data:expectedLong }];
+  const finalIds=[...allIds,autoId];
+  return [{id,data:{...expected,ids:finalIds}},{id:longId,data:{...expectedLong,ids:finalIds}},
+    {id:autoId,data:{ids:finalIds,...onlineLyricsTags,album:enrichment.album,lyricsRaw:verifiedSidecar,cover:null}}];
 }
 
 async function run(folder) {
@@ -455,7 +561,7 @@ async function main() {
     await fs.writeFile(path.join(folder,'smoke.translation.lrc'),'[00:05.00]测试翻译');
     await run(folder);
   } finally {
-    for (const file of [wav,lrc,path.join(folder,'smoke.translation.lrc'),path.join(folder,longTagsFile)]) {
+    for (const file of [wav,lrc,...['smoke.translation.lrc',longTagsFile,onlineLyricsFile,verifiedSidecarFile].map(name=>path.join(folder,name))]) {
       await fs.unlink(file).catch(error => { if (error.code !== 'ENOENT') throw error; });
     }
     await fs.rmdir(folder);

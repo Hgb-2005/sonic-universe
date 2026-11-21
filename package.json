@@ -1,17 +1,17 @@
 {
   "name": "sonic-universe-desktop",
-  "version": "0.42.0",
+  "version": "0.46.2-preview.2",
   "private": true,
-  "description": "A quiet music companion with desktop wallpaper and immersive lyrics",
+  "description": "A quiet music companion with desktop lyrics and immersive visuals",
   "author": "Sonic Universe",
   "main": "desktop/main.cjs",
   "scripts": {
-    "prestart": "node scripts/stamp-assets.cjs && node scripts/build-wallpaper.cjs && node scripts/build-now-playing.cjs",
+    "prestart": "node scripts/stamp-assets.cjs && node scripts/build-now-playing.cjs",
     "start": "electron .",
     "test": "node --test tests/*.test.cjs",
     "desktop:pack": "electron-builder --win dir --x64",
-    "predesktop:pack": "node scripts/stamp-assets.cjs && node scripts/build-wallpaper.cjs && node scripts/build-now-playing.cjs",
-    "predesktop:build": "node scripts/stamp-assets.cjs && node scripts/build-wallpaper.cjs && node scripts/build-now-playing.cjs",
+    "predesktop:pack": "node scripts/stamp-assets.cjs && node scripts/build-now-playing.cjs",
+    "predesktop:build": "node scripts/stamp-assets.cjs && node scripts/build-now-playing.cjs",
     "desktop:build": "electron-builder --win nsis --x64"
   },
   "engines": { "node": ">=24" },
@@ -22,10 +22,10 @@
     "productName": "声波宇宙",
     "directories": { "output": "release" },
     "electronDist": "node_modules/electron/dist",
-    "files": ["desktop/**", "outputs/*.html", "outputs/*.js", "outputs/*.css", "outputs/interstellar-drift.mp3", "outputs/assets/**", "outputs/flight-preview.png", "companion/**", "package.json", "!desktop/native/*.cs", "!companion/node_modules/**", "!outputs/assets/reference/**", "!outputs/_*"],
-    "asarUnpack": ["desktop/native/WallpaperHost.exe", "desktop/native/NowPlayingHost.exe"],
+    "files": ["desktop/**", "outputs/*.html", "outputs/*.js", "outputs/*.css", "outputs/interstellar-drift.mp3", "outputs/assets/**", "outputs/flight-preview.png", "companion/**", "package.json", "!desktop/native/*.cs", "!desktop/native/WallpaperHost.exe", "!desktop/wallpaper.cjs", "!companion/node_modules/**", "!outputs/assets/reference/**", "!outputs/_*"],
+    "asarUnpack": ["desktop/native/NowPlayingHost.exe"],
     "win": { "target": "nsis", "icon": "outputs/assets/sonic-icon.png", "signExecutable": false },
-    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true, "createStartMenuShortcut": true },
+    "nsis": { "oneClick": false, "include": "build/installer.nsh", "createDesktopShortcut": true, "createStartMenuShortcut": true },
     "artifactName": "Sonic-Universe-${version}-${arch}.${ext}"
   }
 }

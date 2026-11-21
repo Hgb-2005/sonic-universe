@@ -22,6 +22,13 @@ test('the desktop selects a newer stable release and constructs a fixed reposito
   assert.equal(updateFor({...release,assets:[{...asset,digest:null}]},'0.40.0').installer,null);
 });
 
+test('a desktop preview can update to the matching stable version but cannot downgrade',()=>{
+  assert.equal(updateFor(release,'0.40.1-preview.1')?.version,'0.40.1');
+  assert.equal(updateFor(release,'0.40.0-preview.2')?.version,'0.40.1');
+  assert.equal(updateFor(release,'0.40.2-preview.1'),null);
+  assert.equal(updateFor({...release, tag_name:'v0.40.1-preview.2', prerelease:true},'0.40.1-preview.1'),null);
+});
+
 test('an update download checks size and checksum before replacing the selected file',async()=>{
   const directory=await mkdtemp(join(tmpdir(),'sonic-update-test-'));
   const file=join(directory,asset.name), installer=updateFor(release,'0.40.0').installer;

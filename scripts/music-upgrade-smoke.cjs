@@ -13,13 +13,16 @@ const origin = `http://127.0.0.1:${port}`;
 const recommendation = { provider:'qishui', mediaId:'8101', name:'日推测试歌曲', artist:'镜湖', duration:25 };
 const resolvedSong = { ...recommendation, mediaId:'8102', name:'解析测试歌曲' };
 const chart = { provider:'apple', mediaId:'8103', name:'榜单测试歌曲', artist:'镜湖', linkedOnly:true,
-  externalUrl:'https://music.apple.com/cn/song/8103' };
-const matchedChartSong = { ...recommendation, mediaId:'8105', name:chart.name, artist:chart.artist };
+  externalUrl:'https://music.apple.com/cn/song/8103', duration:25, album:'录音室专辑' };
+const matchedChartSong = { ...recommendation, mediaId:'8105', name:chart.name, artist:chart.artist, album:chart.album };
 const matchingPublicSong = { ...matchedChartSong, provider:'netease', mediaId:'9411', linkedOnly:true, externalUrl:'https://music.163.com/song?id=9411' };
-const livePublicSong = { ...matchingPublicSong, mediaId:'9412', duration:47, externalUrl:'https://music.163.com/song?id=9412' };
+const livePublicSong = { ...matchingPublicSong, mediaId:'9412', duration:47, album:'现场录音辑', externalUrl:'https://music.163.com/song?id=9412' };
 const unmatchedChartSong = { ...chart, mediaId:'8106', name:'暂无汽水同版的榜单歌曲', externalUrl:'https://music.apple.com/cn/song/8106' };
 const lastChartSong = { ...chart, mediaId:'8107',name:'榜单下一首' };
 const matchedLastChartSong = { ...matchedChartSong, mediaId:'8108', name:lastChartSong.name };
+const rejectedVersion = { ...matchedChartSong, mediaId:'8109', album:'音乐节现场', duration:47 };
+const manualVersion = { ...matchedChartSong, mediaId:'8110', album:'剧场现场', duration:48 };
+const chartAlternate = { ...matchedChartSong, mediaId:'8111', name:unmatchedChartSong.name, album:'现场珍藏', duration:49 };
 const musicVideo = { ...chart, mediaId:'8104', name:'测试 MV', externalUrl:'https://music.apple.com/cn/music-video/8104' };
 const inlineVideo = { provider:'commons', mediaId:'41356', name:'可在应用内播放的 MV', artist:'镜湖',
   videoUrl:'https://upload.wikimedia.org/wikipedia/commons/1/11/Inline-test.webm',
@@ -42,6 +45,8 @@ const localSong = { name:'Local Smoke Title', artist:'Fixture Artist', album:'Fi
 const localLyric = 'Matching folder lyrics';
 const playlistSource = { id:'8120', ownerId:'8121', name:'同步测试歌单' };
 const refreshedSong = { ...recommendation, mediaId:'8122', name:'刷新新增歌曲' };
+const providerLyric = '汽水当前录音的逐行歌词';
+const sameRecordingLyric = 'LRCLIB 同版录音的歌词';
 
 function testAudio() {
   const sampleRate = 8000;
@@ -87,7 +92,9 @@ async function mockCompanion(page) {
   const providerWrites = [];
   const chartMatches = [];
   const mediaRequests = [];
+  const lyricLookups = [];
   let videoBuffer = null;
+  let lyricOutage = false;
   let playlistName = playlistSource.name;
   let playlistItems = [recommendation, resolvedSong];
   const playlist = () => ({ ...playlistSource, name:playlistName, trackCount:playlistItems.length });
@@ -99,6 +106,21 @@ async function mockCompanion(page) {
   await page.route('**/*', route => {
     const request = route.request();
     const url = new URL(request.url());
+    if (url.origin === 'https://lrclib.net' && url.pathname === '/api/get') {
+      const headers = { 'Access-Control-Allow-Origin':'*', 'Access-Control-Allow-Headers':'lrclib-client',
+        'Access-Control-Allow-Methods':'GET, OPTIONS' };
+      if (request.method() === 'OPTIONS') return route.fulfill({status:204,headers});
+      const query = Object.fromEntries(url.searchParams);
+      lyricLookups.push(query);
+      const song = [matchedChartSong,matchedLastChartSong].find(track => track.name === query.track_name);
+      if (!song) return route.fulfill({status:404,headers});
+      const exact = song === matchedChartSong;
+      return route.fulfill({ headers, json:{
+        trackName:song.name, artistName:song.artist, duration:song.duration,
+        albumName:exact?song.album:'另一张录音专辑',
+        syncedLyrics:`[00:00.00]${exact?sameRecordingLyric:'错误版本的歌词'}`,
+      } });
+    }
     if (url.href === inlineVideo.videoUrl) {
       mediaRequests.push(url.href);
       assert.ok(videoBuffer);
@@ -119,7 +141,7 @@ async function mockCompanion(page) {
     if (url.pathname.startsWith('/api/')) requests.push(url.pathname + url.search);
     if (url.pathname === '/api/qishui/discovery') return route.fulfill({ json:{ provider:'qishui', items:[recommendation] } });
     if (url.pathname === '/api/netease/search') return route.fulfill({json:{items:[matchingPublicSong,livePublicSong]}});
-    if (url.pathname === '/api/qishui/search') return route.fulfill({json:{items:[matchedLastChartSong]}});
+    if (url.pathname === '/api/qishui/search') return route.fulfill({json:{items:[matchedChartSong,rejectedVersion,manualVersion]}});
     if (url.pathname === '/api/qishui/library/playlists') return route.fulfill({ json:{ items:[playlist()], hasMore:false } });
     if (url.pathname === `/api/qishui/playlists/${playlistSource.id}`) {
       return route.fulfill({ json:{ playlist:playlist(), items:playlistItems, hasMore:false } });
@@ -134,8 +156,13 @@ async function mockCompanion(page) {
       assert.equal(request.method(),'POST');
       const input = request.postDataJSON();
       chartMatches.push(input);
-      const item = [matchedChartSong,matchedLastChartSong].find(song=>song.name===input?.name&&song.artist===input?.artist)||null;
-      return route.fulfill({ json:{ item } });
+      const candidates = [matchedChartSong,matchedLastChartSong,rejectedVersion,manualVersion,chartAlternate]
+        .filter(song=>song.name===input?.name&&song.artist===input?.artist);
+      const compatible = candidates.filter(song=>(!input.duration||Math.abs(input.duration-song.duration)<=2)
+        &&(!input.album||input.album===song.album));
+      const item = compatible.length===1?compatible[0]:null;
+      const reason = item?'matched':compatible.length>1?'ambiguous':'no-match';
+      return route.fulfill({ json:input.includeCandidates ? {item,reason,candidates} : {item} });
     }
     if (url.pathname === '/api/discovery/music-videos') return route.fulfill({ json:{ items:[musicVideo] } });
     if (url.pathname === '/api/discovery/playable-videos') {
@@ -145,14 +172,28 @@ async function mockCompanion(page) {
     if ([recommendation,matchedChartSong,matchedLastChartSong].some(track => url.pathname === `/api/qishui/tracks/${track.mediaId}/audio`)) {
       return route.fulfill({ json:{ streamPath:'/media/music-upgrade-test', preview:false } });
     }
+    if (url.pathname === `/api/qishui/tracks/${rejectedVersion.mediaId}/audio`) {
+      return route.fulfill({ status:422, json:{ code:'not-playable',error:'受保护的录音' } });
+    }
+    if (url.pathname === `/api/qishui/tracks/${manualVersion.mediaId}/audio`) {
+      return route.fulfill({ json:{ streamPath:'/media/music-upgrade-test', preview:true,clipStartMs:27000 } });
+    }
     if (url.pathname === '/media/music-upgrade-test') {
       return route.fulfill({ contentType:'audio/wav', headers:{ 'Accept-Ranges':'bytes' }, body:audio });
+    }
+    if (url.pathname === `/api/qishui/songs/${recommendation.mediaId}/lyrics`) {
+      if(lyricOutage)return route.fulfill({status:503,json:{code:'upstream-unavailable',error:'歌词服务暂不可用'}});
+      return route.fulfill({ json:{ krc:'[1000,900]没有字词时间点', lrc:`[00:00.00]${providerLyric}` } });
+    }
+    if (url.pathname === `/api/qishui/songs/${manualVersion.mediaId}/lyrics`) {
+      return route.fulfill({json:{lrc:'[00:27.00]试听从原曲中段开始\n[00:30.00]接着唱下一句'}});
     }
     if (/^\/api\/qishui\/songs\/\d+\/lyrics$/.test(url.pathname)) return route.fulfill({ json:{ lrc:'' } });
     if (url.pathname.startsWith('/api/')) return route.fulfill({ status:404, json:{ error:'测试接口未配置' } });
     return route.continue();
   });
-  return { requests, providerWrites, chartMatches, mediaRequests, setVideoBuffer(buffer){videoBuffer=buffer}, refreshFixture(){
+  return { requests, providerWrites, chartMatches, mediaRequests, lyricLookups,
+    setLyricOutage(value){lyricOutage=value}, setVideoBuffer(buffer){videoBuffer=buffer}, refreshFixture(){
     playlistName = '刷新后的同步歌单';
     playlistItems = [resolvedSong, refreshedSong];
   } };
@@ -190,7 +231,7 @@ async function makeVideo(page) {
 
 async function verifyPlaylistSync(page, companion) {
   const room = page.locator('#listeningRoom');
-  await room.getByRole('button',{ name:'在线搜索',exact:true }).click();
+  await room.getByRole('button',{ name:'搜索音乐',exact:true }).click();
   await page.locator('#onlinePlaylistsBtn').click();
   await page.locator(`[data-online-playlist-id="${playlistSource.id}"]`).click();
   await page.locator('#onlineSyncPlaylistBtn').click();
@@ -269,7 +310,10 @@ async function verifyUpgrade(page) {
   page.on('pageerror', error => errors.push(error.message));
   const companion = await mockCompanion(page);
   const { requests } = companion;
-  await page.goto(origin);
+  if (process.argv.includes('--packaged')) {
+    await page.waitForURL(url => url.origin === origin);
+    await page.reload();
+  } else await page.goto(origin);
   await page.waitForFunction(() => SonicPlayback.snapshot().ready && SonicPlayback.snapshot().onlineReady);
   await page.evaluate(() => SonicPlayback.setVolume(0));
   const discovery = page.locator('dialog.sd-dialog');
@@ -278,6 +322,17 @@ async function verifyUpgrade(page) {
   const submit = discovery.locator('[data-discovery-submit]');
   const status = discovery.locator('[data-discovery-status]');
   const items = discovery.locator('[data-discovery-items]');
+  const matchInput = ({name,artist,duration,album},includeCandidates=false)=>({
+    name,artist,duration,album,...(includeCandidates?{includeCandidates:true}:{}),
+  });
+  const lyricResult = (track,state) => page.waitForFunction(({id,state}) => {
+    const snapshot = SonicPlayback.snapshot();
+    if (snapshot.track?.id!==`online:qishui:${id}` || snapshot.lyricsInfo?.state!==state) return null;
+    return { info:snapshot.lyricsInfo, lines:snapshot.lyrics };
+  },{id:track.mediaId,state}).then(handle => handle.jsonValue());
+  const lookupInput = track => ({
+    track_name:track.name, artist_name:track.artist, album_name:track.album, duration:String(track.duration),
+  });
 
   await page.locator('[data-action="discovery"]').filter({ visible:true }).first().click();
   await items.getByText(recommendation.name,{exact:true}).waitFor();
@@ -288,6 +343,11 @@ async function verifyUpgrade(page) {
     return snapshot.track?.name === name && snapshot.playing;
   }, recommendation.name);
   assert.ok(requests.some(request => request.startsWith('/api/qishui/discovery?')));
+  const provider = await lyricResult(recommendation,'ready');
+  assert.deepEqual(provider.info,{state:'ready',source:'汽水音乐',timing:'line'});
+  assert.deepEqual(provider.lines.map(line=>({text:line.text,points:line.points})),[{text:providerLyric,points:[]}]);
+  assert.ok(requests.includes(`/api/qishui/songs/${recommendation.mediaId}/lyrics`));
+  assert.deepEqual(companion.lyricLookups,[]);
   console.log('PASS recommendations open in the normal player');
 
   await tab('charts').click();
@@ -299,28 +359,44 @@ async function verifyUpgrade(page) {
     const snapshot = SonicPlayback.snapshot();
     return snapshot.playing && snapshot.track?.id === `online:qishui:${id}`;
   },matchedChartSong.mediaId);
-  assert.deepEqual(companion.chartMatches,[{name:chart.name,artist:chart.artist}]);
+  await status.filter({hasText:'已开始播放完整歌曲'}).waitFor();
+  assert.deepEqual(companion.chartMatches,[matchInput(chart,true)]);
   assert.ok(requests.includes(`/api/qishui/tracks/${matchedChartSong.mediaId}/audio`));
+  const fallback = await lyricResult(matchedChartSong,'ready');
+  assert.deepEqual(fallback.info,{state:'ready',source:'LRCLIB',timing:'line'});
+  assert.deepEqual(fallback.lines.map(line=>line.text),[sameRecordingLyric]);
+  assert.ok(requests.includes(`/api/qishui/songs/${matchedChartSong.mediaId}/lyrics`));
+  assert.ok(!requests.includes(`/api/qishui/songs/${chart.mediaId}/lyrics`));
+  assert.deepEqual(companion.lyricLookups[0],lookupInput(matchedChartSong));
   assert.deepEqual(await page.evaluate(() => window.musicUpgradeOfficialLinks),[]);
 
   if (!await discovery.isVisible()) {
     await page.locator('[data-action="discovery"]').filter({ visible:true }).first().click();
     await tab('charts').click();
   }
-  await chartRow(unmatchedChartSong.name).locator('[data-discovery-play-chart]').click();
+  const unmatchedRow=chartRow(unmatchedChartSong.name);
+  await unmatchedRow.locator('[data-discovery-play-chart]').click();
   await page.waitForFunction(() => document.querySelector('[data-discovery-status]').dataset.error === 'true');
-  assert.deepEqual(companion.chartMatches.at(-1),{name:unmatchedChartSong.name,artist:unmatchedChartSong.artist});
+  assert.deepEqual(companion.chartMatches.at(-1),matchInput(unmatchedChartSong,true));
+  const candidate=unmatchedRow.locator('[data-discovery-play-chart-candidate]');
+  await candidate.waitFor();
+  assert.match(await candidate.textContent(),/镜湖 · 现场珍藏 · 00:49/);
+  assert.equal(await unmatchedRow.getByRole('link').getAttribute('href'),unmatchedChartSong.externalUrl);
   assert.equal(await page.evaluate(() => SonicPlayback.snapshot().track.id),`online:qishui:${matchedChartSong.mediaId}`);
   assert.deepEqual(await page.evaluate(() => window.musicUpgradeOfficialLinks),[]);
-  console.log('PASS chart playback plays the matched Qishui track and keeps unmatched results in the app');
+  console.log('PASS chart plays a full match and offers candidate details and the official link for an unmatched recording');
 
   const before=companion.chartMatches.length;
   await items.getByRole('button',{name:'播放整榜'}).click();
   await page.waitForFunction(()=>SonicPlayback.snapshot({queue:true}).queueCount===3&&SonicPlayback.snapshot().playing);
-  assert.deepEqual(companion.chartMatches.slice(before).map(match=>match.name),[chart.name]);
+  assert.deepEqual(companion.chartMatches.slice(before),[matchInput(chart)]);
   await page.evaluate(()=>SonicPlayback.next());
   await page.waitForFunction(id=>SonicPlayback.snapshot().playing&&SonicPlayback.snapshot().track?.id==='online:qishui:'+id,matchedLastChartSong.mediaId);
-  assert.deepEqual(companion.chartMatches.slice(before).map(match=>match.name),[chart.name,unmatchedChartSong.name,lastChartSong.name]);
+  assert.deepEqual(companion.chartMatches.slice(before),[chart,unmatchedChartSong,lastChartSong].map(song=>matchInput(song)));
+  const wrongRecording = await lyricResult(matchedLastChartSong,'missing');
+  assert.deepEqual(wrongRecording.lines,[]);
+  assert.deepEqual(companion.lyricLookups.at(-1),lookupInput(matchedLastChartSong));
+  console.log('PASS online lyrics load for the selected recording, reject invalid KRC and require the exact LRCLIB album');
   console.log('PASS whole chart queues all rows and skips the unmatched track on advance');
 
   await discovery.evaluate(dialog=>dialog.close());
@@ -330,18 +406,48 @@ async function verifyUpgrade(page) {
   await page.locator('#onlineSearchBtn').click();
   const matchingButtons=page.locator('[data-online-action="match-qishui"]');
   await matchingButtons.last().click();
-  await page.getByText('汽水暂时没有可确认的同版本，仍可在原平台收听。',{exact:true}).waitFor();
-  await page.locator('[data-online-action="choose-qishui"]').click();
-  await page.getByRole('dialog',{name:'选择汽水版本'}).getByRole('button',{name:/榜单下一首/}).click();
-  await page.waitForFunction(id=>SonicPlayback.snapshot().playing&&SonicPlayback.snapshot().track?.id==='online:qishui:'+id,matchedLastChartSong.mediaId);
+  const searchStatus=page.locator('#onlineResultStatus');
+  await searchStatus.filter({hasText:'请选择要播放的录音版本'}).waitFor();
+  assert.deepEqual(companion.chartMatches.at(-1),matchInput(livePublicSong,true));
+
+  const currentPlayback=()=>page.evaluate(()=>{
+    const state=SonicPlayback.snapshot({queue:true});
+    return {playing:state.playing,id:state.track?.id,activeEntry:state.queueEntryId,
+      revision:state.queueRevision,entries:state.queue.map(track=>track.entryId)};
+  });
+  const active=await currentPlayback();
+  assert.equal(active.playing,true);
+  assert.equal(active.entries.length,3);
+  const chooseVersion=page.locator('[data-online-action="choose-qishui"]');
+  const versions=page.getByRole('dialog',{name:'选择汽水版本'});
+  await chooseVersion.click();
+  await versions.getByRole('button',{name:/音乐节现场/}).click();
+  await searchStatus.filter({hasText:'版权或会员保护内容无法在声波宇宙内播放'}).waitFor();
+  assert.ok(requests.includes(`/api/qishui/tracks/${rejectedVersion.mediaId}/audio`));
+  assert.deepEqual(await currentPlayback(),active);
+
+  await chooseVersion.click();
+  await versions.getByRole('button',{name:/剧场现场/}).click();
+  await page.waitForFunction(id=>SonicPlayback.snapshot().playing&&SonicPlayback.snapshot().track?.id==='online:qishui:'+id,manualVersion.mediaId);
+  await searchStatus.filter({hasText:'试听'}).waitFor();
+  await page.waitForFunction(()=>{
+    const state=SonicPlayback.snapshot();
+    return state.position>=.3&&state.position<3&&Math.abs(state.lyricPosition-state.position-27)<.01
+      &&state.lyrics[0]?.time===27&&state.duration===21;
+  });
+  await page.evaluate(()=>SonicPlayback.seek(2));
+  await page.waitForFunction(()=>Math.abs(document.getElementById('audio').currentTime-2)<.6
+    &&SonicPlayback.snapshot().lyricPosition>=29);
+  console.log('PASS clipped preview advances and seeks on its own clock while lyrics use the recording clock');
   await matchingButtons.first().click();
-  await page.getByText('正在播放汽水音乐提供的匹配版本。',{exact:true}).waitFor();
+  await searchStatus.filter({hasText:'正在播放汽水音乐匹配版本的全曲'}).waitFor();
+  assert.deepEqual(companion.chartMatches.at(-1),matchInput(matchingPublicSong,true));
   assert.equal(await page.evaluate(()=>SonicPlayback.snapshot().track.id),`online:qishui:${matchedChartSong.mediaId}`);
   assert.deepEqual(await page.evaluate(()=>window.musicUpgradeOfficialLinks),[]);
   await page.locator('[data-online-provider="qishui"]').click();
   await page.locator('#queueDialog').evaluate(dialog=>dialog.close());
   await page.locator('[data-action="discovery"]').filter({visible:true}).first().click();
-  console.log('PASS a public search match plays in the app only for the same recording length');
+  console.log('PASS public search checks audio identity, preserves playback on a rejected manual pick, and distinguishes preview from full playback');
 
   const fixtureVideo = await makeVideo(page);
   companion.setVideoBuffer(fixtureVideo.buffer);
@@ -488,6 +594,71 @@ async function verifyUpgrade(page) {
   });
   await page.waitForFunction(()=>!SonicPlayback.snapshot().playing&&SonicPlayback.playbackSettings().sleepDeadline===0);
   console.log('PASS playback rate and sleep timer settings control the active player');
+
+  const staleLyricsUrl = `${origin}/api/qishui/songs/${matchedChartSong.mediaId}/lyrics`;
+  let delayed;
+  const holdLyrics = route => { delayed = route; };
+  await page.route(staleLyricsUrl,holdLyrics);
+  try {
+    const requested = page.waitForRequest(staleLyricsUrl);
+    const playSong = song => page.evaluate(item => SonicPlayback.playOnlineList([item],'歌词切换测试'),song);
+    await Promise.all([requested,playSong(matchedChartSong)]);
+    await lyricResult(matchedChartSong,'loading');
+    assert.equal(await playSong(recommendation),true);
+    const current = await lyricResult(recommendation,'ready');
+    assert.ok(delayed,'The previous song response was delayed while switching tracks');
+    try { await delayed.fulfill({json:{lrc:'[00:00.00]上一首迟到的歌词'}}); }
+    catch(error) {
+      if(delayed.request().failure()?.errorText!=='net::ERR_ABORTED')throw error;
+    }
+    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+    const after = await page.evaluate(()=>SonicPlayback.snapshot());
+    assert.equal(after.track.id,`online:qishui:${recommendation.mediaId}`);
+    assert.deepEqual(after.lyrics,current.lines);
+    assert.deepEqual(after.lyricsInfo,current.info);
+  } finally {
+    await page.unroute(staleLyricsUrl,holdLyrics);
+  }
+  console.log('PASS a delayed response for the previous recording cannot replace the current lyrics');
+
+  const rejectedAudioUrl = `${origin}/api/qishui/tracks/${recommendation.mediaId}/audio`;
+  const rejectAudio = route=>route.fulfill({status:422,json:{code:'not-playable',error:'测试下一首暂不可播'}});
+  delayed=null;
+  await page.route(staleLyricsUrl,holdLyrics);
+  await page.route(rejectedAudioUrl,rejectAudio);
+  try {
+    const requested = page.waitForRequest(staleLyricsUrl);
+    const selected = page.evaluate(song=>SonicPlayback.playOnlineList([song],'保留当前歌词测试'),matchedChartSong);
+    assert.equal((await Promise.all([requested,selected]))[1],true);
+    await lyricResult(matchedChartSong,'loading');
+    await page.evaluate(song=>SonicPlayback.select('online:qishui:'+song.mediaId),recommendation);
+    assert.equal((await page.evaluate(()=>SonicPlayback.snapshot())).track.id,`online:qishui:${matchedChartSong.mediaId}`);
+    const text = '下一首未能播放，当前歌曲的歌词仍到达';
+    assert.ok(delayed,'The current recording lyric request was held');
+    await delayed.fulfill({json:{lrc:'[00:00.00]'+text}});
+    assert.equal((await lyricResult(matchedChartSong,'ready')).lines[0].text,text);
+  } finally {
+    await page.unroute(staleLyricsUrl,holdLyrics);
+    await page.unroute(rejectedAudioUrl,rejectAudio);
+  }
+  console.log('PASS rejected audio preflight preserves in-flight lyrics for the current recording');
+
+  companion.setLyricOutage(true);
+  assert.equal(await page.evaluate(song=>SonicPlayback.playOnlineList([song],'歌词恢复测试'),recommendation),true);
+  const temporary = await lyricResult(recommendation,'unavailable');
+  assert.deepEqual(temporary.lines,[]);
+  assert.equal(temporary.info.reason,'connection');
+  await page.locator('#listeningRoom [data-room-mode="listen"]').click();
+  const retryLyrics = page.locator('#listeningRoom [data-action="retry-lyrics"]:visible');
+  await retryLyrics.waitFor();
+  const audioBeforeRetry = requests.filter(request=>request.endsWith('/audio')).length;
+  companion.setLyricOutage(false);
+  await retryLyrics.click();
+  assert.deepEqual((await lyricResult(recommendation,'ready')).lines.map(line=>line.text),[providerLyric]);
+  assert.equal(requests.filter(request=>request.endsWith('/audio')).length,audioBeforeRetry);
+  await retryLyrics.waitFor({state:'hidden'});
+  console.log('PASS a temporary lyric outage retries the same recording without reopening the audio stream');
+
   await verifyPlaylistSync(page,companion);
   await verifyFolderImport(page);
   assert.deepEqual(errors,[]);

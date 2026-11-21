@@ -20,7 +20,7 @@
     const $=selector=>dialog.querySelector(selector), form=$('form'), fields=$('fieldset'), status=$('[data-detail-status]');
     const submit=$('[type=submit]'), image=$('[data-detail-cover]'), empty=$('[data-detail-cover-empty]');
     const inputs=form.elements;
-    let original,cover,request,generation=0;
+    let original,cover,request,lyricsIntent='',generation=0;
 
     function setStatus(message,error=false){status.textContent=message;status.dataset.error=String(error);}
     function locked(value){fields.disabled=value;submit.disabled=value;}
@@ -28,7 +28,7 @@
       cover=value;image.hidden=!cover;empty.hidden=!!cover;$('[data-detail-clear]').disabled=!cover;
       if(cover)image.src=cover;else image.removeAttribute('src');
     }
-    function draft(){return {...original,name:inputs.title.value,artist:inputs.artist.value,album:inputs.album.value,lyricsRaw:inputs.lyrics.value,translationRaw:inputs.translation.value,cover};}
+    function draft(){return {...original,name:inputs.title.value,artist:inputs.artist.value,album:inputs.album.value,lyricsRaw:inputs.lyrics.value,translationRaw:inputs.translation.value,lyricsIntent,cover};}
     function change() {return {stamp:++generation,applies(){return dialog.open&&this.stamp===generation;}};}
 
     async function open(id) {
@@ -36,6 +36,7 @@
       const track=await api.localTrackDetails(id);
       if(stamp!==generation)return;
       original=track;
+      lyricsIntent='';
       inputs.title.value=track.name;inputs.artist.value=track.artist;inputs.album.value=track.album;inputs.lyrics.value=track.lyricsRaw;inputs.translation.value=track.translationRaw;
       $('[data-detail-path]').textContent=track.sourcePath+(track.sourceMissing?' · 原文件已移走，本机副本仍可播放':'');setCover(track.cover);locked(false);setStatus('');
       if(!dialog.open)dialog.showModal();
@@ -43,6 +44,7 @@
 
     dialog.querySelectorAll('[data-detail-close]').forEach(button=>button.addEventListener('click',()=>dialog.close()));
     dialog.addEventListener('close',()=>{generation++;request?.abort();request=null;original=null;});
+    for(const input of [inputs.lyrics,inputs.translation])input.addEventListener('input',()=>{lyricsIntent='manual';});
     $('[data-detail-clear]').addEventListener('click',()=>setCover(null));
     $('[data-detail-artwork]').addEventListener('change',async event=>{
       const [file]=event.target.files;event.target.value='';if(!file)return;
@@ -55,7 +57,7 @@
       const [file]=event.target.files;event.target.value='';if(!file)return;
       if(file.size>250000){setStatus('歌词文件太大。',true);return;}
       const job=change();locked(true);
-      try{const raw=await file.text();if(job.applies()){if(raw.length>160000)throw Error('歌词内容太长。');inputs[picker.dataset.detailLyricsFile].value=raw;setStatus('已读取文件，保存后应用。');}}
+      try{const raw=await file.text();if(job.applies()){if(raw.length>160000)throw Error('歌词内容太长。');inputs[picker.dataset.detailLyricsFile].value=raw;lyricsIntent='manual';setStatus('已读取文件，保存后应用。');}}
       catch(error){if(job.applies())setStatus(error.message,true);}
       finally{if(job.applies())locked(false);}
     });
@@ -72,7 +74,7 @@
         if(match.inferred){inputs.title.value=match.name;inputs.artist.value=match.artist;additions.push('歌名和歌手');}
         if(match.album){inputs.album.value=match.album;additions.push('专辑');}
         if(match.cover){setCover(match.cover);additions.push('封面');}
-        if(match.lyricsRaw&&match.lyricsRaw.length<=160000){inputs.lyrics.value=match.lyricsRaw;additions.push(match.lyricsSource?`歌词（${match.lyricsSource}）`:'歌词');}
+        if(match.lyricsRaw&&match.lyricsRaw.length<=160000){inputs.lyrics.value=match.lyricsRaw;lyricsIntent='online';additions.push(match.lyricsSource?`歌词（${match.lyricsSource}）`:'歌词');}
         setStatus(additions.length?'已填入'+additions.join('、')+'，核对后保存。':match.coverUnavailable?'已匹配曲目，封面暂时无法读取。':'已匹配曲目，暂无可补全字段。');
       }catch(error){if(job.applies()&&!controller.signal.aborted)setStatus(error.message||'暂时无法读取汽水音乐。',true);}
       finally{if(request===controller)request=null;if(job.applies())locked(false);}

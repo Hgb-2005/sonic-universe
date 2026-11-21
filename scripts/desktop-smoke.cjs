@@ -7,12 +7,86 @@ const { _electron } = require('playwright');
 const root = path.resolve(__dirname, '..');
 const qa = path.join(root, 'work', 'desktop-qa');
 const packaged = process.argv.includes('--packaged');
+const quarantineOnly = process.argv.includes('--quarantine-only');
 const executablePath = packaged
   ? path.resolve(process.env.SONIC_DESKTOP_EXECUTABLE || path.join(root, 'release', 'win-unpacked', '声波宇宙.exe'))
   : require('electron');
 const capture = process.argv.includes('--capture');
+const origin = 'http://127.0.0.1:18864';
+
+async function checkQuarantinePackage() {
+  const checkMain = main => {
+    assert.doesNotMatch(main, /createWallpaperController|WallpaperHost|wallpaper\.cjs|getNativeWindowHandle\(|setIgnoreMouseEvents\(/i,
+      'Desktop main code must not load the wallpaper controller or attach a native window');
+  };
+  const checkDescriptor = descriptor => {
+    assert.ok(Object.values(descriptor.scripts||{}).every(script=>!script.includes('build-wallpaper')),
+      'Desktop lifecycle scripts must not build the wallpaper helper');
+    const unpack=descriptor.build?.asarUnpack||[];
+    assert.ok(unpack.every(entry=>!entry.toLowerCase().includes('wallpaperhost')),
+      'The wallpaper helper must not be unpacked');
+  };
+  checkDescriptor(JSON.parse(await fs.readFile(path.join(root,'package.json'),'utf8')));
+  if(!packaged){
+    checkMain(await fs.readFile(path.join(root,'desktop','main.cjs'),'utf8'));
+    return;
+  }
+
+  const {listPackage,extractFile}=require('@electron/asar');
+  const resources=path.join(path.dirname(executablePath),'resources');
+  const archive=path.join(resources,'app.asar');
+  const files=listPackage(archive).map(file=>file.replaceAll('\\','/').toLowerCase());
+  for(const filename of ['wallpaperhost.exe','wallpaper.cjs']){
+    assert.ok(!files.some(file=>file.endsWith('/'+filename)),filename+' is still shipped in app.asar');
+  }
+  await assert.rejects(fs.access(path.join(resources,'app.asar.unpacked','desktop','native','WallpaperHost.exe')),{code:'ENOENT'});
+  assert.ok(files.some(file=>file.endsWith('/desktop/native/nowplayinghost.exe')),
+    'Now Playing metadata helper must still ship');
+  await fs.access(path.join(resources,'app.asar.unpacked','desktop','native','NowPlayingHost.exe'));
+  const manifest=JSON.parse(extractFile(archive,'package.json').toString('utf8'));
+  assert.equal(manifest.main,'desktop/main.cjs');
+  checkMain(extractFile(archive,'desktop/main.cjs').toString('utf8'));
+}
+
+async function verifyWallpaperQuarantine(app,page,room) {
+  const settings=await page.evaluate(()=>sonicDesktop.settings());
+  assert.equal(settings.wallpaper,false);
+  assert.equal(settings.wallpaperAvailable,false);
+  await room.locator('[data-action="desktop"]').click();
+  const dialog=room.locator('[data-desktop-dialog]');
+  await dialog.waitFor();
+  const pauseNotice=/动态桌面.*(?:暂停|停用|关闭|不可用)/;
+  await dialog.getByText(pauseNotice).waitFor();
+  assert.equal(await dialog.locator('[data-wallpaper-enter], [data-wallpaper-exit]').count(),0);
+  assert.ok(await dialog.getByRole('button',{name:'迷你播放器',exact:true}).isVisible());
+  await dialog.getByRole('button',{name:'关闭桌面设置',exact:true}).click();
+
+  const windowState=()=>app.evaluate(({BrowserWindow},url)=>{
+    const window=BrowserWindow.getAllWindows().find(item=>item.webContents.getURL().startsWith(url));
+    return {
+      bounds:window.getBounds(),visible:window.isVisible(),
+      minimized:window.isMinimized(),fullScreen:window.isFullScreen(),normal:window.isNormal(),
+    };
+  },origin);
+  const before=await windowState();
+  assert.ok(before.visible&&before.normal&&!before.minimized&&!before.fullScreen);
+  if(packaged){
+    // The archive and unpacked files were checked before any Electron process launched.
+    const denial=await page.evaluate(()=>sonicDesktop.wallpaper(true));
+    assert.equal(denial.ok,false,denial.message);
+    assert.match(denial.message,pauseNotice);
+  }
+  assert.deepEqual(await windowState(),before);
+  assert.equal(await page.evaluate(()=>SonicListeningRoom.stats().wallpaper),false);
+  await room.locator('[data-room-mode="listen"]').click();
+  assert.equal(await room.getAttribute('data-mode'),'listen');
+  await room.locator('[data-room-mode="work"]').click();
+  assert.equal(await room.getAttribute('data-mode'),'work');
+  console.log('PASS wallpaper quarantine, disabled settings and ordinary window navigation');
+}
 
 async function run() {
+  await checkQuarantinePackage();
   await fs.mkdir(qa, { recursive:true });
   const profile = await fs.mkdtemp(path.join(qa, 'profile-'));
   const app = await _electron.launch({
@@ -23,6 +97,13 @@ async function run() {
   try {
     const page = await app.firstWindow();
     page.on('pageerror', error=>errors.push(error.message));
+    const room = page.locator('#listeningRoom');
+    if(quarantineOnly){
+      await page.waitForFunction(()=>window.SonicPlayback?.snapshot().ready);
+      await verifyWallpaperQuarantine(app,page,room);
+      assert.deepEqual(errors,[]);
+      return;
+    }
     const fixtureAudio = await fs.readFile(path.join(root,'outputs','interstellar-drift.mp3'));
     await page.route('**/api/qishui/search',route=>route.fulfill({json:{items:[
       {provider:'qishui',mediaId:'1001',name:'测试歌曲',artist:'测试音源',duration:96},
@@ -41,7 +122,7 @@ async function run() {
       },body:bytes});
     });
     await page.waitForFunction(()=>window.SonicPlayback?.snapshot().ready);
-    const room = page.locator('#listeningRoom');
+    await verifyWallpaperQuarantine(app,page,room);
     await room.locator('[data-art-cover]').waitFor();
     await room.locator('[data-work-queue] [aria-current=true]').waitFor();
     await page.waitForFunction(()=>{
@@ -79,12 +160,12 @@ async function run() {
     await room.locator('[data-music-library]').waitFor();
     assert.ok(await page.evaluate(()=>SonicPlayback.snapshot().playing));
     assert.equal(await room.locator('[data-sl-tracks] [aria-current=true]').count(),1);
-    await room.getByRole('button',{name:'歌词欣赏',exact:true}).click();
+    await room.locator('[data-room-mode="listen"]').click();
     const after=await page.evaluate(()=>SonicPlayback.snapshot());
     assert.ok(after.playing&&after.position>=before);
     await room.locator('.lr-now-cover').click();
     assert.equal(await room.getAttribute('data-lyric-style'),'list');
-    await room.getByRole('button',{name:'舞台',exact:true}).click();
+    await room.locator('button[data-lyric-style="stage"]').click();
     assert.ok(await page.evaluate(()=>SonicPlayback.snapshot().playing));
     await room.locator('[data-action="play"]').click();
     await room.getByText('导入或调整歌词', { exact:false }).click();
@@ -114,7 +195,7 @@ async function run() {
     await room.locator('[data-action="desktop-lyrics-window"][aria-pressed="false"]').waitFor();
     console.log('PASS desktop lyric overlay receives current and next lines from the player');
 
-    await room.getByRole('button',{name:'飞入',exact:true}).click();
+    await room.locator('button[data-lyric-style="fly"]').click();
     await room.locator('[data-seek]').fill('7.6');
     assert.equal(await room.locator('[data-flight-state=flying]').count(),0);
     await room.locator('[data-action="play"]').click();
@@ -134,7 +215,7 @@ async function run() {
     await page.waitForFunction(()=>!SonicPlayback.snapshot().playing&&!document.querySelector('[data-flight-state=flying]'));
     assert.equal(await room.locator('[data-current-line]').textContent(),'让音乐慢慢流动');
     console.log('PASS timed word groups enter at native timestamps and settle on pause');
-    await room.getByRole('button',{name:'舞台',exact:true}).click();
+    await room.locator('button[data-lyric-style="stage"]').click();
 
     const miniOpened = app.waitForEvent('window', { predicate:window=>window!==page, timeout:15000 });
     await room.getByRole('button',{name:'迷你播放器',exact:true}).click();
@@ -154,34 +235,6 @@ async function run() {
     await page.waitForFunction(()=>SonicListeningRoom.stats().fpsLimit===30);
     console.log('PASS mini controls and time updates while main drawing is stopped');
     await mini.getByRole('button',{name:'收起迷你播放器'}).click();
-
-    const attachment = await page.evaluate(()=>sonicDesktop.wallpaper(true));
-    console.log('Wallpaper attach:', attachment);
-    assert.equal(attachment.ok,true,attachment.message);
-    await page.waitForFunction(()=>SonicListeningRoom.stats().wallpaper&&SonicListeningRoom.stats().fpsLimit===20);
-    assert.equal(await room.getAttribute('data-mode'),'work');
-    const coverId=await app.evaluate(async({BrowserWindow})=>{
-      const cover=new BrowserWindow({title:'Sonic coverage fixture',show:false,alwaysOnTop:true});
-      await cover.loadURL('data:text/html,<title>Sonic coverage fixture</title>');
-      cover.setFullScreen(true);cover.show();cover.focus();return cover.id;
-    });
-    try {
-      await page.waitForFunction(()=>SonicListeningRoom.stats().fpsLimit===0, null, {polling:100,timeout:40000});
-    } catch(error) {
-      console.error('Coverage window:',await app.evaluate(({BrowserWindow,screen},id)=>{
-        const fixture=BrowserWindow.fromId(id);
-        return {focused:fixture.isFocused(),bounds:fixture.getBounds(),display:screen.getDisplayMatching(fixture.getBounds()).bounds};
-      },coverId));
-      console.error('Wallpaper renderer:',await page.evaluate(()=>({visibility:document.visibilityState,...SonicListeningRoom.stats()})));
-      throw error;
-    } finally {
-      await app.evaluate(({BrowserWindow},id)=>BrowserWindow.fromId(id)?.destroy(),coverId);
-    }
-    const restored = await page.evaluate(()=>sonicDesktop.wallpaper(false));
-    assert.equal(restored.ok,true);
-    await page.waitForFunction(()=>!SonicListeningRoom.stats().wallpaper);
-    assert.equal(await room.getAttribute('data-mode'),'listen');
-    console.log('PASS real Windows wallpaper attach and restore');
 
     if(capture) {
       await room.locator('.lr-footer [data-action="external"]').click();
@@ -206,10 +259,10 @@ async function run() {
       console.log('PASS system loopback with a separate test audio source');
     }
 
-    await room.getByRole('button',{name:'在线搜索',exact:true}).click();
+    await room.getByRole('button',{name:'搜索音乐',exact:true}).click();
     await page.locator('#onlineSearchInput').fill('测试歌曲');
     await page.locator('#onlineSearchBtn').click();
-    await page.locator('#onlineResults [data-online-action="play"]').click();
+    await page.locator('#onlineResults [data-result-start]').click();
     await page.waitForFunction(()=>SonicPlayback.snapshot().playing&&SonicPlayback.snapshot().track?.name==='测试歌曲');
     await page.keyboard.press('Escape');
     await page.waitForFunction(()=>document.querySelector('[data-current-line]')?.textContent==='入耳');

@@ -41,10 +41,9 @@
   function units(line, end, timed) {
     if (timed.length) return timed;
     const parts = segmenter ? Array.from(segmenter.segment(line.text), item => item.segment) : [line.text];
-    const blocks = parts.length <= 42 ? parts : [line.text];
     const spread = clamp((end-line.time)*.34, 0, .46);
-    return blocks.map((text,index) => {
-      const start = line.time + index / blocks.length * spread;
+    return parts.map((text,index) => {
+      const start = line.time + index / parts.length * spread;
       return {text,start,end:Math.min(end,start+.32)};
     });
   }
@@ -55,14 +54,18 @@
     return {enter:smooth(clamp(elapsed/Math.min(.48,Math.max(.12,(end-start)*.45)))), phase,
       direction:Math.sin(phase*Math.PI*2)};
   }
-  function wordFrame(word, position, lineStart, order, animated) {
-    if (!animated) return {rest:0, note:0, wave:0};
+  function wordMotion(word, lineStart) {
     const duration = clamp((word.end-word.start)*.55+.16,.16,.48);
     const begin = Math.max(lineStart,word.start-.055);
-    const amount = clamp((position-begin)/duration);
-    const voiced = clamp((position-word.start)/Math.max(.12,word.end-word.start));
-    return {rest:1-smooth(amount),note:Math.sin(Math.PI * voiced),
-      wave:Math.sin(Math.PI * amount) * (order%2===0 ? 1 : -1)};
+    const voice = Math.max(.12,word.end-word.start);
+    return {begin,duration,voice,finish:Math.max(begin+duration,word.start+voice)};
   }
-  return Object.freeze({groups:Object.freeze(groups),get,units,lineFrame,wordFrame});
+  function wordFrame(word, position) {
+    const {begin,duration,voice} = word.motion;
+    const amount = clamp((position-begin)/duration);
+    const voiced = clamp((position-word.start)/voice);
+    return {rest:1-smooth(amount),note:Math.sin(Math.PI * voiced),
+      wave:Math.sin(Math.PI * amount) * (word.order%2===0 ? 1 : -1)};
+  }
+  return Object.freeze({groups:Object.freeze(groups),get,units,lineFrame,wordMotion,wordFrame});
 });

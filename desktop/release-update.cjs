@@ -12,10 +12,11 @@ const versionParts = value => /^v?(\d{1,5})\.(\d{1,5})\.(\d{1,5})$/.exec(value |
 
 function updateFor(release,current){
   if(release?.draft||release?.prerelease)return null;
-  const next=versionParts(release?.tag_name), here=versionParts(current);
+  const preview=/^(v?\d{1,5}\.\d{1,5}\.\d{1,5})-preview\.[1-9]\d{0,4}$/.exec(current||'');
+  const next=versionParts(release?.tag_name), here=versionParts(preview?.[1]||current);
   if(!next||!here)return null;
   const first=next.findIndex((part,index)=>part!==here[index]);
-  if(first<0||next[first]<here[first])return null;
+  if(first<0?!preview:next[first]<here[first])return null;
   const version=next.join('.'),tag='v'+version;
   const filename=`Sonic-Universe-${version}-x64.exe`;
   if(release.tag_name!==tag||!Array.isArray(release.assets))return null;

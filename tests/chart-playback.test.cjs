@@ -29,6 +29,45 @@ test('chart matching rejects wrong versions, wrong artists and distinct same-cre
   assert.deepEqual(await match([track('1', '一首歌', '歌手'), track('2', '一首歌', '歌手')]), { item: null });
 });
 
+test('chart matching uses album and duration before deciding which same-credit recording matches', async () => {
+  const input = { name: '一首歌', artist: '歌手', album: 'Ａ  Album', duration: 190 };
+  const wrongDuration = { ...track('1', '一首歌', '歌手'), album: 'A Album', duration: 192.01 };
+  const wrongAlbum = { ...track('2', '一首歌', '歌手'), album: '另一张专辑', duration: 190 };
+  const missing = track('3', '一首歌', '歌手');
+  const expected = { ...track('4', '一首歌', '歌手'), album: 'a album', duration: 192 };
+  const pages = [
+    { items: [wrongDuration, wrongAlbum, track('5', '一首歌 (Live)', '歌手')], hasMore: true, nextOffset: 20 },
+    { items: [missing, expected, track('6', '一首歌', '其他歌手'), expected] },
+  ];
+  const search = async ({ offset }) => pages[offset / 20];
+  assert.deepEqual(await matchChartSong(search, input), { item: expected });
+  assert.deepEqual(await matchChartSong(search, { ...input, includeCandidates: true }), {
+    item: expected, reason: 'matched', candidates: [expected, missing, wrongDuration, wrongAlbum],
+  });
+});
+
+test('chart matching exposes ambiguity and keeps incomplete metadata out of automatic playback', async () => {
+  const input = { name: '一首歌', artist: '歌手', album: '专辑', duration: 190, includeCandidates: true };
+  const candidate = { ...track('1', '一首歌', '歌手'), album: '专辑', duration: 190 };
+  const tied = { ...candidate, mediaId: '2' };
+  const noAlbum = { ...candidate, mediaId: '3', album: '' };
+  const noDuration = { ...candidate, mediaId: '4', duration: 0 };
+  const wrongAlbum = { ...candidate, mediaId: '5', album: '其他专辑' };
+  const match = (items, hints = input) => matchChartSong(async () => ({ items }), hints);
+  assert.deepEqual(await match([noAlbum, candidate, tied]), {
+    item: null, reason: 'ambiguous', candidates: [candidate, tied, noAlbum],
+  });
+  assert.deepEqual(await match([wrongAlbum, noAlbum, noDuration]), {
+    item: null, reason: 'no-match', candidates: [noAlbum, noDuration, wrongAlbum],
+  });
+  assert.deepEqual(await match([noAlbum, candidate], { ...input, album: '' }), {
+    item: null, reason: 'ambiguous', candidates: [noAlbum, candidate],
+  });
+  assert.deepEqual(await match([noDuration], { ...input, duration: 0 }), {
+    item: noDuration, reason: 'matched', candidates: [noDuration],
+  });
+});
+
 test('chart matching inspects bounded pagination, tolerates repeated IDs and fails closed on incomplete pages', async () => {
   const input = { name: '一首歌', artist: '歌手' };
   const song = track('12', '一首歌', '歌手');
@@ -51,11 +90,27 @@ test('chart matching inspects bounded pagination, tolerates repeated IDs and fai
   assert.deepEqual(incomplete, { item: null });
 });
 
+test('detailed chart matching caps deduplicated manual candidates and reports incomplete paging', async () => {
+  const input = { name: '一首歌', artist: '歌手', includeCandidates: true };
+  const candidates = Array.from({ length: 16 }, (_, index) => track(String(index + 1), input.name, input.artist));
+  const offsets = [];
+  const incomplete = await matchChartSong(async ({ offset, limit }) => {
+    offsets.push(offset);
+    return { items: [track('100', '一首歌（翻唱）', '歌手'), ...candidates], hasMore: true, nextOffset: offset + limit };
+  }, input);
+  assert.deepEqual(offsets, [0, 20, 40]);
+  assert.deepEqual(incomplete, { item: null, reason: 'incomplete', candidates: candidates.slice(0, 15) });
+});
+
 test('chart matching rejects malformed input before any search and reports invalid service responses', async () => {
   const shouldNotRun = () => assert.fail('Invalid text reached the catalogue');
   for (const input of [null, { name: '歌曲' }, { name: '歌\n曲', artist: '歌手' }, { name: '啊'.repeat(241), artist: '歌手' }]) {
     await assert.rejects(matchChartSong(shouldNotRun, input), { status: 400, code: 'invalid-chart-song' });
   }
+  await assert.rejects(matchChartSong(shouldNotRun, { name: '歌曲', artist: '歌手', duration: '190' }),
+    { status: 400, code: 'invalid-chart-song' });
+  await assert.rejects(matchChartSong(shouldNotRun, { name: '歌曲', artist: '歌手', album: {} }),
+    { status: 400, code: 'invalid-chart-song' });
   await assert.rejects(matchChartSong(async () => null, { name: '歌', artist: '人' }), { status: 502, code: 'upstream-invalid-response' });
 });
 
@@ -81,11 +136,14 @@ test('Companion exposes chart matching as a POST and returns the selected catalo
     });
   }
 
-  const candidate = track('12', '一首歌', '歌手');
+  const candidate = { ...track('12', '一首歌', '歌手'), duration: 190 };
   assert.equal((await request('GET')).status, 405);
   assert.equal((await request('POST', { name: '一首歌', artist: '歌手' })).status, 503);
   providers.set('qishui', { search: async () => ({ items: [candidate] }) });
   assert.deepEqual(await request('POST', { name: '一首歌', artist: '歌手' }), { status: 200, data: { item: candidate } });
+  assert.deepEqual(await request('POST', { name: '一首歌', artist: '歌手', duration: 190, includeCandidates: true }), {
+    status: 200, data: { item: candidate, reason: 'matched', candidates: [candidate] },
+  });
   assert.deepEqual(await request('POST', { name: '一首歌', artist: '陌生歌手' }), { status: 200, data: { item: null } });
   assert.equal((await request('POST', { name: '一首歌' })).status, 400);
 });

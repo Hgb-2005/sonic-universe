@@ -10,6 +10,8 @@
   const COVER_DOMAINS = ['douyinpic.com', 'douyinstatic.com', 'byteimg.com', 'qishui.com', 'douyin.com'];
   const MAX_DURATION_DIFFERENCE = 2;
   const MAX_LYRIC_LENGTH = 250000;
+  const LYRIC_END_TOLERANCE = .5;
+  const LYRIC_MARKUP = /<(?:\/?[A-Za-z]|[\d!?])[^<>]*>|<!--|\(\d{1,10},\d{1,10}(?:,\d+)?\)/;
   const AUDIO_EXTENSION = /\.(?:mp3|wav|ogg|m4a|aac|flac|opus|webm|aif|aiff|mp4)$/i;
   const LYRIC_CLIENT = 'Sonic Universe/0.39 (https://github.com/Hgb-2005/sonic-universe)';
   let lyricQueue = Promise.resolve(), nextLookup = 0;
@@ -52,31 +54,65 @@
     }
   }
 
-  function lyricSource(data, duration) {
-    const krc = data?.krc;
-    if (typeof krc === 'string' && krc.length <= MAX_LYRIC_LENGTH
-      && !/^\s*krc1/i.test(krc) && !/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/.test(krc)
-      && karaoke.parseKrc(krc).some(line => line.time >= 0 && line.time < duration
-        && line.points.some(point => point.time >= line.time && point.time < Math.min(duration, line.end)
-          && point.end > point.time))) {
-      return krc;
+  function validatedPoints(line, end) {
+    const length = Array.from(line.text).length;
+    const points = [];
+    for (const [index, point] of line.points.entries()) {
+      const previous = points.at(-1);
+      const explicitEnd = point.end !== undefined;
+      const stop = explicitEnd ? point.end : (line.points[index + 1]?.time ?? end);
+      if (!Number.isInteger(point.index) || point.index <= (previous?.index ?? -1) || point.index >= length
+        || !Number.isFinite(point.time) || point.time < (previous?.time ?? line.time) || point.time >= end
+        || !Number.isFinite(stop) || stop <= point.time || stop > end + LYRIC_END_TOLERANCE) return [];
+      points.push(explicitEnd ? { ...point, end: Math.min(stop, end) } : point);
     }
-    for (const source of [data?.timedLrc, data?.lrc]) {
-      if (typeof source !== 'string' || source.length > MAX_LYRIC_LENGTH) continue;
-      if (karaoke.parse(source).some(line => line.text && line.time >= 0 && line.time <= duration)) return source;
+    return points;
+  }
+
+  function resolveTimedLyrics(data, duration) {
+    if (!Number.isFinite(duration) || duration <= 0) return null;
+    const sources = typeof data === 'string' ? [data] : [
+      data?.krc, data?.yrc, data?.qrc, data?.ttml, data?.vtt, data?.raw,
+      data?.timedLrc, data?.syncedLyrics, data?.lrc,
+    ];
+    let fallback = null;
+    for (const raw of new Set(sources)) {
+      if (typeof raw !== 'string' || !raw || raw.length > MAX_LYRIC_LENGTH
+        || /^\s*krc1/i.test(raw) || /[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/.test(raw)) continue;
+      let parsed;
+      try { parsed = karaoke.parse(raw); }
+      catch { continue; }
+      if (parsed.some(line => LYRIC_MARKUP.test(line.text) || LYRIC_MARKUP.test(line.translation || ''))) continue;
+      const bounded = parsed.filter(line => line.text?.trim() && Number.isFinite(line.time)
+        && line.time >= 0 && line.time < duration && (line.end === undefined
+          || (Number.isFinite(line.end) && line.end > line.time && line.end <= duration + LYRIC_END_TOLERANCE)));
+      if (!bounded.length) continue;
+      const lines = bounded.map((line, index) => {
+        const end = Math.min(duration, line.end ?? bounded[index + 1]?.time ?? duration);
+        const points = validatedPoints(line, end);
+        return line.end === undefined ? { ...line, points } : { ...line, end, points };
+      });
+      if (lines.some(line => line.points.length)) return { raw, lines, timing: 'word' };
+      const hasInvalidMarks = bounded.some(line => line.points.length);
+      if (!fallback && !hasInvalidMarks && !/^\s*\[\d{1,10},\d{1,10}\]/m.test(raw)) {
+        fallback = { raw, lines, timing: 'line' };
+      }
     }
-    return '';
+    return fallback;
   }
 
   function authExpired(error) {
     return error?.status === 401 || error?.code === 'auth-required';
   }
 
-  function findTimedLyrics({ name, artist, album, duration }, signal) {
+  function findTimedLyrics({ name, artist, album, duration }, signal, { reportUnavailable = false } = {}) {
     if (!label(name)||!label(artist)||!(duration >= 1 && duration <= 3600)) return Promise.resolve('');
     const lookup = lyricQueue.then(async () => {
       const wait = nextLookup - Date.now();
-      if (wait > 1000) return '';
+      if (wait > 1000) {
+        if (reportUnavailable) throw Object.assign(new Error('歌词服务暂不可用。'), { status: 429 });
+        return '';
+      }
       if (wait > 0) await new Promise(resolve => setTimeout(resolve, wait));
       signal?.throwIfAborted();
       const url = new URL('https://lrclib.net/api/get');
@@ -91,15 +127,21 @@
           const delay = Math.max(30000, (deadline || 0)-Date.now());
           nextLookup = Date.now()+delay*(1+Math.random()*.2);
         }
-        if (!response.ok) return '';
+        if (!response.ok) {
+          if (reportUnavailable && (response.status === 429 || response.status >= 500)) {
+            throw Object.assign(new Error('歌词服务暂不可用。'), { status: response.status });
+          }
+          return '';
+        }
         const match = await response.json();
         if (key(match.trackName)!==key(name)||artistKey(match.artistName)!==artistKey(artist)||
           Math.abs(Number(match.duration)-duration)>MAX_DURATION_DIFFERENCE||!Number.isFinite(Number(match.duration))||
           (label(album)&&key(match.albumName)!==key(album))) return '';
         const raw = match.syncedLyrics;
-        return typeof raw==='string'&&raw.length<=160000&&karaoke.parse(raw).some(line=>line.text&&line.time<=duration)?raw:'';
+        return typeof raw === 'string' && raw.length <= 160000
+          ? resolveTimedLyrics(raw, duration)?.raw || '' : '';
       } catch(error) {
-        if(!signal?.aborted)nextLookup=Date.now()+15000;
+        if(!signal?.aborted&&!error?.status)nextLookup=Math.max(nextLookup, Date.now()+15000);
         throw error;
       } finally {
         nextLookup = Math.max(nextLookup, Date.now()+750);
@@ -123,7 +165,7 @@
       const authorization = await client.loginStatus();
       signal?.throwIfAborted();
       if (authorization?.authenticated !== true) return { status: 'unauthenticated' };
-      const match = await client.matchChartTrack({ name, artist }, { signal });
+      const match = await client.matchChartTrack({ name, artist, duration, ...(album?{album}:{}) }, { signal });
       signal?.throwIfAborted();
       candidate = match?.item;
     } catch (error) {
@@ -153,7 +195,7 @@
     try {
       const data = await client.lyrics(mediaId);
       signal?.throwIfAborted();
-      result.lyricsRaw = lyricSource(data, duration);
+      result.lyricsRaw = resolveTimedLyrics(data, duration)?.raw || '';
       result.lyricsStatus = result.lyricsRaw ? 'available' : 'not-found';
     } catch (error) {
       signal?.throwIfAborted();
@@ -163,5 +205,5 @@
     return result;
   }
 
-  return { enrichLocalTrack, findTimedLyrics, localIdentity };
+  return { enrichLocalTrack, findTimedLyrics, localIdentity, resolveTimedLyrics };
 });
