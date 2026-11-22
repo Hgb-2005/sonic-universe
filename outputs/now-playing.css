@@ -127,15 +127,7 @@
 #listeningRoom .lr-track-details [data-error=true] { color: #ffb4b4; }
 #listeningRoom .lr-mod-options { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
 #listeningRoom[data-mode=listen][data-lyric-layout=list] .lr-lyric-tools { justify-content: center; margin-top: 4px; }
-#listeningRoom[data-mode=listen]:is([data-lyric-layout=compact],[data-lyric-layout=list]) .lr-player-wrap { width: min(100%, 595px); padding: 9px 13px; border: 1px solid #e4e3fc2d; border-radius: 13px; background: #14131fea; box-shadow: 0 17px 40px #05051055; }
-#listeningRoom[data-mode=listen]:is([data-lyric-layout=compact],[data-lyric-layout=list]) .lr-player { grid-template-columns: minmax(80px, 1fr) minmax(130px, 1.2fr) auto; grid-template-areas: "info transport utility" "info progress utility"; gap: 3px 9px; }
-#listeningRoom[data-mode=listen]:is([data-lyric-layout=compact],[data-lyric-layout=list]) .lr-track-info { display: flex; }
-#listeningRoom[data-mode=listen]:is([data-lyric-layout=compact],[data-lyric-layout=list]) .lr-track-thumb { width: 38px; margin: 0; }
-#listeningRoom[data-mode=listen]:is([data-lyric-layout=compact],[data-lyric-layout=list]) .lr-track-name { font-size: 13px; }
-#listeningRoom[data-mode=listen]:is([data-lyric-layout=compact],[data-lyric-layout=list]) .lr-transport-buttons { justify-content: center; gap: 4px; }
-#listeningRoom[data-mode=listen]:is([data-lyric-layout=compact],[data-lyric-layout=list]) .lr-play { width: 35px; height: 35px; }
 @media (max-width: 700px) {
-  #listeningRoom[data-mode=listen]:is([data-lyric-layout=compact],[data-lyric-layout=list]) .lr-player { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "info transport" "progress progress"; }
   #listeningRoom .lr-full-lyrics { padding-inline: 1px; }
 }
 @media (prefers-reduced-motion: reduce) { #listeningRoom .lr-now-cover { transform: none; transition: none; } }

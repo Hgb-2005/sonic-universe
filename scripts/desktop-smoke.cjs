@@ -260,11 +260,12 @@ async function run() {
     }
 
     await room.getByRole('button',{name:'搜索音乐',exact:true}).click();
-    await page.locator('#onlineSearchInput').fill('测试歌曲');
-    await page.locator('#onlineSearchBtn').click();
-    await page.locator('#onlineResults [data-result-start]').click();
+    await room.getByRole('searchbox',{name:'搜索音乐',exact:true}).fill('测试歌曲');
+    await room.locator('[data-sl-search-source="qishui"]').click();
+    await room.locator('[data-sl-qishui-track]').click();
     await page.waitForFunction(()=>SonicPlayback.snapshot().playing&&SonicPlayback.snapshot().track?.name==='测试歌曲');
-    await page.keyboard.press('Escape');
+    assert.equal(await page.locator('dialog[open]').count(),0);
+    await room.locator('[data-room-mode="listen"]').click();
     await page.waitForFunction(()=>document.querySelector('[data-current-line]')?.textContent==='入耳');
     await room.locator('[data-action="play"]').click();
     await room.locator('[data-seek]').fill('1.5');

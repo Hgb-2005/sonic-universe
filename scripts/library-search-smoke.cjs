@@ -7,8 +7,9 @@ const { chromium, _electron } = require('playwright');
 const { createAppServer } = require('../companion/server.cjs');
 
 const root = path.resolve(__dirname,'..');
-const port = 18880;
+const port = Number(process.env.SONIC_LIBRARY_SMOKE_PORT || 18880);
 const origin = `http://127.0.0.1:${port}`;
+const sample = {id:'demo-auld-lang-syne',name:'友谊地久天长',artist:'Bautsch',path:'/assets/auld-lang-syne.ogg'};
 const localNames = ['Orbit Delta','Orbit Alpha','Other Track','Orbit Echo'];
 const [delta,alpha,other,echo] = localNames;
 const savedList = 'Fixture Saved Order';
@@ -24,6 +25,12 @@ const qishui = [
   remote('8402','Qishui Known Preview',{preview:true}),
   remote('8403','Qishui Pending Preview'),
   remote('8404','Qishui Last'),
+];
+const inlineQuery='Inline Catalog Only';
+const inlinePlaylist='Inline Versions';
+const inlineVersions=[
+  {...qishui[1],album:'Cover Version'},
+  remote('8488',qishui[1].name,{album:'Live at the Test Hall'})
 ];
 const matches = [
   remote('8411','QQ Wrong Version',{album:'A Different Album'}),
@@ -59,6 +66,7 @@ function provideWav(route,body) {
 async function mockOnline(page,wav) {
   const searches=[],tickets=[],media=[],matchRequests=[];
   const slowQuery=Promise.withResolvers(),slowDone=Promise.withResolvers();
+  let inlineAttempts=0;
   await page.route('**/*', async route => {
     const request=route.request(),url=new URL(request.url());
     if(url.origin!==origin)return ['http:','https:'].includes(url.protocol)?route.abort():route.continue();
@@ -68,6 +76,10 @@ async function mockOnline(page,wav) {
     if(search) {
       const {query}=request.postDataJSON(),provider=search[1];
       searches.push([provider,query]);
+      if(provider==='qishui'&&query===inlineQuery){
+        if(inlineAttempts++===0)return route.fulfill({status:504,json:{error:'Fixture search timed out'}});
+        return route.fulfill({json:{items:inlineVersions}});
+      }
       if(query==='Delayed'){
         await slowQuery.promise;
         try{await route.fulfill({json:{items:[remote('8499','Stale Result')]}});}
@@ -190,7 +202,8 @@ async function verify(page,{electron=false}={}) {
   assert.ok(!network.media.includes(qishui[2].mediaId));
   console.log('PASS shared keyword switches between local and online, ordered Qishui replay persists across reload and skips preview tickets');
 
-  await room.getByRole('button',{name:'搜索音乐',exact:true}).click();
+  await room.getByRole('button',{name:'音乐库',exact:true}).click();
+  await room.getByRole('button',{name:'搜在线',exact:true}).click();
   await Promise.all([
     page.waitForRequest(request=>request.url().endsWith('/api/qishui/search')&&request.postDataJSON()?.query==='Delayed'),
     searchOnline('Delayed'),
@@ -218,14 +231,53 @@ async function verify(page,{electron=false}={}) {
   assert.ok(!network.media.includes(matches[2].mediaId));
 
   await room.getByRole('button',{name:'搜索音乐',exact:true}).click();
-  await online.locator('[data-online-provider="qishui"]').click();
-  await searchOnline('Orbit');
-  await online.locator('[data-search-media-id="'+qishui[1].mediaId+'"] [data-result-start]').click();
+  const sharedSearch=room.getByRole('searchbox',{name:'搜索音乐',exact:true});
+  const oldPlayback=await state();
+  const ticketCount=network.tickets.length;
+  await sharedSearch.fill(inlineQuery);
+  assert.match(await room.locator('[data-sl-empty-text]').innerText(),/本机没有匹配/);
+  await room.locator('[data-sl-search-source="qishui"]').click();
+  await room.locator('[data-sl-qishui-status]').filter({hasText:'超时'}).waitFor();
+  await room.locator('[data-sl-qishui-retry]').click();
+  const previewResult=room.locator('[data-sl-qishui-track="'+qishui[1].mediaId+'"]');
+  await previewResult.waitFor();
+  assert.match(await previewResult.textContent(),/汽水音乐.*翻唱版.*仅试听/);
+  const live=room.locator('[data-sl-qishui-track="'+inlineVersions[1].mediaId+'"]');
+  assert.equal(await live.locator('.sl-qishui-title').textContent(),qishui[1].name);
+  assert.match(await live.textContent(),/汽水音乐.*现场版.*可播状态待确认/);
+  assert.deepEqual(network.searches.slice(-2),[['qishui',inlineQuery],['qishui',inlineQuery]]);
+  assert.equal(await sharedSearch.inputValue(),inlineQuery);
+  assert.equal(await page.locator('dialog[open]').count(),0);
+  const previewRow=previewResult.locator('..'),liveRow=live.locator('..');
+  const favorite=previewRow.locator('[data-sl-qishui-action="favorite"]');
+  await favorite.click();
+  await previewRow.locator('[data-sl-qishui-action="favorite"][aria-pressed="true"]:not([aria-busy])').waitFor();
+  await liveRow.locator('[data-sl-qishui-action="membership"]').click();
+  const create=room.getByRole('dialog',{name:'新建歌单',exact:true});
+  await create.getByRole('textbox',{name:'歌单名称'}).fill(inlinePlaylist);
+  await create.getByRole('button',{name:'保存歌单'}).click();
+  const memberId='online:qishui:'+inlineVersions[1].mediaId;
+  await page.waitForFunction(({name,id})=>SonicPlayback.library().playlists.find(list=>list.name===name)?.trackIds.includes(id),{name:inlinePlaylist,id:memberId});
+  const add=liveRow.locator('[data-sl-qishui-action="membership"]:not([aria-busy])');
+  await add.click();
+  const picker=room.getByRole('dialog',{name:'加入歌单',exact:true});
+  await picker.getByRole('combobox',{name:'选择歌单'}).selectOption({label:inlinePlaylist});
+  await picker.getByRole('button',{name:'加入',exact:true}).click();
+  await add.waitFor();
+  const collection=await page.evaluate(()=>SonicPlayback.library());
+  assert.deepEqual(collection.playlists.find(list=>list.name===inlinePlaylist).trackIds,[memberId]);
+  assert.equal(collection.tracks.find(track=>track.id==='online:qishui:'+qishui[1].mediaId).favorite,true);
+  const beforePick=await state();
+  assert.equal(beforePick.track.id,oldPlayback.track.id);
+  assert.equal(beforePick.playing,true);
+  assert.equal(beforePick.queueRevision,oldPlayback.queueRevision);
+  assert.deepEqual(beforePick.queue.map(({id,entryId})=>({id,entryId})),oldPlayback.queue.map(({id,entryId})=>({id,entryId})));
+  assert.equal(network.tickets.length,ticketCount);
+  await previewResult.click();
   await waitForTrack(qishui[1].name);
   assert.ok(network.media.includes(qishui[1].mediaId));
-  await page.keyboard.press('Escape');
   assert.deepEqual(errors,[]);
-  console.log('PASS stale online searches abort, public results verify version/order, and explicit selection still plays a preview');
+  console.log('PASS legacy search still verifies public versions; inline Qishui results keep the active song until an explicit preview pick');
 }
 
 async function openLibrary(page) {
@@ -338,6 +390,38 @@ async function verifySavedOrder(page) {
   await page.waitForFunction(name=>SonicPlayback.snapshot().track?.name===name&&SonicPlayback.snapshot().playing,remainingNames[1]);
 }
 
+async function verifyDockSearchReturn(page) {
+  const room=page.locator('#listeningRoom');
+  const dock=room.locator(':scope > .lr-player-wrap');
+  const searchButton=room.getByRole('button',{name:'搜索音乐',exact:true});
+  const search=room.getByRole('searchbox',{name:'搜索音乐',exact:true});
+  await searchButton.click();
+  await room.locator('[data-sl-search-source="local"]').click();
+  await search.fill('Playlist Fixture');
+  await room.getByRole('button',{name:'播放 '+editNames[14],exact:true}).click();
+  await page.waitForFunction(name=>SonicPlayback.snapshot().track?.name===name&&SonicPlayback.snapshot().playing,editNames[14]);
+  const scroll=await page.evaluate(()=>{window.scrollTo({top:780,behavior:'instant'});return window.scrollY;});
+  assert.ok(scroll>0);
+  const queueButton=dock.getByRole('button',{name:'打开当前播放队列',exact:true});
+  const bounds=await queueButton.boundingBox();
+  await dock.getByRole('button',{name:'打开正在播放',exact:true}).click();
+  assert.equal(await room.getAttribute('data-mode'),'listen');
+  assert.deepEqual(await queueButton.boundingBox(),bounds);
+  await searchButton.click();
+  assert.equal(await search.inputValue(),'Playlist Fixture');
+  assert.equal(await page.evaluate(()=>window.scrollY),scroll);
+  assert.deepEqual(await queueButton.boundingBox(),bounds);
+  await queueButton.click();
+  const queue=room.locator('[data-queue-dialog]');
+  await queue.waitFor();
+  assert.equal(await queue.locator('[data-queue-current-title]').textContent(),editNames[14]);
+  assert.equal(await queue.locator('[data-queue-next-title]').textContent(),editNames[15]);
+  await page.keyboard.press('Escape');
+  assert.equal(await page.evaluate(()=>window.scrollY),scroll);
+  assert.equal(await page.evaluate(()=>SonicPlayback.snapshot().playing),true);
+  console.log('PASS fixed dock keeps search keyword, scrolled results and matching current/next queue while audio continues');
+}
+
 function readStoredLibrary(page) {
   return page.evaluate(async()=>{
     const requestValue=request=>new Promise((resolve,reject)=>{
@@ -405,28 +489,201 @@ async function verifyStorageFailures(page) {
   await retry.click();
   await page.waitForFunction(()=>window.SonicPlayback?.library().ready&&!SonicPlayback.library().readFailed);
   assert.deepEqual(await readStoredLibrary(page),beforeRead);
-  await openPlaylist(room,savedList);
+  await openPlaylist(await openLibrary(page),savedList);
   assert.deepEqual(await displayedNames(room),remainingNames);
   console.log('PASS failed write aborts metadata and media together; unread library remains intact and can reload safely');
 }
 
+async function verifySampleLyrics(page, room) {
+  const {lyrics, duration}=await page.evaluate(()=>SonicPlayback.snapshot());
+  assert.ok(lyrics.length>=3,'The packaged sample offers several timed lyric lines');
+  const first=lyrics.findIndex((line,index)=>{
+    const next=lyrics[index+1];
+    return line.time>=1.3&&next&&next.time<duration/2&&line.text&&next.text&&line.text!==next.text&&next.time-line.time>=1.4;
+  });
+  assert.ok(first>=0,'An early phrase gives time to observe a live line change');
+  const preview=room.locator('[data-lyric-preview]');
+  await room.locator(':scope > .lr-player-wrap [data-action="now-playing"]').click();
+  await preview.waitFor();
+  await room.locator('[data-now-lyrics]').click();
+  const full=room.locator('[data-full-lyrics]');
+  await full.waitFor();
+  const line=index=>full.locator(`[data-full-line="${index}"]`);
+  assert.deepEqual(await full.locator('.lr-full-text').allTextContents(),lyrics.map(item=>item.text));
+  assert.ok(lyrics.every(item=>item.translation));
+  assert.deepEqual(await full.locator('.lr-full-translation').allTextContents(),lyrics.map(item=>item.translation));
+
+  await line(first).click();
+  const seeked=await page.waitForFunction(({index,time})=>{
+    const state=SonicPlayback.snapshot();
+    const row=document.querySelector(`[data-full-line="${index}"]`);
+    return state.playing&&Math.abs(state.position-time)<.8&&row?.getAttribute('aria-current')==='true'&&state.position;
+  },{index:first,time:lyrics[first].time});
+  const timed=await page.waitForFunction(({index,time})=>{
+    const state=SonicPlayback.snapshot();
+    const row=document.querySelector(`[data-full-line="${index}"]`);
+    return state.playing&&state.position>=time-.1&&row?.getAttribute('aria-current')==='true'&&state.position;
+  },{index:first+1,time:lyrics[first+1].time},{timeout:Math.ceil((lyrics[first+1].time-lyrics[first].time+3)*1000)});
+  assert.ok(await timed.jsonValue()>await seeked.jsonValue());
+
+  const slider=room.locator(':scope > .lr-player-wrap [data-seek]');
+  const bounds=await slider.boundingBox();
+  assert.ok(bounds&&bounds.width>60,'The dock progress slider is available on the lyric page');
+  const progressX=time=>bounds.x+bounds.width*time/duration;
+  const y=bounds.y+bounds.height/2;
+  const target=lyrics.findIndex((item,index)=>item.time>duration/2&&lyrics[index+1]);
+  assert.ok(target>first+1);
+  await page.mouse.move(progressX(await timed.jsonValue()),y);
+  await page.mouse.down();
+  await page.mouse.move(progressX((lyrics[target].time+lyrics[target+1].time)/2),y,{steps:4});
+  await page.mouse.up();
+  await page.waitForFunction(({index,start,end})=>{
+    const {position,playing}=SonicPlayback.snapshot();
+    return playing&&position>=start&&position<end&&document.querySelector(`[data-full-line="${index}"]`)?.getAttribute('aria-current')==='true';
+  },{index:target,start:lyrics[target].time,end:lyrics[target+1].time});
+
+  await room.locator('[data-action="collapse-lyrics"]').click();
+  await preview.waitFor();
+  await page.waitForFunction(()=>{
+    const {lyrics,lyricPosition,lyricDuration,playing}=SonicPlayback.snapshot();
+    const {line}=SonicListeningCore.lyricAt(lyrics,lyricPosition,lyricDuration);
+    return playing&&line?.text&&document.querySelector('[data-preview-line="0"]').textContent===line.text;
+  });
+}
+
+async function verifyFirstRun(page,{electron=false}={}) {
+  page.setDefaultTimeout(9000);
+  const audioResponses=[];
+  page.on('response',response=>{
+    const url=new URL(response.url());
+    if(url.origin===origin&&url.pathname===sample.path)audioResponses.push(response);
+  });
+  await page.route('**/*',route=>{
+    const url=new URL(route.request().url());
+    return /^https?:$/.test(url.protocol)&&url.origin!==origin?route.abort():route.continue();
+  });
+  await page.route('**/health',route=>route.abort());
+  if(electron){
+    await page.waitForURL(url=>url.origin===origin);
+    await page.reload();
+  }else await page.goto(origin);
+  const room=page.locator('#listeningRoom');
+  const homeCard=room.locator('.lr-home-card');
+  const demo=homeCard.getByRole('button',{name:'试听示例',exact:true});
+  const importMusic=homeCard.getByRole('button',{name:'导入音乐',exact:true});
+  const homeLyrics=homeCard.locator('[data-demo-lyrics]');
+  const home=room.getByRole('button',{name:'声波宇宙首页',exact:true});
+  const searchButton=room.getByRole('button',{name:'搜索音乐',exact:true});
+  const search=room.getByRole('searchbox',{name:'搜索音乐',exact:true});
+  await demo.waitFor();
+  const viewport=await page.evaluate(()=>({width:innerWidth,height:innerHeight}));
+  await homeLyrics.waitFor();
+  assert.equal(await homeCard.locator('[data-home-title]').textContent(),sample.name);
+  assert.equal(await homeCard.locator('[data-home-artist]').textContent(),sample.artist);
+  const sampleLicense=homeCard.locator('[data-sample-license]');
+  await sampleLicense.waitFor();
+  assert.equal(await sampleLicense.getAttribute('href'),'https://creativecommons.org/publicdomain/zero/1.0/');
+  for(const control of [demo,importMusic,homeLyrics]){
+    const bounds=await control.boundingBox();
+    assert.ok(bounds&&bounds.x>=0&&bounds.y>=0&&bounds.x+bounds.width<=viewport.width&&bounds.y+bounds.height<=viewport.height,
+      `${await control.innerText()} must be visible without scrolling`);
+  }
+  await homeLyrics.click();
+  await room.locator('[data-full-lyrics]').waitFor();
+  assert.ok(await room.locator('[data-full-line]').count()>=3);
+  assert.equal(await page.evaluate(()=>SonicPlayback.snapshot().playing),false);
+  await room.locator('[data-action="collapse-lyrics"]').click();
+  await home.click();
+  await page.evaluate(()=>SonicPlayback.setVolume(0));
+  await demo.click();
+  await page.waitForFunction(id=>{
+    const playback=SonicPlayback.snapshot();
+    return playback.track?.id===id&&playback.track.kind==='demo'&&playback.playing&&playback.position>.05&&
+      document.getElementById('app').dataset.demoAudio==='asset'&&playback.lyrics.length>=3;
+  },sample.id);
+  assert.ok(audioResponses.some(response=>response.ok()&&response.headers()['content-type']==='audio/ogg'),
+    'Decoded sample came from its local shipped Ogg recording');
+  let navigations=0;
+  page.on('framenavigated',frame=>{if(frame===page.mainFrame())navigations++;});
+  const state=()=>page.evaluate(()=>{
+    const {track,playing,position,queueEntryId,queueRevision}=SonicPlayback.snapshot();
+    const audio=document.getElementById('audio');
+    return {id:track.id,name:track.name,playing,position,queueEntryId,queueRevision,src:audio.currentSrc};
+  });
+  await verifySampleLyrics(page,room);
+  const before=await state();
+  await home.click();
+  await homeLyrics.click();
+  await room.locator('[data-full-lyrics]').waitFor();
+  await home.click();
+  await searchButton.click();
+  assert.equal(await search.evaluate(node=>node===document.activeElement),true);
+  assert.equal(await page.locator('dialog[open]').count(),0);
+  await search.fill(before.name);
+  assert.deepEqual(await displayedNames(room),[before.name]);
+  await search.fill('First Run Fixture');
+  assert.match(await room.locator('[data-sl-empty-text]').innerText(),/本机没有匹配/);
+
+  await room.locator('[data-sl-search-source="qishui"]').click();
+  await room.locator('[data-sl-qishui-results]').waitFor();
+  assert.equal(await page.locator('dialog[open]').count(),0);
+  assert.equal(await search.inputValue(),'First Run Fixture');
+  await room.locator('[data-sl-search-source="local"]').click();
+  await room.locator('[data-sl-local-results]').waitFor();
+  assert.equal(await search.inputValue(),'First Run Fixture');
+  await home.click();
+  await page.waitForFunction(position=>SonicPlayback.position()>position,before.position);
+  const after=await state();
+  assert.equal(navigations,0);
+  assert.deepEqual({...after,position:before.position},before);
+  assert.equal(await room.getAttribute('data-mode'),'work');
+
+  const chooserPromise=page.waitForEvent('filechooser');
+  await importMusic.click();
+  await (await chooserPromise).setFiles({name:'First Run Fixture.wav',mimeType:'audio/wav',buffer:silentWav()});
+  await page.waitForFunction(()=>{
+    const playback=SonicPlayback.snapshot();
+    return playback.track?.name==='First Run Fixture'&&playback.playing&&playback.position>.05;
+  });
+  await searchButton.click();
+  assert.equal(await search.inputValue(),'First Run Fixture');
+  assert.deepEqual(await displayedNames(room),['First Run Fixture']);
+  const imported=await state();
+  await page.evaluate(()=>{
+    document.getElementById('audio').addEventListener('pause',()=>{document.body.dataset.auditPaused='true';},{once:true});
+  });
+  await home.click();
+  await page.waitForFunction(position=>SonicPlayback.position()>position+.05,imported.position);
+  assert.equal(navigations,0);
+  assert.equal(await page.evaluate(()=>document.body.dataset.auditPaused==='true'),false);
+  assert.deepEqual({...await state(),position:imported.position},imported);
+  console.log(`PASS ${viewport.width}×${viewport.height} bundled first-run audio, compact and full synced lyrics, seek, file picker and search/home without audio interruption`);
+}
+
 async function run() {
   const packaged=process.argv.includes('--packaged');
+  const firstRunOnly=process.argv.includes('--first-run-only');
   if(packaged||process.argv.includes('--electron')){
     const qa=path.join(root,'work','desktop-qa');
     await fs.mkdir(qa,{recursive:true});
-    const profile=await fs.mkdtemp(path.join(qa,'library-search-profile-'));
     const executablePath=packaged?path.resolve(process.env.SONIC_DESKTOP_EXECUTABLE||path.join(root,'release','win-unpacked','声波宇宙.exe')):require('electron');
-    const launch=()=>_electron.launch({executablePath,args:packaged?[]:[root],cwd:root,timeout:30000,
+    const launch=profile=>_electron.launch({executablePath,args:packaged?[]:[root],cwd:root,timeout:30000,
       env:{...process.env,SONIC_DESKTOP_PROFILE:profile,SONIC_DESKTOP_PORT:String(port)}});
-    const app=await launch();
+    const freshProfile=await fs.mkdtemp(path.join(qa,'first-run-profile-'));
+    const firstRun=await launch(freshProfile);
+    try{await verifyFirstRun(await firstRun.firstWindow(),{electron:true});}
+    finally{await firstRun.close();}
+    if(firstRunOnly)return;
+    const profile=await fs.mkdtemp(path.join(qa,'library-search-profile-'));
+    const app=await launch(profile);
     try{
       const page=await app.firstWindow();
       await verify(page,{electron:true});
       await verifyPlaylistEditing(page);
+      await verifyDockSearchReturn(page);
     }
     finally{await app.close();}
-    const restarted=await launch();
+    const restarted=await launch(profile);
     try{
       const page=await restarted.firstWindow();
       await mockOnline(page,silentWav());
@@ -442,9 +699,16 @@ async function run() {
     const channel=process.env.SONIC_TEST_BROWSER_CHANNEL||(process.platform==='win32'?'msedge':undefined);
     const browser=await chromium.launch({channel,headless:true});
     try{
+      for(const options of [{viewport:{width:1440,height:900}},{viewport:{width:320,height:568},isMobile:true,hasTouch:true}]){
+        const firstRun=await browser.newPage(options);
+        try{await verifyFirstRun(firstRun);}
+        finally{await firstRun.close();}
+      }
+      if(firstRunOnly)return;
       const page=await browser.newPage({viewport:{width:1440,height:900}});
       await verify(page);
       await verifyPlaylistEditing(page);
+      await verifyDockSearchReturn(page);
       await page.reload();
       await verifySavedOrder(page);
       console.log('PASS saved order and remaining memberships survive browser reload and play in order');

@@ -231,7 +231,8 @@ async function makeVideo(page) {
 
 async function verifyPlaylistSync(page, companion) {
   const room = page.locator('#listeningRoom');
-  await room.getByRole('button',{ name:'搜索音乐',exact:true }).click();
+  await room.locator('[data-room-mode="library"]').click();
+  await room.getByRole('button',{ name:'搜在线',exact:true }).click();
   await page.locator('#onlinePlaylistsBtn').click();
   await page.locator(`[data-online-playlist-id="${playlistSource.id}"]`).click();
   await page.locator('#onlineSyncPlaylistBtn').click();
@@ -400,7 +401,8 @@ async function verifyUpgrade(page) {
   console.log('PASS whole chart queues all rows and skips the unmatched track on advance');
 
   await discovery.evaluate(dialog=>dialog.close());
-  await page.locator('.lr-header [data-action="online"]').click();
+  await page.locator('#listeningRoom [data-room-mode="library"]').click();
+  await page.getByRole('button',{name:'搜在线',exact:true}).click();
   await page.locator('[data-online-provider="netease"]').click();
   await page.locator('#onlineSearchInput').fill(chart.name);
   await page.locator('#onlineSearchBtn').click();
@@ -563,6 +565,7 @@ async function verifyUpgrade(page) {
   await discovery.getByRole('button',{ name:'关闭音乐发现',exact:true }).click();
   console.log('PASS link parser rejects foreign hosts and retrieves official Qishui song details');
 
+  await page.getByRole('button',{name:'声波宇宙首页',exact:true}).click();
   const equalizerTrigger = page.locator('[data-action="equalizer"]');
   if (!await equalizerTrigger.first().isVisible()) {
     await page.getByRole('button',{ name:'调整氛围',exact:true }).click();

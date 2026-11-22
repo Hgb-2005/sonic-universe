@@ -10,7 +10,7 @@
   function normalize(value) {
     const source = value && typeof value === 'object' ? value : {};
     return {
-      mode: ['work', 'listen', 'library', 'visual'].includes(source.mode) ? source.mode : defaults.mode,
+      mode: ['work', 'listen', 'library', 'search', 'visual'].includes(source.mode) ? source.mode : defaults.mode,
       lyricStyle: ['stage','list','fly','effects'].includes(source.lyricStyle)?source.lyricStyle:defaults.lyricStyle,
       lyricEffect: typeof source.lyricEffect==='string'&&/^[a-z]{1,16}$/.test(source.lyricEffect)?source.lyricEffect:defaults.lyricEffect,
       background: ['geometry', 'mist', 'plain', 'universe'].includes(source.background) ? source.background : defaults.background,

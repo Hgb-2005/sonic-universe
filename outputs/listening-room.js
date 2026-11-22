@@ -41,9 +41,9 @@
     <div class="lr-mod-decoration" data-mod-decoration aria-hidden="true" hidden></div>
     <div class="lr-titlebar" data-desktop-only hidden aria-hidden="true"></div>
     <header class="lr-header">
-      <a class="lr-brand" href="./" aria-label="声波宇宙首页"><img src="./assets/sonic-mark.svg" alt=""><span><span class="lr-brand-name">声波宇宙</span><small class="lr-brand-sub">SONIC UNIVERSE</small></span></a>
+      <button type="button" class="lr-brand" data-action="home" aria-label="声波宇宙首页"><img src="./assets/sonic-mark.svg" alt=""><span><span class="lr-brand-name">声波宇宙</span><small class="lr-brand-sub">SONIC UNIVERSE</small></span></button>
       <nav class="lr-tabs" aria-label="页面导航"><button class="lr-tab" data-room-mode="work" aria-pressed="true">${icon('headphones')}工作陪伴</button><button class="lr-tab" data-room-mode="listen" aria-pressed="false">${icon('music')}正在播放</button><button class="lr-tab" data-room-mode="visual" aria-pressed="false" ${scenes?'':'hidden'}>${icon('scene')}视觉舞台</button><button class="lr-tab" data-room-mode="library" aria-pressed="false">${icon('library')}音乐库</button></nav>
-      <div class="lr-header-actions"><button class="lr-text-button" data-action="discovery" aria-label="音乐发现">${icon('music')}<span>发现</span></button><button class="lr-text-button" data-action="online" aria-label="搜索音乐">${icon('search')}<span>搜索音乐</span></button><button class="lr-icon" data-action="external" data-external-header aria-label="管理外部声音联动" title="管理外部声音联动" hidden>${icon('sound')}</button><button class="lr-icon" data-action="settings" aria-label="调整氛围">${icon('settings')}</button><button class="lr-icon" data-action="fullscreen" aria-label="全屏欣赏">${icon('expand')}</button></div>
+      <div class="lr-header-actions"><button class="lr-text-button" data-action="discovery" aria-label="音乐发现">${icon('music')}<span>发现</span></button><button class="lr-text-button" data-action="search" aria-label="搜索音乐" aria-pressed="false">${icon('search')}<span>搜索</span></button><button class="lr-icon" data-action="external" data-external-header aria-label="管理外部声音联动" title="管理外部声音联动" hidden>${icon('sound')}</button><button class="lr-icon" data-action="settings" aria-label="调整氛围">${icon('settings')}</button><button class="lr-icon" data-action="fullscreen" aria-label="全屏欣赏">${icon('expand')}</button></div>
     </header>
     <main class="lr-stage">
       <span class="lr-live" data-live role="status" hidden></span>
@@ -92,35 +92,39 @@
         </div>
         </div>
       </section>
-      <div class="lr-player-wrap">
-        <div class="lr-art-frame" data-work-only aria-hidden="true">
+      <section class="lr-home-card" data-work-only aria-labelledby="lrHomeTrackName">
+        <div class="lr-art-frame" aria-hidden="true">
           <div class="lr-art-placeholder" data-art-placeholder>${icon('music')}</div>
           <img class="lr-art-cover" data-art-cover alt="" decoding="async" hidden>
         </div>
-        <section class="lr-player" aria-label="音乐播放控制">
-          <div class="lr-track-info">
-            <div class="lr-track-thumb" data-thumb-placeholder aria-hidden="true"></div>
-            <img class="lr-track-thumb" data-thumb alt="" decoding="async" hidden>
-            <div class="lr-track-copy">
-              <div class="lr-track-labels"><p class="lr-track-state" data-track-state>正在载入</p><p class="lr-track-source" data-track-source hidden></p></div>
-              <p class="lr-track-name" data-title>正在准备音乐</p>
-              <p class="lr-track-artist" data-artist></p>
-              <button type="button" class="lr-now-from-work" data-action="now-playing" data-work-only>打开正在播放 ${icon('arrow')}</button>
-            </div>
+        <div class="lr-home-copy">
+          <div class="lr-track-labels"><p class="lr-track-state" data-track-state>正在载入</p><p class="lr-track-source" data-track-source hidden></p></div>
+          <h1 class="lr-home-title" id="lrHomeTrackName" data-home-title>正在准备音乐</h1>
+          <p class="lr-home-artist"><span data-home-artist></span> <a data-sample-license href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener noreferrer" aria-label="示例歌曲授权 CC0 1.0（在浏览器中打开）" hidden>CC0 1.0</a></p>
+          <button type="button" class="lr-continue" data-action="continue" data-home-resume aria-labelledby="lrHomeResumeLabel lrHomeResumeTitle" aria-describedby="lrHomeResumeMeta lrHomeResumeStatus" hidden>
+            <span class="lr-resume-track">
+              <span class="lr-resume-title" id="lrHomeResumeTitle" data-resume-title></span>
+              <span class="lr-resume-meta" id="lrHomeResumeMeta"><span data-resume-source></span><span data-resume-position></span></span>
+            </span>
+            <span class="lr-resume-action">${icon('play')}<span id="lrHomeResumeLabel" data-resume-label>继续听</span></span>
+          </button>
+          <p class="lr-resume-status" id="lrHomeResumeStatus" data-resume-status role="status" hidden></p>
+          <button type="button" class="lr-now-from-work" data-home-now-playing data-action="now-playing">打开正在播放 ${icon('arrow')}</button>
+          <div class="lr-demo-actions" data-demo-actions hidden>
+            <button type="button" class="lr-primary" data-action="demo-play"><span class="lr-play-icon" data-demo-icon>${icon('play')}</span><span data-sample-label>试听示例</span></button>
+            <button type="button" class="lr-choice lr-start-import" data-action="import" data-start-import>${icon('folder')}导入音乐</button>
+            <button type="button" class="lr-choice lr-demo-lyrics" data-demo-lyrics data-action="expand-lyrics" aria-controls="lrLyricReading" aria-expanded="false" hidden>${icon('lyrics')}同步歌词</button>
           </div>
-          <div class="lr-progress"><span data-position>00:00</span><input class="lr-range" data-seek type="range" min="0" max="96" step="0.1" value="0" aria-label="歌曲进度"><span data-duration>01:36</span></div>
-          <div class="lr-transport-buttons"><button class="lr-icon" data-action="previous" aria-label="上一首">${icon('previous')}</button><button class="lr-play" data-action="play" aria-label="播放音乐">${icon('play')}</button><button class="lr-icon" data-action="next" aria-label="下一首">${icon('next')}</button></div>
-          <div class="lr-player-right"><button class="lr-icon" data-action="favorite" aria-label="收藏歌曲" aria-pressed="false">${icon('heart')}</button><label class="lr-volume">${icon('volume')}<input class="lr-range" data-volume type="range" min="0" max="100" value="65" aria-label="音量"></label><button class="lr-icon" data-action="queue" aria-label="打开当前播放队列">${icon('queue')}</button></div>
-          <div class="lr-playback-recovery" data-playback-recovery hidden>
-            <p id="lrPlaybackRecoveryStatus" data-playback-recovery-status role="status"></p>
-            <button type="button" class="lr-choice" data-action="playback-retry" aria-describedby="lrPlaybackRecoveryStatus">重试当前歌曲</button>
-          </div>
-        </section>
-        <div class="lr-signal" data-work-only>
+        </div>
+        <div class="lr-signal">
           <div class="lr-signal-label">${icon('sound')}实时频谱</div>
           <canvas data-spectrum width="480" height="58" aria-hidden="true"></canvas>
         </div>
-      </div>
+      </section>
+      <section class="lr-work-recent lr-work-panel" data-work-recent hidden aria-labelledby="lrRecentHeading">
+        <div class="lr-panel-heading"><h2 id="lrRecentHeading">最近播放</h2></div>
+        <div class="lr-recent-list" data-recent-list></div>
+      </section>
       <section class="lr-work-caption lr-work-panel" data-work-caption hidden aria-labelledby="workLyricHeading">
         <div class="lr-panel-heading"><h2 id="workLyricHeading">${icon('lyrics')}同步歌词</h2><button class="lr-panel-link" data-caption-action data-action="listen"><span>打开歌词</span>${icon('arrow')}</button></div>
         <p data-small-line></p>
@@ -129,7 +133,6 @@
       <aside class="lr-work-side" data-work-only aria-label="播放队列与设置">
         <section class="lr-queue-preview lr-work-panel" aria-labelledby="workQueueHeading">
           <div class="lr-panel-heading"><h2 id="workQueueHeading">${icon('queue')}播放队列</h2><button class="lr-panel-link" data-action="queue">查看全部 ${icon('arrow')}</button></div>
-          <button type="button" class="lr-continue" data-action="continue" hidden><span>继续听</span><small data-continue-detail></small></button>
           <div class="lr-queue-context"><span data-queue-scope></span><button class="lr-queue-mode" data-action="repeat">${icon('repeat')}<span data-repeat-label>列表循环</span></button></div>
           <ol class="lr-preview-list" data-work-queue></ol>
           <p class="lr-queue-note" data-work-queue-note hidden></p>
@@ -147,6 +150,26 @@
         </section>
       </aside>
     </main>
+    <div class="lr-player-wrap">
+      <section class="lr-player" aria-label="音乐播放控制">
+        <button type="button" class="lr-track-info" data-action="now-playing" aria-label="打开正在播放" aria-describedby="lrDockTrackName">
+          <span class="lr-track-thumb" data-thumb-placeholder aria-hidden="true"></span>
+          <img class="lr-track-thumb" data-thumb alt="" decoding="async" hidden>
+          <span class="lr-track-copy"><span class="lr-track-name" id="lrDockTrackName" data-title>正在准备音乐</span><span class="lr-track-artist" data-artist></span></span>
+        </button>
+        <div class="lr-progress"><span data-position>00:00</span><input class="lr-range" data-seek type="range" min="0" max="96" step="0.1" value="0" aria-label="歌曲进度"><span data-duration>01:36</span></div>
+        <div class="lr-transport-buttons">
+          <button type="button" class="lr-icon" data-action="previous" aria-label="上一首">${icon('previous')}</button>
+          <button type="button" class="lr-play" data-action="play" aria-label="播放音乐"><span class="lr-play-icon" data-play-icon>${icon('play')}</span></button>
+          <button type="button" class="lr-icon" data-action="next" aria-label="下一首">${icon('next')}</button>
+        </div>
+        <div class="lr-player-right"><button type="button" class="lr-icon" data-action="favorite" aria-label="收藏歌曲" aria-pressed="false">${icon('heart')}</button><label class="lr-volume">${icon('volume')}<input class="lr-range" data-volume type="range" min="0" max="100" value="65" aria-label="音量"></label><button type="button" class="lr-icon" data-action="queue" aria-label="打开当前播放队列" aria-haspopup="dialog" title="播放队列">${icon('queue')}</button></div>
+        <div class="lr-playback-recovery" data-playback-recovery hidden>
+          <p id="lrPlaybackRecoveryStatus" data-playback-recovery-status role="status"></p>
+          <button type="button" class="lr-choice" data-action="playback-retry" aria-describedby="lrPlaybackRecoveryStatus">重试当前歌曲</button>
+        </div>
+      </section>
+    </div>
     <footer class="lr-footer"><div class="lr-footer-group"><button data-action="settings" data-background-label>几何微光</button><span data-eco-label>省电优先</span><button data-action="external" data-listen-link hidden>外部声音联动</button></div><div class="lr-footer-group"><button data-action="playback-settings">播放设置</button><button data-action="equalizer">均衡器</button><button data-action="desktop-lyrics-window" data-desktop-only aria-pressed="false" hidden>桌面歌词</button><button data-action="mini" data-desktop-only hidden>迷你播放器</button><button data-action="desktop" data-desktop-only hidden>桌面设置</button><button data-action="legacy">星空与创作 ↗</button></div></footer>
     <dialog class="lr-dialog" data-playback-dialog aria-labelledby="playbackSettingsTitle">
       <div class="lr-dialog-heading"><h2 id="playbackSettingsTitle">播放设置</h2><button class="lr-icon" data-close aria-label="关闭播放设置">${icon('close')}</button></div>
@@ -175,6 +198,10 @@
     <dialog class="lr-dialog" data-queue-dialog aria-labelledby="roomQueueHeading">
       <div class="lr-dialog-heading"><div><h2 id="roomQueueHeading">播放队列</h2><p data-queue-count></p></div><button class="lr-icon" data-close aria-label="关闭播放队列">${icon('close')}</button></div>
       <div class="lr-choice-row" data-queue-recovery hidden><p class="lr-status" data-queue-recovery-status role="status"></p><button class="lr-choice" data-action="queue-retry">重试当前歌曲</button></div>
+      <dl class="lr-queue-summary" data-queue-summary aria-label="播放顺序" hidden>
+        <div><dt data-queue-current-label>当前曲目</dt><dd data-queue-current-title></dd></div>
+        <div><dt id="roomQueueNextLabel">下一首</dt><dd data-queue-next-title></dd></div>
+      </dl>
       <input class="lr-search-input" data-queue-search type="search" placeholder="搜索队列" aria-label="搜索当前队列">
       <ol class="lr-queue" data-queue-list></ol>
       <div class="lr-queue-pages" data-queue-pages hidden><button class="lr-choice" data-queue-page="-1">上一页</button><span data-queue-page-label></span><button class="lr-choice" data-queue-page="1">下一页</button></div>
@@ -199,14 +226,25 @@
   document.body.prepend(root);
   const back = document.createElement('button'); back.id = 'roomReturn'; back.textContent = '回到听歌空间 ↗'; back.hidden = true; document.body.append(back);
   const $ = selector => root.querySelector(selector), $$ = selector => root.querySelectorAll(selector);
+  const playerDock=$('.lr-player-wrap');
+  function reserveDockSpace() {
+    const bounds=playerDock.getBoundingClientRect();
+    if(!bounds.height)return;
+    const clearance=Math.ceil(bounds.height+Math.max(0,window.innerHeight-bounds.bottom)+10)+'px';
+    if(root.style.getPropertyValue('--lr-player-clearance')!==clearance)root.style.setProperty('--lr-player-clearance',clearance);
+  }
+  const dockResize=new ResizeObserver(reserveDockSpace);
+  dockResize.observe(playerDock);
   const musicLibrary=window.SonicMusicLibrary.mount($('[data-music-library]'),{api,icon,formatTime:core.formatTime});
+  const isLibraryMode=mode=>mode==='library'||mode==='search';
   const canvas = $('.lr-background'), context = canvas.getContext('2d', { alpha: false });
   const spectrum=$('[data-spectrum]'), spectrumContext=spectrum.getContext('2d'), spectrumBands=new Float32Array(48);
   const beatClock=$('[data-action="beat-clock"]'), beatStatus=$('[data-beat-status]'), beatSteps=beatClock.querySelectorAll('i');
   let beatClockIndex=-1, beatClockPulse=0;
   const desktop = window.sonicDesktop;
+  if(desktop)preferences.mode='work';
   const karaoke = window.SonicLyricKaraoke;
-  let lyricExpanded=false;
+  let lyricExpanded=false,searchScroll=0;
   const decorateLyrics=desktop?window.SonicLyricStyleMods.createDecoration($('[data-mod-decoration]')):null;
   const lyricMods=desktop?window.SonicLyricStyleMods.mount(root,mod=>{
     if(mod)preferences.lyricStyle=mod.layout;
@@ -223,6 +261,7 @@
   let palette = [...(colors[preferences.color]||colors.lilac)], coverPalette = colors.lilac, coverRequest = 0, canvasWidth = 0, canvasHeight = 0, scale = 1;
   let phase = 0, energy = 0, bass = 0, flow = 0, seeking = false, volumeChanging = false, toastTimer = 0;
   let artworkSource = '', lastTitle = '', displayedPlaying = null, lastRgb = '', artworkRgb = '', coverScale=1;
+  let recentTracks=[],recentShelfDirty=true;
   let lastQueueRefresh=0,workQueueKey=[],lastSpectrumKey='';
   const emptyLyrics=[], lyricRows=new Map(), lyricTimeline=$('[data-lyric-timeline]');
   const effectStage=$('[data-effect-stage]'),effectDialog=$('[data-effect-dialog]'),effectButton=$('[data-action="lyric-effects"]');
@@ -260,7 +299,7 @@
     }catch{}
   } else if(preferences.mode==='visual') preferences.mode='work';
   const playbackNames = { sequence:'顺序播放', list:'列表循环', single:'单曲循环', shuffle:'随机播放' };
-  const idleFields=['ready','busy','playing','buffering','playbackInterrupted','external','externalPending','externalSignal','volume','duration','position','lyricPosition','lyricDuration','playbackMode'];
+  const idleFields=['ready','busy','playing','demoOnly','importing','buffering','playbackInterrupted','external','externalPending','externalSignal','volume','duration','position','lyricPosition','lyricDuration','playbackMode'];
   const trackFields=['id','name','artist','kind','cover','favorite'];
   const toast = $('[data-toast]');
   function notify(message, error = false) {
@@ -298,9 +337,11 @@
   }
   function applyPreferences(save=false) {
     const mode=preferences.mode;
-    const style=preferences.lyricStyle,effectActive=mode==='listen'&&lyricExpanded&&style==='effects';
-    root.dataset.mode=mode;root.dataset.background=preferences.background;root.dataset.lyricStyle=lyricExpanded?preferences.lyricStyle:'compact';
-    root.dataset.immersive=String(mode==='visual'||mode==='listen'&&lyricExpanded&&(style==='fly'||effectActive));
+    const expanded=mode==='listen'&&lyricExpanded;
+    const style=preferences.lyricStyle,full=expanded&&style==='list',effectActive=expanded&&style==='effects';
+    nowPlaying.setView(mode!=='listen'?'hidden':full?'full':expanded?'stage':'preview');
+    root.dataset.mode=mode;root.dataset.background=preferences.background;root.dataset.lyricStyle=expanded?style:'compact';
+    root.dataset.immersive=String(mode==='visual'||expanded&&(style==='fly'||effectActive));
     const preset=effects.get(preferences.lyricEffect);
     effectStage.hidden=!effectActive;
     effectStage.dataset.fx=preset.id;
@@ -315,28 +356,28 @@
     effectButton.setAttribute('aria-pressed',String(effectActive));
     $$('[data-effect-choice]').forEach(button=>button.setAttribute('aria-pressed',String(effectActive&&button.dataset.effectChoice===preset.id)));
     revealStageChrome();
-    root.dataset.lyricLayout=lyricExpanded?(preferences.lyricStyle==='list'?'list':'stage'):'compact';
-    root.dataset.lyricExpanded=String(lyricExpanded);
-    const selectedMod=lyricExpanded&&mode==='listen'?lyricMods?.current():null;
+    root.dataset.lyricLayout=expanded?(full?'list':'stage'):'compact';
+    root.dataset.lyricExpanded=String(expanded);
+    const selectedMod=expanded?lyricMods?.current():null;
     decorateLyrics?.(selectedMod,!preferences.energySaver);
     if(selectedMod) {
       root.dataset.lyricMod=selectedMod.id;root.dataset.modAlign=selectedMod.alignment;root.dataset.modMotion=selectedMod.motion;
       root.style.setProperty('--lr-mod-accent',selectedMod.accent);root.style.setProperty('--lr-mod-scale',selectedMod.fontScale);
     } else {delete root.dataset.lyricMod;delete root.dataset.modAlign;delete root.dataset.modMotion;}
-    $('[data-expanded-lyrics]').hidden=!lyricExpanded;
-    $('[data-stage-lyrics]').hidden=!lyricExpanded||preferences.lyricStyle==='list';
-    $$('[data-action="expand-lyrics"]').forEach(button=>button.setAttribute('aria-expanded',String(lyricExpanded)));
-    nowPlaying.setView(lyricExpanded,lyricExpanded&&preferences.lyricStyle==='list');
+    $('[data-expanded-lyrics]').hidden=!expanded;
+    $('[data-stage-lyrics]').hidden=!expanded||full;
+    $$('[data-action="expand-lyrics"]').forEach(button=>button.setAttribute('aria-expanded',String(expanded)));
     $$('[data-work-only]').forEach(element=>element.hidden=mode!=='work');
     $('[data-listen]').hidden=mode!=='listen';$('[data-listen-link]').hidden=mode!=='listen';
     $('[data-visual-view]').hidden=mode!=='visual';
     beatClock.hidden=mode!=='visual';
     beatClock.setAttribute('aria-pressed',String(preferences.beatClock));
     $('[data-beat-ratio]').value=preferences.beatRatio;
-    musicLibrary.setVisible(mode==='library');
+    musicLibrary.setVisible(isLibraryMode(mode),mode==='search');
     $('[data-work-caption]').hidden=mode!=='work'||!preferences.desktopLyrics;
     root.dataset.caption=String(preferences.desktopLyrics);
     $$('[data-room-mode]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.roomMode===preferences.mode)));
+    $('[data-action="search"]').setAttribute('aria-pressed',String(mode==='search'));
     $$('button[data-lyric-style]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.lyricStyle===preferences.lyricStyle)));
     $$('[data-background]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.background===preferences.background)));
     $$('[data-color]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.color===preferences.color)));
@@ -348,15 +389,15 @@
     if(save)persist();resize();schedule();updateUI(true);
   }
   function setMode(mode) {
-    if(!['work','listen','library','visual'].includes(mode)||(mode==='visual'&&!scenes))return;
-    if(mode!==preferences.mode)window.scrollTo(0,0);
-    lyricExpanded=false;preferences.mode=mode;applyPreferences(true);
+    if(!['work','listen','library','search','visual'].includes(mode)||(mode==='visual'&&!scenes))return;
+    const previous=preferences.mode;
+    if(previous==='search'&&mode!==previous)searchScroll=window.scrollY;
+    preferences.mode=mode;applyPreferences(true);
+    if(mode!==previous)window.scrollTo({top:mode==='search'?searchScroll:0,behavior:'instant'});
   }
   function setLyricExpanded(expanded) {
-    if(preferences.mode!=='listen')window.scrollTo(0,0);
-    preferences.mode='listen';
     lyricExpanded=expanded;
-    applyPreferences(true);
+    setMode('listen');
     (expanded?(preferences.lyricStyle==='list'?$('[data-full-lyrics]'):$('[data-action="collapse-lyrics"]')):$('[data-now-lyrics]')).focus({preventScroll:true});
   }
   function revealStageChrome() {
@@ -367,7 +408,7 @@
   }
   function usesReactiveScene() {
     const mode=root.dataset.mode;
-    return scenes&&mode!=='library'&&(mode==='visual'||preferences.reactiveBackdrop||sceneDialog.open);
+    return scenes&&!isLibraryMode(mode)&&(mode==='visual'||preferences.reactiveBackdrop||sceneDialog.open);
   }
   function showsLyricEffects() {
     return root.dataset.mode==='listen'&&lyricExpanded&&preferences.lyricStyle==='effects';
@@ -499,7 +540,7 @@
     } else energy=bass=flow=0;
     const spotlight=root.dataset.mode==='listen'&&root.dataset.lyricLayout==='stage'&&preferences.background!=='plain';
     context.fillStyle=spotlight?'#0e1224':'#101019';context.fillRect(0,0,canvasWidth,canvasHeight);
-    if(preferences.background==='plain'||root.dataset.mode==='library')return;
+    if(preferences.background==='plain'||isLibraryMode(root.dataset.mode))return;
     const radius=Math.max(canvasWidth,canvasHeight);
     function glow(x,y,size,color,opacity) {
       const light=context.createRadialGradient(x,y,0,x,y,size);
@@ -599,13 +640,20 @@
     spectrumContext.fillStyle=gradient;
     levels.forEach((level,index)=>spectrumContext.fillRect(index*step+2,height-level-2,step-4,level));
   }
-  function refreshArtwork(track) {
-    const source=track?.cover||(track?.kind==='demo'?demoCover:'');
+  function artworkUrl(track){return track?.cover||(track?.kind==='demo'?demoCover:'');}
+  function setArtwork(image,placeholder,source){
+    if(image.getAttribute('src')===(source||null))return;
+    image.hidden=true;placeholder.hidden=false;
+    image.onload=()=>{if(image.getAttribute('src')===source){image.hidden=false;placeholder.hidden=true;}};
+    image.onerror=()=>{image.hidden=true;placeholder.hidden=false;};
+    if(source){image.referrerPolicy='no-referrer';image.src=source;}else image.removeAttribute('src');
+  }
+  function refreshArtwork(track, homeTrack) {
+    setArtwork($('[data-art-cover]'),$('[data-art-placeholder]'),artworkUrl(homeTrack));
+    const source=artworkUrl(track);
     if(source===artworkSource)return;artworkSource=source;
-    for(const [imageSelector,placeholderSelector] of [['[data-thumb]','[data-thumb-placeholder]'],['[data-art-cover]','[data-art-placeholder]'],['[data-now-cover]','[data-now-cover-placeholder]']]) {
-      const image=$(imageSelector),placeholder=$(placeholderSelector);image.hidden=true;placeholder.hidden=false;image.onload=()=>{if(artworkSource===source){image.hidden=false;placeholder.hidden=true;}};image.onerror=()=>{image.hidden=true;placeholder.hidden=false;};
-      if(source){image.referrerPolicy='no-referrer';image.src=source;}else image.removeAttribute('src');
-    }
+    setArtwork($('[data-thumb]'),$('[data-thumb-placeholder]'),source);
+    setArtwork($('[data-now-cover]'),$('[data-now-cover-placeholder]'),source);
     const request=++coverRequest;
     coverPalette=colors.lilac;backgroundDirty=true;
     if(!source)return;
@@ -846,7 +894,7 @@
     }
   }
   function renderLyrics(position=snapshot.lyricPosition,snap=false) {
-    if(root.dataset.mode==='library')return;
+    if(isLibraryMode(root.dataset.mode))return;
     const lines=snapshot.lyrics?.length?snapshot.lyrics:emptyLyrics;
     const {index,line,end}=core.lyricAt(lines,position,snapshot.lyricDuration);
     if(root.dataset.mode!=='listen') {
@@ -959,6 +1007,81 @@
     const message=$('[data-external-metadata-status]');
     if(message.textContent!==text)message.textContent=text;
   }
+  const musicSourceNames={file:'本地音乐',online:'汽水音乐',demo:'内置示例',chart:'在线榜单'};
+  function updateHomeResume(){
+    const saved=snapshot.ready&&!snapshot.playing&&!snapshot.external?api.resumeInfo():null;
+    const resume=saved?.kind==='demo'&&snapshot.demoOnly?null:saved;
+    const shown=Boolean(resume);
+    const home=$('.lr-home-card'),copy=$('.lr-home-copy'),button=$('[data-home-resume]'),status=$('[data-resume-status]');
+    const wasShown=!button.hidden;
+    if(shown!==wasShown){
+      const restoreFocus=!shown&&document.activeElement===button;
+      copy.dataset.resuming=String(shown);
+      home.setAttribute('aria-labelledby',shown?'lrHomeResumeTitle':'lrHomeTrackName');
+      $$('.lr-home-copy > .lr-track-labels, .lr-home-copy > [data-home-title], .lr-home-copy > .lr-home-artist').forEach(field=>field.hidden=shown);
+      button.hidden=!shown;
+      if(restoreFocus&&preferences.mode==='work')$('[data-action="play"]').focus({preventScroll:true});
+    }
+    if(!resume){status.hidden=true;return null;}
+
+    const phase=resume.phase||snapshot.playbackRecovery?.phase;
+    const pending=Boolean(phase||snapshot.busy||snapshot.externalPending);
+    const signedOut=resume.recovery==='auth'&&!snapshot.onlineLoggedIn;
+    const label=pending?'正在续听…':signedOut?'重新登录':resume.retry?'重试续听':'继续听';
+    const message=phase==='login'?'正在等待汽水扫码确认。':pending?'':signedOut?'汽水登录已失效，已保留上次进度。':
+      resume.retry?(resume.kind==='online'?'暂时无法连接汽水音乐，已保留上次进度。':'暂时无法续听，已保留上次进度。'):'';
+    const fields={
+      '[data-resume-title]':resume.name,
+      '[data-resume-source]':musicSourceNames[resume.kind]||'音乐',
+      '[data-resume-position]':'上次听到 '+core.formatTime(resume.position),
+      '[data-resume-label]':label,
+      '[data-resume-status]':message
+    };
+    for(const [selector,value] of Object.entries(fields)){
+      const field=$(selector);
+      if(field.textContent!==value)field.textContent=value;
+    }
+    if(button.title!==resume.name)button.title=resume.name;
+    if(button.getAttribute('aria-disabled')!==String(pending))button.setAttribute('aria-disabled',String(pending));
+    status.hidden=!message;
+    return resume;
+  }
+  function updateRecentShelf(){
+    const shelf=$('[data-work-recent]');
+    if(preferences.mode!=='work'||!snapshot.ready){shelf.hidden=true;return;}
+    shelf.hidden=!recentTracks.length;
+    if(!recentShelfDirty)return;
+    recentShelfDirty=false;
+    const items=api.recentTracks(4);
+    shelf.hidden=!items.length;
+    if(items.length===recentTracks.length&&items.every((item,index)=>{
+      const prev=recentTracks[index];
+      return item.id===prev.id&&item.name===prev.name&&item.artist===prev.artist&&item.kind===prev.kind&&item.cover===prev.cover;
+    }))return;
+    recentTracks=items;
+    const list=$('[data-recent-list]'),focused=document.activeElement?.dataset.recentTrack;
+    list.replaceChildren(...items.map(track=>{
+      const button=document.createElement('button');
+      button.type='button';button.className='lr-recent-track';button.dataset.recentTrack=track.id;
+      const cover=document.createElement('span'),copy=document.createElement('span');
+      cover.className='lr-recent-cover';cover.setAttribute('aria-hidden','true');cover.innerHTML=icon('music');
+      const url=artworkUrl(track);
+      if(url){
+        const image=document.createElement('img');
+        image.className='lr-recent-cover';image.alt='';image.loading='lazy';image.decoding='async';image.referrerPolicy='no-referrer';
+        image.addEventListener('error',()=>image.replaceWith(cover),{once:true});
+        image.src=url;button.append(image);
+      }else button.append(cover);
+      copy.className='lr-recent-copy';
+      const title=document.createElement('span'),source=document.createElement('span');
+      title.className='lr-recent-title';title.textContent=track.name;
+      source.className='lr-recent-source';source.textContent=musicSourceNames[track.kind]||'音乐';
+      button.title=[track.name,track.artist,source.textContent].filter(Boolean).join(' · ');
+      copy.append(title,source);button.append(copy);
+      return button;
+    }));
+    if(focused)list.querySelector('[data-recent-track="'+CSS.escape(focused)+'"]')?.focus({preventScroll:true});
+  }
   function updateUI(force=false,snapLyrics=false) {
     const previous=snapshot;
     snapshot=api.snapshot();
@@ -968,13 +1091,8 @@
     updatePlaybackRecovery();
     if(root.dataset.mode==='work'&&(force||performance.now()-lastQueueRefresh>550))renderWorkQueue();
     refreshOpenQueue(force);
-    const resume=snapshot.ready&&!snapshot.playing&&!snapshot.external?api.resumeInfo():null;
-    const continueButton=$('[data-action="continue"]');continueButton.hidden=!resume;continueButton.disabled=snapshot.busy||snapshot.externalPending;
-    if(resume){
-      const detail=[resume.name,core.formatTime(resume.position),resume.remaining?'还有 '+resume.remaining+' 首':''].filter(Boolean).join(' · ');
-      const copy=$('[data-continue-detail]');if(copy.textContent!==detail)copy.textContent=detail;
-      continueButton.title=detail;
-    }
+    const resume=updateHomeResume();
+    updateRecentShelf();
     $('[data-lyric-timing]').hidden=!snapshot.canNudgeLyrics;
     const offset=snapshot.lyricOffset,offsetLabel=(offset>0?'+':'')+offset.toFixed(1)+' 秒';
     const offsetOutput=$('[data-lyric-offset]');if(offsetOutput.textContent!==offsetLabel)offsetOutput.textContent=offsetLabel;
@@ -993,15 +1111,21 @@
       (snapshot.lyrics===previous.lyrics||(!snapshot.lyrics.length&&!previous.lyrics.length)))return;
     root.dataset.playing=String(snapshot.playing||snapshot.external);
     const title=snapshot.track?.name||'选择一首歌';
-    if(title!==lastTitle){lastTitle=title;$('[data-title]').textContent=title;$('[data-title]').title=title;}
+    if(title!==lastTitle){
+      lastTitle=title;
+      const dockTitle=$('[data-title]');
+      dockTitle.textContent=title;dockTitle.title=title;
+      $('[data-home-title]').textContent=title;
+    }
+    const isBundledSample=snapshot.track?.kind==='demo'&&snapshot.track.id==='demo-auld-lang-syne';
     const artist=snapshot.track?.artist||(snapshot.track?.kind==='demo'?'Interstellar Drift':'');
-    $('[data-artist]').textContent=artist;
+    if($('[data-artist]').textContent!==artist){$('[data-artist]').textContent=artist;$('[data-home-artist]').textContent=artist;}
     const statusLabel=snapshot.external?'声音联动':snapshot.buffering?'正在缓冲':snapshot.playing?'正在播放':
       snapshot.playbackInterrupted||snapshot.queueRecovery?'等待重试':snapshot.track?'已暂停':'待播';
     const trackState=$('[data-track-state]');
     if(trackState.textContent!==statusLabel)trackState.textContent=statusLabel;
     const source=$('[data-track-source]');
-    const label=snapshot.external?(snapshot.externalMetadata?.sourceApp||'外部声音'):{online:'汽水音乐',demo:'原创音景',file:'本地音乐'}[snapshot.track?.kind]||'';
+    const label=snapshot.external?(snapshot.externalMetadata?.sourceApp||'外部声音'):{online:'汽水音乐',demo:isBundledSample?'内置示例':'原创音景',file:'本地音乐'}[snapshot.track?.kind]||'';
     if(source.textContent!==label){source.textContent=label;source.hidden=!label;}
     $('[data-source-status]').hidden=!snapshot.external;
     $('[data-external-header]').hidden=!snapshot.external;
@@ -1009,8 +1133,24 @@
     const message=!snapshot.ready?'正在载入歌库':snapshot.external?'已连接外部声音':snapshot.busy?'正在准备音乐':'';
     if(status.textContent!==message){status.hidden=!message;status.textContent=message;}
     const playing=snapshot.external?snapshot.externalMetadata?.playing===true:snapshot.playing;
-    if(displayedPlaying!==playing||force){displayedPlaying=playing;const button=$('[data-action="play"]');button.innerHTML=icon(playing?'pause':'play');button.setAttribute('aria-label',playing?'暂停音乐':'播放音乐');}
-    for(const action of ['play','previous','next','favorite','repeat'])root.querySelectorAll('[data-action="'+action+'"]').forEach(button=>button.disabled=!snapshot.ready||snapshot.busy||snapshot.external||!snapshot.track);
+    if(displayedPlaying!==playing){
+      displayedPlaying=playing;
+      const glyph=icon(playing?'pause':'play');
+      $('[data-play-icon]').innerHTML=glyph;
+      $('[data-demo-icon]').innerHTML=glyph;
+    }
+    const demoControls=preferences.mode==='work'&&!resume&&snapshot.demoOnly&&snapshot.track?.kind==='demo'&&!snapshot.external;
+    root.dataset.demoControls=String(demoControls);
+    const sampleLabel=$('[data-sample-label]'),sampleText=playing?'暂停试听':'试听示例';
+    if(sampleLabel.textContent!==sampleText)sampleLabel.textContent=sampleText;
+    $('[data-demo-actions]').hidden=!demoControls;
+    $('[data-demo-lyrics]').hidden=!isBundledSample;
+    $('[data-home-now-playing]').hidden=Boolean(resume)||demoControls&&isBundledSample;
+    $('[data-sample-license]').hidden=!isBundledSample||snapshot.external;
+    $('[data-start-import]').disabled=snapshot.importing;
+    const playButton=$('[data-action="play"]'),playLabel=playing?'暂停音乐':'播放音乐';
+    if(playButton.getAttribute('aria-label')!==playLabel)playButton.setAttribute('aria-label',playLabel);
+    for(const action of ['play','demo-play','previous','next','favorite','repeat'])root.querySelectorAll('[data-action="'+action+'"]').forEach(button=>button.disabled=!snapshot.ready||snapshot.busy||snapshot.external||!snapshot.track);
     $('[data-action="favorite"]').setAttribute('aria-pressed',String(snapshot.track?.favorite||false));
     const externalTimed=snapshot.external&&Number.isFinite(snapshot.externalMetadata?.position);
     if(!seeking)$('[data-position]').textContent=snapshot.external&&!externalTimed?'LIVE':core.formatTime(snapshot.position);
@@ -1024,7 +1164,7 @@
       ? snapshot.externalSignal==='sound'?'已检测到声音，画面正在跟随。':snapshot.externalSignal==='silent'?'已连接，暂未检测到声音。请在原播放器开始播放。':'已连接，正在等待声音。'
       : snapshot.externalPending?'正在等待声音来源…':'还未连接外部声音。';
     updateExternalMetadataUI();
-    refreshArtwork(snapshot.track);
+    refreshArtwork(snapshot.track,resume||snapshot.track);
     if(lyricSurfaceDirty||!lyricFrameId||force||!lyricsPlaying()||snapLyrics)renderListeningPosition(lyricPosition(),snapLyrics);
   }
   function updatePlaybackRecovery(){
@@ -1122,7 +1262,7 @@
     const active=snapshot.playing||snapshot.external;
     const reactive=usesReactiveScene();
     const lyricEffects=showsLyricEffects();
-    const animate=active&&!reduced&&mode!=='library'&&(reactive||!lyricEffects&&preferences.background!=='plain');
+    const animate=active&&!reduced&&!isLibraryMode(mode)&&(reactive||!lyricEffects&&preferences.background!=='plain');
     const showSpectrum=mode==='work';
     const coverBeat=active&&!reduced&&(mode==='listen'&&!lyricExpanded||mode==='work');
     const lyricBeat=lyricEffects&&!reduced&&lyricsPlaying()&&effectBeatPresets.has(preferences.lyricEffect);
@@ -1203,11 +1343,12 @@
     $('[data-work-queue-add]').hidden=!snapshot.ready||snapshot.external||queueCount>1;
   }
   function queueId(track) { return track.entryId || track.id; }
-  function makeQueueRow(track, index, current, editable, canDrag) {
+  function makeQueueRow(track, index, role, editable, canDrag) {
     const row = document.createElement('li');
     row.className = 'lr-queue-row';
     row.dataset.queueEntry = queueId(track);
     row.dataset.queueSource = track.id;
+    if (role) row.dataset.queueRole = role;
     row.innerHTML = `
       <span class="lr-queue-handle" data-queue-drag aria-hidden="true" title="拖动调整顺序">${icon('grip')}</span>
       <button type="button" class="lr-queue-song" data-queue-command="play"><span class="lr-queue-number"></span><span class="lr-queue-info"><strong></strong><small></small></span></button>
@@ -1223,6 +1364,7 @@
     if (canDrag) handle.draggable = true;
     else handle.hidden = true;
     const labels = {play:'播放',up:'上移',down:'下移',remove:'从队列移除'};
+    const current = role==='current';
     const unavailable = {play:false,up:index === 0,down:index === queueItems.length - 1,remove:current};
     for (const button of row.querySelectorAll('[data-queue-command]')) {
       const command = button.dataset.queueCommand;
@@ -1230,6 +1372,7 @@
       button.title = current && command === 'remove' ? '切换到其他歌曲后可移除' : labels[command];
       button.disabled = !editable || unavailable[command];
       if (current && command === 'play') button.setAttribute('aria-current','true');
+      if (role==='next' && command==='play') button.setAttribute('aria-describedby','roomQueueNextLabel');
     }
     return row;
   }
@@ -1238,11 +1381,43 @@
     const {queueEntry,queueSource} = row.dataset;
     return items.findIndex(({track})=>queueId(track)===queueEntry || (queueEntry===queueSource&&track.id===queueSource));
   }
+  function revealQueueRow(element) {
+    if (!element) return;
+    const row = element.closest('[data-queue-entry]') || element;
+    const bounds = row.getBoundingClientRect();
+    const top = queueList.getBoundingClientRect().top + queueList.clientTop;
+    const inset = 4;
+    if (bounds.top < top + inset) queueList.scrollTop += bounds.top - top - inset;
+    else if (bounds.bottom > top + queueList.clientHeight - inset) {
+      queueList.scrollTop += bounds.bottom - top - queueList.clientHeight + inset;
+    }
+  }
+  function renderQueueSummary(state, currentIndex, nextIndex, mode) {
+    const current = queueItems[currentIndex], next = queueItems[nextIndex];
+    $('[data-queue-summary]').hidden=!state.ready;
+    $('[data-queue-current-label]').textContent=state.external?'外部播放':state.queueRecovery||state.playbackRecovery?'待重试':'当前曲目';
+    const currentTitle = (state.external?state.track?.name:current?.name||state.track?.name)||'尚未选曲';
+    const repeatsCurrent = mode==='single'||mode==='list'&&queueItems.length===1;
+    const nextTitle = state.external?'由原播放器控制':!current?'尚未排定':mode==='shuffle'?'随机选择':
+      repeatsCurrent?'重复当前曲目':next?.name||'已到队列末尾';
+    for(const [selector,title] of [['[data-queue-current-title]',currentTitle],['[data-queue-next-title]',nextTitle]]) {
+      const element=$(selector);
+      if(element.textContent!==title){element.textContent=title;element.title=title;}
+    }
+  }
   function renderQueue({ locateCurrent = false, resetScroll = false } = {}) {
     const state = api.snapshot({queue:true});
     queueItems = state.queue || [];
     const query = queueSearch.value.trim().toLocaleLowerCase();
-    const current = state.customQueue ? state.queueEntryId : state.track?.id;
+    const current = state.external ? null : state.customQueue ? state.queueEntryId : state.track?.id;
+    const currentIndex = queueItems.findIndex(track=>queueId(track)===current);
+    const mode = state.playbackMode || 'list';
+    let nextIndex = -1;
+    if (currentIndex>=0 && (mode==='sequence'||mode==='list')) {
+      if (currentIndex+1<queueItems.length) nextIndex=currentIndex+1;
+      else if (mode==='list' && queueItems.length>1) nextIndex=0;
+    }
+    renderQueueSummary(state,currentIndex,nextIndex,mode);
     const editable = state.ready && !state.busy && !state.external;
     const recovery=state.queueRecovery;
     $('[data-queue-recovery]').hidden=!recovery;
@@ -1268,7 +1443,8 @@
     const first = queuePage * queuePageSize;
     const rows = document.createDocumentFragment();
     for (const {track,index} of filtered.slice(first,first + queuePageSize)) {
-      rows.append(makeQueueRow(track,index,queueId(track)===current,editable,editable && !query && queueItems.length>1));
+      const role=index===currentIndex?'current':index===nextIndex?'next':'';
+      rows.append(makeQueueRow(track,index,role,editable,editable && !query && queueItems.length>1));
     }
     if (!filtered.length) {
       const empty = document.createElement('li');
@@ -1285,7 +1461,7 @@
       const command = focusedButton.dataset.queueCommand || 'play';
       const replacement = row?.querySelector(`[data-queue-command="${CSS.escape(command)}"]:enabled`) || row?.querySelector('button:enabled') || queueSearch;
       replacement.focus({preventScroll:true});
-      if (replacement !== queueSearch) replacement.scrollIntoView({block:'nearest'});
+      if (replacement !== queueSearch) revealQueueRow(replacement);
     }
     const count = state.queueCount ?? queueItems.length;
     const scope = state.queueScope || '当前播放范围';
@@ -1297,7 +1473,7 @@
   }
   function refreshOpenQueue(force=false) {
     if (!queueDialog.open || draggedEntry) return;
-    const key = [snapshot.queueRevision,snapshot.queueEntryId,snapshot.ready,snapshot.busy,snapshot.external,snapshot.track?.id,snapshot.onlineLoggedIn];
+    const key = [snapshot.queueRevision,snapshot.queueEntryId,snapshot.ready,snapshot.busy,snapshot.external,snapshot.track?.id,snapshot.onlineLoggedIn,snapshot.playbackMode,snapshot.playbackRecovery?.reason];
     if (!force && key.every((value,index)=>value===queueDialogKey[index])) return;
     queueDialogKey = key;
     renderQueue();
@@ -1372,10 +1548,17 @@
   queueList.addEventListener('dragend',()=>{endQueueDrag();refreshOpenQueue();});
   queueDialog.addEventListener('close',endQueueDrag);
   const actions={
-    continue:()=>api.continueListening(),play:()=>api.toggle(),previous:()=>api.previous(),next:()=>api.next(),favorite:()=>api.favorite(),repeat:()=>api.cyclePlayback(),
+    continue:()=>api.continueListening(),play:()=>api.toggle(),'demo-play':()=>api.toggle(),previous:()=>api.previous(),next:()=>api.next(),favorite:()=>api.favorite(),repeat:()=>api.cyclePlayback(),
     'playback-retry':()=>api.retryPlayback(),
     import:()=>api.importMusic(),folder:()=>api.importFolder(),
-    library:()=>{closeDialogs();setMode('library');},online:()=>{closeDialogs();api.openOnline(root.dataset.mode==='library'?musicLibrary.searchQuery():undefined);},
+    home:()=>{closeDialogs();if(preferences.mode==='work')window.scrollTo(0,0);else setMode('work');},
+    library:()=>{closeDialogs();setMode('library');},
+    search:()=>{closeDialogs();setMode('search');musicLibrary.focusSearch();},
+    online:()=>{
+      closeDialogs();
+      const mode=root.dataset.mode;
+      api.openOnline(isLibraryMode(mode)?musicLibrary.searchQuery():undefined,{searchOnly:mode==='search'});
+    },
     discovery:()=>{closeDialogs();api.openDiscovery(root);},equalizer:()=>{closeDialogs();window.SonicEqualizer.open();},
     'desktop-lyrics-window':async()=>{
       if(!desktop?.desktopLyrics)return;
@@ -1383,7 +1566,7 @@
       if(!result?.ok&&result?.message)notify(result.message,true);
     },
     settings:()=>show($('[data-settings]')),lyrics:()=>{closeDialogs();api.editLyrics();},listen:()=>setLyricExpanded(true),
-    'now-playing':()=>setLyricExpanded(false),
+    'now-playing':()=>setMode('listen'),
     'visual-stage':()=>{if(scenes){setMode('visual');$('[data-action="scene-gallery"]').focus({preventScroll:true});}},
     'expand-lyrics':()=>setLyricExpanded(true),'collapse-lyrics':()=>setLyricExpanded(false),'lyric-mods':()=>lyricMods?.open(),
     'lyric-effects':()=>show(effectDialog),
@@ -1408,7 +1591,8 @@
       queueSearch.value='';
       renderQueue({locateCurrent:true,resetScroll:true});
       show(queueDialog);
-      queueList.querySelector('[aria-current=true]')?.scrollIntoView({block:'nearest'});
+      queueDialog.scrollTop=0;
+      revealQueueRow(queueList.querySelector('[aria-current=true]'));
     },
     'queue-retry':()=>runQueueAction(()=>{
       const state=api.snapshot();
@@ -1421,6 +1605,15 @@
   };
   root.addEventListener('click',event=>{
     const button=event.target.closest('button');if(!button||button.disabled)return;
+    if(button.hasAttribute('data-home-resume')&&button.getAttribute('aria-disabled')==='true')return;
+    if(button.dataset.recentTrack){
+      const id=button.dataset.recentTrack;
+      if(!snapshot.busy&&!(snapshot.playing&&snapshot.track?.id===id)){
+        Promise.resolve(api.playFromLibrary(id,'recent',true,recentTracks.map(track=>track.id)))
+          .catch(error=>notify(error.message||'暂时无法播放，请重试。',true));
+      }
+      return;
+    }
     if(button.hasAttribute('data-close')){button.closest('dialog').close();return;}
     if(button.dataset.lyricAdjust){
       if(api.nudgeLyrics(Number(button.dataset.lyricAdjust))!==null){updateUI(true,true);if(desktop)publishPlayerState();}
@@ -1505,12 +1698,12 @@
   back.addEventListener('click',()=>setLegacy(false));
   window.addEventListener('sonic:toast',event=>notify(event.detail.message,event.detail.error));
   window.addEventListener('sonic:library-search',event=>{
-    closeDialogs();setMode('library');musicLibrary.searchLocal(event.detail.query);
+    closeDialogs();setMode(event.detail.searchOnly?'search':'library');musicLibrary.searchLocal(event.detail.query);
   });
   window.addEventListener('sonic:transport-state',wake);
   window.addEventListener('sonic:queue-change',()=>{lastQueueRefresh=-Infinity;wake();});
-  window.addEventListener('sonic:library-change',()=>{lastQueueRefresh=-Infinity;refreshOpenQueue(true);});
-  document.addEventListener('visibilitychange',schedule);window.addEventListener('resize',()=>{resize();schedule();});reducedMotion.addEventListener('change',schedule);
+  window.addEventListener('sonic:library-change',()=>{recentShelfDirty=true;lastQueueRefresh=-Infinity;refreshOpenQueue(true);wake();});
+  document.addEventListener('visibilitychange',schedule);window.addEventListener('resize',()=>{reserveDockSpace();resize();schedule();});reducedMotion.addEventListener('change',schedule);
   document.fonts?.addEventListener('loadingdone',()=>{invalidateLyricSurface();wake();});
   document.addEventListener('keydown',event=>{
     if(legacy||event.defaultPrevented||event.repeat||/^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName)||document.querySelector('dialog[open]')||event.ctrlKey||event.altKey||event.metaKey)return;

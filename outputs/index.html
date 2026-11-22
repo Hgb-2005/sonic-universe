@@ -9,12 +9,12 @@
 <link rel="icon" type="image/svg+xml" href="./assets/sonic-mark.svg">
 <meta name="sonic-project-pack-revision" content="bed720a09029">
 <meta name="sonic-file-tags-revision" content="9ac4d4eafaf4">
-<link rel="stylesheet" href="./listening-room.css?v=4be19cf2fd69">
-<link rel="stylesheet" href="./music-library.css?v=04ac0c56ee1a">
+<link rel="stylesheet" href="./listening-room.css?v=5e9485b3c616">
+<link rel="stylesheet" href="./music-library.css?v=4832055b00df">
 <link rel="stylesheet" href="./music-discovery.css?v=4af8c2d7230d">
 <link rel="stylesheet" href="./equalizer.css?v=7f372d94c3af">
-<link rel="stylesheet" href="./reactive-scenes.css?v=d1857be167f3">
-<link rel="stylesheet" href="./now-playing.css?v=b1572224a237">
+<link rel="stylesheet" href="./reactive-scenes.css?v=2b2133406b92">
+<link rel="stylesheet" href="./now-playing.css?v=4db3a6699d74">
 <link rel="stylesheet" href="./lyric-effects.css?v=136b818bc9ce">
 <script>if(!new URLSearchParams(location.search).has('sharedViewer')&&new URLSearchParams(location.search).get('interface')!=='legacy'){document.documentElement.classList.add('listening-enabled');setTimeout(()=>{if(!window.SonicListeningRoom){document.documentElement.classList.remove('listening-enabled');window.SonicPlayback?.presentation(false);}},6000);}</script>
 <style>.help-btn{text-decoration:none}.footer-links{flex-wrap:wrap}</style>
@@ -359,7 +359,7 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
 <input type="file" id="backgroundInput" accept="image/jpeg,image/png,image/webp" hidden>
 <input type="file" id="coverInput" accept="image/jpeg,image/png,image/webp" hidden>
 <dialog class="space-dialog queue-dialog" id="queueDialog" aria-labelledby="queueHeading">
-  <div class="dialog-heading"><div><div class="dialog-kicker">YOUR PRIVATE COLLECTION</div><h2 id="queueHeading">收藏喜欢的歌，也收藏星光。</h2><p id="queueSummary">正在打开播放列表…</p></div><button class="icon-btn dialog-close" data-close="queueDialog" aria-label="关闭播放列表">✕</button></div>
+  <div class="dialog-heading"><div data-legacy-queue-heading><div class="dialog-kicker">YOUR PRIVATE COLLECTION</div><h2 id="queueHeading">收藏喜欢的歌，也收藏星光。</h2><p id="queueSummary">正在打开播放列表…</p></div><h2 id="onlineSearchHeading" hidden>在线搜索</h2><button class="icon-btn dialog-close" data-close="queueDialog" aria-label="关闭窗口">✕</button></div>
   <div class="queue-toolbar"><div class="import-buttons"><button class="primary-btn" id="queueImportBtn">＋ 添加音乐</button><button class="secondary-btn" id="folderImportBtn">选择文件夹</button></div><label class="playback-label" for="playbackMode">播放方式<select id="playbackMode"><option value="sequence">顺序播放</option><option value="list">列表循环</option><option value="single">单曲循环</option><option value="shuffle">随机播放</option></select></label></div>
   <div class="library-browser"><div class="library-tabs" role="group" aria-label="音乐库分类"><button data-library-view="all" aria-pressed="true">全部音乐</button><button data-library-view="favorites" aria-pressed="false">☆ 我的收藏</button><button data-library-view="playlists" aria-pressed="false">我的歌单</button><button data-library-view="soda" aria-pressed="false">↗ 多平台音乐</button></div><label class="library-search"><input class="text-input" type="search" id="librarySearch" placeholder="搜索歌曲、歌手或专辑…" aria-label="搜索歌曲、歌手、专辑或文件夹" autocomplete="off"></label></div>
   <div class="playlist-shelf"><label for="libraryPlaylist">歌单<select id="libraryPlaylist"><option value="">还没有歌单，创建一个吧</option></select></label><button class="text-btn" id="newPlaylistBtn">＋ 新建歌单</button><button class="text-btn" id="renamePlaylistBtn" hidden>重命名</button><button class="text-btn" id="deletePlaylistBtn" hidden>删除歌单</button></div>
@@ -382,6 +382,7 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
       <div class="online-local-callout" id="onlineLocalCallout" hidden>
         <div class="online-local-callout-copy"><strong>搜索和扫码需要本机完整入口</strong><p>公开网页仍可使用星空和本地音乐；在线搜索与汽水登录需先双击「启动音乐入口.cmd」，再打开本机入口。</p></div>
         <button class="primary-btn" id="onlineLocalEntryBtn" type="button">打开本机完整入口 ↗</button>
+        <button class="secondary-btn" type="button" id="onlineBackToLocalBtn" hidden>返回本地搜索</button>
       </div>
       <div class="online-onboarding">
         <div class="library-tabs online-provider-tabs" role="group" aria-label="选择音乐平台"><button type="button" data-online-provider="qishui" aria-pressed="true">汽水音乐</button><button type="button" data-online-provider="netease" aria-pressed="false">网易云音乐</button><button type="button" data-online-provider="qq" aria-pressed="false">QQ 音乐</button><button type="button" data-online-provider="kugou" aria-pressed="false">酷狗音乐</button></div>
@@ -583,8 +584,8 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
   <script defer src="./visual-system.js?v=cd3086ca4807"></script>
   <script defer src="./soda-library.js?v=51f77f62c8a0"></script>
   <script defer src="./online-music.js?v=047dc3ed6c91"></script>
-<script defer src="./listening-core.js?v=d6ba203ca489"></script>
-<script defer src="./now-playing.js?v=345bb35d482f"></script>
+<script defer src="./listening-core.js?v=552006f60055"></script>
+<script defer src="./now-playing.js?v=370198b350ef"></script>
 <script defer src="./track-details.js?v=445b8b761242"></script>
 <script defer src="./track-enrichment.js?v=f0137ad7fa25"></script>
 <script defer src="./folder-library.js?v=75eed93a2a86"></script>
@@ -595,12 +596,12 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
 <script defer src="./equalizer.js?v=b70a9b6984ae"></script>
 <script defer src="./music-discovery.js?v=2a23711cbf24"></script>
 <script defer src="./external-now-playing.js?v=4707f602ab4d"></script>
-<script defer src="./universe-main.js?v=b46fc6f81c1d"></script>
-<script defer src="./music-library.js?v=c071c90fdc7b"></script>
+<script defer src="./universe-main.js?v=c0888ac0b0f3"></script>
+<script defer src="./music-library.js?v=ed5f5c50fb01"></script>
 <script defer src="./reactive-scene-landscapes.js?v=264da93dedd1"></script>
 <script defer src="./reactive-scene-neon.js?v=42a4617fe172"></script>
 <script defer src="./reactive-scene-bloom.js?v=e8c1912bc8d6"></script>
 <script defer src="./reactive-scenes.js?v=f516d8659581"></script>
-<script defer src="./listening-room.js?v=bffd2e15f4e6"></script>
+<script defer src="./listening-room.js?v=7b4b848d9940"></script>
 </body>
 </html>

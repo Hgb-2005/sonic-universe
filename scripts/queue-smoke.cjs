@@ -67,7 +67,7 @@ async function mockQishui(page) {
   const loginRequests = [];
   const delayedMatch = Promise.withResolvers();
   const delayedMatchFinished = Promise.withResolvers();
-  let authenticated = true, serviceInterrupted = false, pendingLogin = null;
+  let authenticated = true, serviceInterrupted = false, upstreamOffline = false, pendingLogin = null;
   const shortWav = silentWav(1.2);
   const longWav = silentWav(25);
   const tracks = ids => ids.map(mediaId => ({
@@ -156,6 +156,7 @@ async function mockQishui(page) {
       const retryAfterInterruption = id === interrupted && audioRequests.includes(id);
       audioRequests.push(id);
       if (!authenticated) return route.fulfill({ status:401, json:{ code:'auth-required', error:'登录已失效' } });
+      if (upstreamOffline) return route.fulfill({ status:502, json:{ code:'network', error:'Qishui service could not be reached' } });
       if (serviceInterrupted && id === authLater) {
         return route.fulfill({ status:503, json:{ error:'音乐服务暂时不可用' } });
       }
@@ -179,6 +180,7 @@ async function mockQishui(page) {
   return { playlistReads, audioRequests, mediaRequests, edits, matchRequests, loginRequests,
     expireSession(){ authenticated = false; },
     setServiceInterrupted(value){ serviceInterrupted = value; },
+    setUpstreamOffline(value){ upstreamOffline = value; },
     postponeAuthorization(){
       const pending = {gate:Promise.withResolvers(),finished:Promise.withResolvers()};
       pendingLogin = pending;
@@ -228,7 +230,10 @@ async function verifyQueue(page) {
   await page.waitForFunction(() => window.SonicPlayback?.snapshot().ready);
   const room = page.locator('#listeningRoom');
   await page.evaluate(() => SonicPlayback.setVolume(0));
-  const launchOnline = () => room.getByRole('button',{ name:'搜索音乐',exact:true }).click();
+  const launchOnline = async () => {
+    await room.getByRole('button',{name:'声波宇宙首页',exact:true}).click();
+    await room.getByRole('button',{name:'打开汽水音乐库',exact:true}).click();
+  };
 
   async function openPlaylist(id) {
     await page.locator('#onlinePlaylistsBtn').click();
@@ -406,6 +411,32 @@ async function verifyQueue(page) {
   assert.ok(network.mediaRequests.includes(authBlocked));
   assert.ok(!network.mediaRequests.includes(authLater));
   console.log('PASS playback-bar QR recovery survives reload, ignores cancelled approval, and resumes from keyboard login');
+
+  await room.locator('[data-action="previous"]').click();
+  await waitForPlaying(authStarter);
+  const upstreamRequestStart = network.audioRequests.length;
+  network.setUpstreamOffline(true);
+  await room.locator('[data-action="next"]').click();
+  await page.waitForFunction(() => {
+    const state = SonicPlayback.snapshot();
+    return !state.busy && !state.playing && state.queueRecovery?.reason === 'connection';
+  });
+  assert.equal((await state()).queueEntryId,restoredBlockedEntry);
+  assert.deepEqual((await state()).queue.map(track => [track.entryId,track.name]),restoredEntries);
+  assert.deepEqual(network.audioRequests.slice(upstreamRequestStart),[authBlocked,authBlocked]);
+  await room.locator('[data-action="home"]').click();
+  const homeRetry=room.locator('.lr-home-card [data-home-resume]');
+  await homeRetry.waitFor();
+  assert.equal(await homeRetry.locator('[data-resume-title]').textContent(),title(authBlocked));
+  assert.equal(await homeRetry.locator('[data-resume-source]').textContent(),'汽水音乐');
+  assert.equal(await homeRetry.locator('[data-resume-label]').textContent(),'重试续听');
+  network.setUpstreamOffline(false);
+  await homeRetry.click();
+  await waitForPlaying(authBlocked);
+  assert.equal((await state()).queueEntryId,restoredBlockedEntry);
+  assert.equal((await state()).queueRecovery,null);
+  assert.deepEqual(network.audioRequests.slice(upstreamRequestStart),[authBlocked,authBlocked,authBlocked]);
+  console.log('PASS the homepage retries the same Qishui track and keeps the queue after an upstream outage');
 
   network.setServiceInterrupted(true);
   await room.locator('[data-action="next"]').click();

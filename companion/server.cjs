@@ -38,6 +38,7 @@ const MIME = {
   '.jpeg': 'image/jpeg',
   '.svg': 'image/svg+xml',
   '.mp3': 'audio/mpeg',
+  '.ogg': 'audio/ogg',
   '.webm': 'video/webm',
   '.ico': 'image/x-icon',
 };

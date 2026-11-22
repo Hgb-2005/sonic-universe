@@ -12,6 +12,7 @@
     const follow=root.querySelector('[data-lyric-follow]');
     const fullTools=root.querySelector('[data-lyric-full-tools]');
     let lines, active=-2, fullIndex=-2, lastPosition=0, followAfter=0, groups=[], currentNode;
+    let view, savedReading=null;
 
     function makeHighlight(container,line,end) {
       currentNode=container;
@@ -69,7 +70,17 @@
       const {index,line,end}=lyricAt(nextLines,position,state.lyricDuration);
       if(expanded&&!full)return;
       const changed=lines!==nextLines;
-      if(changed){lines=nextLines;active=fullIndex=-2;followAfter=0;groups=[];currentNode=null;if(full)fillFull(lines);}
+      const restored=full&&changed&&savedReading?.lines===nextLines;
+      if(changed) {
+        lines=nextLines;active=fullIndex=-2;followAfter=0;groups=[];currentNode=null;
+        if(full)fillFull(lines);
+        if(restored) {
+          followAfter=performance.now()+savedReading.remaining;
+          follow.hidden=false;
+          scroll.scrollTop=savedReading.top;
+        }
+        savedReading=null;
+      }
       if(full) {
         if(index!==fullIndex) {
           const previous=scroll.children[fullIndex];
@@ -90,7 +101,7 @@
         makeHighlight(rows[1],line,end);
       }
       lastPosition=position;updateGroups(position);
-      if(full&&force)centerLine(true);
+      if(full&&force&&!restored)centerLine(true);
     }
 
     scroll.addEventListener('click',event=>{
@@ -106,8 +117,14 @@
 
     return {
       sync,
-      setView(expanded,full) {
-        preview.hidden=expanded;scroll.hidden=!full;fullTools.hidden=!full;
+      setView(nextView) {
+        if(view===nextView)return;
+        if(view==='full'&&nextView==='hidden') {
+          const remaining=followAfter-performance.now();
+          savedReading=remaining>0?{lines,top:scroll.scrollTop,remaining}:null;
+        }else if(nextView!=='full')savedReading=null;
+        view=nextView;
+        preview.hidden=view!=='preview';scroll.hidden=view!=='full';fullTools.hidden=scroll.hidden;
         follow.hidden=true;lines=null;
       },
     };
