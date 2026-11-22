@@ -22,6 +22,7 @@ contextBridge.exposeInMainWorld('sonicDesktop', Object.freeze({
   desktopLyrics: () => ipcRenderer.invoke('sonic:desktop-lyrics'),
   wallpaper: enabled => ipcRenderer.invoke('sonic:wallpaper', enabled===true),
   settings: () => ipcRenderer.invoke('sonic:settings'),
+  fullscreen: enabled => ipcRenderer.invoke('sonic:fullscreen', enabled===true),
   checkRelease: () => ipcRenderer.invoke('sonic:check-release'),
   openUpdate: () => ipcRenderer.invoke('sonic:open-update'),
   downloadUpdate: () => ipcRenderer.invoke('sonic:download-update'),
@@ -33,4 +34,9 @@ contextBridge.exposeInMainWorld('sonicDesktop', Object.freeze({
   onCommand: subscribe('sonic:command'), onVisibility: subscribe('sonic:visibility'),
   onPlayerState: subscribe('sonic:player-state'),
   onDesktopLyricsState: subscribe('sonic:desktop-lyrics-state'),
+  onFullscreen: subscribe('sonic:fullscreen-state'),
+  onQuitCheckpoint: callback => subscribe('sonic:save-quit-checkpoint')(() => {
+    try { callback(); }
+    finally { ipcRenderer.send('sonic:quit-checkpoint-saved'); }
+  }),
 }));

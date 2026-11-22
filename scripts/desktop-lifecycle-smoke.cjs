@@ -1,5 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict');
+const { once }=require('node:events');
 const fs=require('node:fs/promises');
 const path=require('node:path');
 const repo=path.resolve(__dirname,'..');
@@ -147,18 +148,126 @@ async function verify(app){
   await until(async()=> (await getWindow('mini'))?.visible,'fresh mini after crash');
   console.log('PASS crashed overlay and mini are discarded and can reopen without changing the main renderer');
 }
+async function verifyResumeRestart(launch,profile){
+  const titles=['Resume Alpha','Resume Birch','Resume Cedar','Resume Drift'];
+  const audio=Buffer.alloc(44+8000*2*32);
+  audio.write('RIFF');audio.writeUInt32LE(audio.length-8,4);audio.write('WAVEfmt ',8);
+  audio.writeUInt32LE(16,16);audio.writeUInt16LE(1,20);audio.writeUInt16LE(1,22);
+  audio.writeUInt32LE(8000,24);audio.writeUInt32LE(16000,28);
+  audio.writeUInt16LE(2,32);audio.writeUInt16LE(16,34);audio.write('data',36);audio.writeUInt32LE(audio.length-44,40);
+  const snapshot=page=>page.evaluate(()=>SonicPlayback.snapshot({queue:true}));
+  const open=async()=>{
+    const app=await launch(profile),page=await app.firstWindow();
+    await page.waitForFunction(()=>window.SonicPlayback?.snapshot().ready);
+    return {app,page,child:app.process()};
+  };
+  async function quit(app){
+    const exited=once(app.process(),'exit',{signal:AbortSignal.timeout(10000)});
+    await app.evaluate(({app})=>{setTimeout(()=>app.quit(),25);});
+    assert.deepEqual(await exited,[0,null]);
+  }
+
+  let {app,page,child}=await open();
+  let saved,sourceIds;
+  try{
+    await page.locator('#fileInput').setInputFiles(titles.map(title=>({name:title+'.wav',mimeType:'audio/wav',buffer:audio})));
+    await page.waitForFunction(titles=>titles.every(title=>SonicPlayback.library().tracks.some(track=>track.name===title)),titles);
+    sourceIds=await page.evaluate(async titles=>{
+      const ids=titles.map(name=>SonicPlayback.library().tracks.find(track=>track.name===name).id);
+      const playlist=SonicPlayback.savePlaylist('续听测试歌单');
+      await SonicPlayback.editPlaylistMembership(playlist,ids,true);
+      await SonicPlayback.playFromLibrary(ids[0],playlist,true);
+      SonicPlayback.queueTrack(ids[0],'next');
+      const queue=SonicPlayback.snapshot({queue:true}).queue;
+      await SonicPlayback.selectQueueEntry(queue[1].entryId);
+      SonicPlayback.seek(12.4);
+      return ids;
+    },titles);
+    await page.waitForFunction(()=>SonicPlayback.snapshot().playing&&SonicPlayback.position()>=12.4);
+    saved=await page.evaluate(([,birch,,drift])=>{
+      const before=SonicPlayback.snapshot({queue:true});
+      const entry=id=>before.queue.find(item=>item.id===id).entryId;
+      if(!SonicPlayback.moveQueueEntry(entry(drift),entry(birch)))throw new Error('Could not reorder the queue');
+      const after=SonicPlayback.snapshot({queue:true});
+      return {position:after.position,ids:after.queue.map(item=>item.id),index:after.queue.findIndex(item=>item.entryId===after.queueEntryId)};
+    },sourceIds);
+    await quit(app);
+  }finally{if(child.exitCode===null)await app.close();}
+
+  ({app,page,child}=await open());
+  try{
+    const resume=page.locator('[data-home-resume]');
+    await resume.waitFor();
+    assert.equal(await resume.locator('[data-resume-label]').textContent(),'继续听');
+    assert.equal(await resume.locator('[data-resume-title]').textContent(),titles[0]);
+    assert.deepEqual(saved.ids,[sourceIds[0],sourceIds[0],sourceIds[3],sourceIds[1],sourceIds[2]]);
+    assert.equal(saved.index,1);
+    const paused=await snapshot(page);
+    assert.equal(paused.playing,false);
+    assert.equal(paused.queueScope,'续听测试歌单');
+    assert.deepEqual(paused.queue.map(item=>item.id),saved.ids);
+    assert.equal(paused.queueEntryId,paused.queue[saved.index].entryId);
+    assert.ok(paused.position>=saved.position-.05&&paused.position<saved.position+1.5,`${saved.position} -> ${paused.position}`);
+    assert.equal(await page.evaluate(()=>document.getElementById('audio').paused),true);
+    await page.locator('.lr-player [data-action="queue"]').click();
+    assert.equal(await page.locator('[data-queue-next-title]').textContent(),titles[3]);
+    await page.keyboard.press('Escape');
+    await resume.click();
+    await page.waitForFunction(position=>SonicPlayback.snapshot().playing&&SonicPlayback.position()>position+.1,paused.position);
+    const continued=await snapshot(page);
+    assert.equal(continued.queueEntryId,paused.queueEntryId);
+    assert.deepEqual(await page.evaluate(()=>SonicPlayback.library().playlists.find(item=>item.name==='续听测试歌单').trackIds),sourceIds);
+    await page.locator('.lr-player [data-action="play"]').click();
+    saved.position=await page.evaluate(()=>SonicPlayback.position());
+    await page.evaluate(ids=>new Promise((resolve,reject)=>{
+      const open=indexedDB.open('sonic-universe-library',1);
+      open.onerror=()=>reject(open.error);
+      open.onsuccess=()=>{
+        const db=open.result,tx=db.transaction('media','readwrite'),store=tx.objectStore('media');
+        ids.forEach(id=>store.delete(id));
+        tx.oncomplete=()=>{db.close();resolve();};
+        tx.onabort=()=>{db.close();reject(tx.error);};
+      };
+    }),[sourceIds[0],sourceIds[3]]);
+    await quit(app);
+  }finally{if(child.exitCode===null)await app.close();}
+  console.log('PASS real quit immediately after reorder restores the paused position and exact duplicate queue entry');
+
+  ({app,page}=await open());
+  try{
+    const resume=page.locator('[data-home-resume]');
+    await page.locator('[data-resume-skip]').waitFor();
+    assert.equal(await resume.locator('[data-resume-title]').textContent(),titles[0]);
+    assert.equal(await resume.locator('[data-resume-label]').textContent(),'重试续听');
+    assert.deepEqual((await snapshot(page)).queue.map(item=>item.id),saved.ids);
+    await resume.click();
+    await page.waitForFunction(()=>SonicPlayback.snapshot().playbackRecovery?.reason==='file'&&!SonicPlayback.snapshot().playbackRecovery?.phase);
+    const held=await snapshot(page);
+    assert.equal(held.track.id,sourceIds[0]);
+    assert.equal(held.playing,false);
+    assert.ok(Math.abs(held.position-saved.position)<.1);
+    await page.locator('[data-resume-skip]').click();
+    await page.waitForFunction(id=>SonicPlayback.snapshot().track?.id===id&&SonicPlayback.snapshot().playing,sourceIds[1]);
+    const next=await snapshot(page);
+    assert.deepEqual(next.queue.map(item=>item.id),saved.ids);
+    assert.ok(next.position<2,'the accepted next song starts at its own beginning');
+  }finally{await app.close();}
+  console.log('PASS missing saved audio can be retried in place or skipped in the stored order');
+}
 async function main(){
   const qa=path.join(repo,'work','desktop-qa');
   await fs.mkdir(qa,{recursive:true});
   const profile=await fs.mkdtemp(path.join(qa,'lifecycle-profile-'));
-  const app=await _electron.launch({
+  const launch=profile=>_electron.launch({
     executablePath,args:packaged?[]:[repo],cwd:repo,timeout:25000,
     env:{...process.env,SONIC_DESKTOP_PROFILE:profile,SONIC_DESKTOP_PORT:String(port)},
   });
+  const app=await launch(profile);
   app.process().stderr?.on('data',chunk=>{const content=chunk.toString();if(/\[Desktop\]|Unhandled|Warning/.test(content))process.stderr.write(content);});
   try {await verify(app);}
   finally {await app.close();}
   await assert.rejects(fetch(origin+'/health'));
   console.log('PASS isolated desktop quit closes its loopback service');
+  await verifyResumeRestart(launch,await fs.mkdtemp(path.join(qa,'resume-profile-')));
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

@@ -13,6 +13,7 @@ const port=Number(process.env.SONIC_DESKTOP_PORT||17865),origin='http://127.0.0.
 let window=null,mini=null,tray=null,server=null,quitting=false,captureUntil=0,lastState=playerState(null);
 let screenLocked=false,systemSuspended=false,captureMetadataApproved=false,captureMetadataEpoch=0;
 let mainReady=false,mainNeedsReload=false,mainCommand=null,mainReloadTimer=null;
+let quitCheckpointTimer=null,quitCheckpointComplete=false;
 const externalNowPlaying=createExternalNowPlaying({
   helper:path.join(__dirname,'native','NowPlayingHost.exe').replace('app.asar'+path.sep,'app.asar.unpacked'+path.sep),
   executablePath:process.execPath,
@@ -68,6 +69,14 @@ function clearNativePlayback() {
   captureUntil=0;
   stopCaptureMetadata();
   publishNativeState(lastState.external?playerState(null):{...lastState,playing:false});
+}
+function completeQuitCheckpoint(){
+  if(!quitCheckpointTimer)return;
+  clearTimeout(quitCheckpointTimer);
+  quitCheckpointTimer=null;
+  quitCheckpointComplete=true;
+  if(window&&!window.isDestroyed())window.webContents.session.flushStorageData();
+  app.quit();
 }
 function validOrigin(value){try{return new URL(value).origin===origin;}catch{return false;}}
 function trustedMini(event){return mini&&!mini.isDestroyed()&&event.sender===mini.webContents&&event.senderFrame===mini.webContents.mainFrame;}
@@ -127,6 +136,9 @@ function createMain() {
   candidate.once('ready-to-show',()=>{if(!quitting)candidate.show();});
   candidate.on('close',event=>{if(!quitting){event.preventDefault();candidate.hide();}});
   for(const event of ['minimize','restore','show','hide'])candidate.on(event,publishVisibility);
+  for(const event of ['enter-full-screen','leave-full-screen']){
+    candidate.on(event,()=>sendTo(candidate,'sonic:fullscreen-state',candidate.isFullScreen()));
+  }
   candidate.on('closed',()=>{
     if(window!==candidate)return;
     clearTimeout(mainReloadTimer);
@@ -219,6 +231,11 @@ async function start() {
     finally{releaseDownloading=false;}
   });
   ipcMain.handle('sonic:startup',(event,enabled)=>{if(!valid(event))return {ok:false,message:'无效的窗口。'};try{app.setLoginItemSettings({openAtLogin:enabled===true});return {ok:true};}catch(error){return {ok:false,message:error.message};}});
+  ipcMain.handle('sonic:fullscreen',(event,enabled)=>{
+    if(!valid(event)||typeof enabled!=='boolean'||quitting)return false;
+    window.setFullScreen(enabled);
+    return true;
+  });
   ipcMain.handle('sonic:capture',event=>{
     if(!valid(event)||screenInactive()||!window.isVisible()||window.isMinimized())throw Error('请从可见的主窗口连接声音。');
     captureUntil=Date.now()+5000;
@@ -245,10 +262,12 @@ async function start() {
       mainNeedsReload=false;
       publishVisibility();
       send('sonic:desktop-lyrics-state',desktopLyrics.visible);
+      send('sonic:fullscreen-state',window.isFullScreen());
       if(mainCommand){send('sonic:command',mainCommand);mainCommand=null;}
     }
   });
   ipcMain.on('sonic:desktop-lyrics-command',(event,command)=>desktopLyrics.command(event,command));
+  ipcMain.on('sonic:quit-checkpoint-saved',event=>{if(valid(event))completeQuitCheckpoint();});
   ipcMain.on('sonic:command',(event,command)=>{if(!trustedMini(event))return;if(command==='hide-mini'){mini.hide();return;}if(command==='show'){showMain();return;}if(['play','previous','next','listen','work'].includes(command))send('sonic:command',command);});
   function syncScreenActivity() {
     if(screenInactive()){captureUntil=0;externalNowPlaying.close();}
@@ -262,8 +281,16 @@ async function start() {
   for(const event of ['display-metrics-changed','display-removed'])screen.on(event,()=>desktopLyrics.fitDisplay());
 }
 app.on('window-all-closed',()=>{});
-app.on('before-quit',()=>{
-  if(quitting)return;quitting=true;
+app.on('before-quit',event=>{
+  if(quitting)return;
+  if(quitCheckpointTimer){event.preventDefault();return;}
+  if(!quitCheckpointComplete&&mainReady&&window&&!window.isDestroyed()&&!window.webContents.isCrashed()){
+    event.preventDefault();
+    quitCheckpointTimer=setTimeout(completeQuitCheckpoint,1200);
+    send('sonic:save-quit-checkpoint');
+    return;
+  }
+  quitting=true;
   clearTimeout(mainReloadTimer);
   captureUntil=0;
   stopCaptureMetadata();

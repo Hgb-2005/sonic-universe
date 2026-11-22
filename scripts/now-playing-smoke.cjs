@@ -127,8 +127,12 @@ async function verifyNowPlaying(page, folder, app) {
   const preview = room.locator('[data-lyric-preview]');
   const full = room.locator('[data-full-lyrics]');
   const line = number => full.locator(`[data-full-line="${number}"]`);
-  const openLyrics = () => preview.locator('.lr-now-cover').click();
+  const openLyrics = () => room.locator('.lr-now-cover').click();
   const closeLyrics = () => room.locator('[data-action="collapse-lyrics"]').click();
+  const lyricOptions = room.locator('.lr-more-lyrics');
+  const openLyricOptions = async () => {
+    if(await lyricOptions.getAttribute('open')===null)await lyricOptions.locator('summary').click();
+  };
   const details = room.getByRole('dialog',{ name:'歌曲资料', exact:true });
   const openTrackDetails = async id => {
     await room.locator(`[data-sl-id="${id}"] [data-sl-command="queue"]`).click();
@@ -140,7 +144,10 @@ async function verifyNowPlaying(page, folder, app) {
     await details.waitFor({ state:'hidden' });
   };
   const mods = room.getByRole('dialog',{ name:'歌词样式模组', exact:true });
-  const openMods = () => room.locator('[data-action="lyric-mods"]').click();
+  const openMods = async () => {
+    await openLyricOptions();
+    await room.locator('[data-action="lyric-mods"]').click();
+  };
   const importMod = raw => mods.locator('[data-mod-file]').setInputFiles({
     name:'acceptance.json', mimeType:'application/json', buffer:Buffer.from(raw),
   });
@@ -171,6 +178,68 @@ async function verifyNowPlaying(page, folder, app) {
   assert.equal(await full.isVisible(),false);
   assert.equal(await room.getAttribute('data-lyric-expanded'),'false');
 
+  const seek = room.locator('[data-seek]');
+  const seekPreview = room.locator('[data-seek-lyrics]');
+  const seekLine = seekPreview.locator('[data-seek-line]');
+  const seekTranslation = seekPreview.locator('[data-seek-translation]');
+  const bounds = await seek.boundingBox();
+  const beforeDrag = await page.evaluate(() => SonicPlayback.position());
+  const seekX = position => bounds.x + 5 + (bounds.width - 10) * position / 25;
+  await page.mouse.move(seekX(beforeDrag), bounds.y + bounds.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(seekX(3.1), bounds.y + bounds.height / 2);
+  await seekPreview.waitFor();
+  assert.equal(await seekLine.textContent(),'逐字推进');
+  assert.equal(await seekLine.getAttribute('data-timing'),'word');
+  const fills = await seekLine.locator('.lr-timed-group').evaluateAll(words =>
+    words.map(word => Number.parseFloat(word.style.getPropertyValue('--lr-word-fill'))));
+  assert.ok(fills[0]===100 && fills[1]>0 && fills[1]<100 && fills[2]===0,`Seek word fills at 3.1s: ${fills}`);
+  await page.mouse.move(seekX(5.2), bounds.y + bounds.height / 2);
+  assert.equal(await seekLine.textContent(),'夜色');
+  assert.equal(await seekLine.getAttribute('data-timing'),'line');
+  assert.equal(await seekLine.locator('.lr-timed-group').count(),0);
+  assert.equal(await seekTranslation.textContent(),'测试翻译');
+  assert.equal(await seekTranslation.isVisible(),true);
+  await page.mouse.move(seekX(8), bounds.y + bounds.height / 2, { steps:4 });
+  assert.equal(await seekLine.textContent(),'起风');
+  assert.equal(await seekTranslation.isVisible(),false);
+  assert.equal(await page.evaluate(() => SonicPlayback.position()),beforeDrag);
+  await page.mouse.up();
+  await seekPreview.waitFor({state:'hidden'});
+  await page.waitForFunction(() => Math.abs(SonicPlayback.position() - 8) < .4);
+  await room.locator('[data-preview-row="-1"]').click();
+  assert.ok(Math.abs(await page.evaluate(() => SonicPlayback.position()) - 5) < .2);
+  await page.evaluate(() => SonicPlayback.seek(2.4));
+  console.log('PASS native seek drag previews lyrics before committing audio and preview lines jump on click');
+
+  const touch = await page.context().newCDPSession(page);
+  await touch.send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:1});
+  try {
+    const touchBounds = await seek.boundingBox();
+    const sendTouch = (type,time) => touch.send('Input.dispatchTouchEvent',{
+      type,touchPoints:time===undefined?[]:[{
+        x:Math.round(touchBounds.x+5+(touchBounds.width-10)*time/25),y:Math.round(touchBounds.y+touchBounds.height/2),
+      }],
+    });
+    await sendTouch('touchStart',2.4);
+    await sendTouch('touchMove',10);
+    assert.equal(await seekLine.textContent(),'普通整行');
+    assert.ok(Math.abs(await page.evaluate(() => SonicPlayback.position())-2.4)<.05);
+    await sendTouch('touchCancel');
+    await seekPreview.waitFor({state:'hidden'});
+    assert.ok(Math.abs(await page.evaluate(() => SonicPlayback.position())-2.4)<.05);
+    await sendTouch('touchStart',2.4);
+    await sendTouch('touchMove',10);
+    await sendTouch('touchEnd');
+    await seekPreview.waitFor({state:'hidden'});
+    await page.waitForFunction(() => Math.abs(SonicPlayback.position()-10)<.4);
+  } finally {
+    await touch.send('Emulation.setTouchEmulationEnabled',{enabled:false});
+    await touch.detach();
+  }
+  await page.evaluate(() => SonicPlayback.seek(2.4));
+  console.log('PASS native touch cancellation keeps the current position and release seeks after capture is lost');
+
   await openLyrics();
   await full.waitFor();
   assert.equal(await preview.isVisible(),false);
@@ -189,13 +258,55 @@ async function verifyNowPlaying(page, folder, app) {
   await setMode('listen');
   assert.equal(await full.isVisible(),true,'Returning should keep full lyrics expanded');
   assert.equal(await full.evaluate(element=>element.scrollTop),readingPosition);
-  assert.equal(await room.locator('[data-lyric-follow]').isVisible(),true);
+  const follow = room.locator('[data-lyric-follow]');
+  assert.equal(await follow.isVisible(),true);
+  await page.evaluate(() => SonicPlayback.seek(15.4));
+  await line(7).and(full.locator('[aria-current="true"]')).waitFor({state:'attached'});
+  assert.equal(await full.evaluate(element=>element.scrollTop),readingPosition,'Playback updates should not interrupt manual reading');
+
+  const enterImmersion = room.locator('[data-lyric-full-tools] [data-action="enter-immersion"]');
+  await enterImmersion.click();
+  assert.equal(await room.getAttribute('data-listen-immersive'),'true');
+  assert.equal(await full.isVisible(),false);
+  await seek.fill('11.2');
+  await page.waitForFunction(()=>document.querySelector('[data-preview-line="0"]').textContent==='回声');
+  const immersionQueue = room.locator('[data-queue-dialog]');
+  await room.locator('.lr-player [data-action="queue"]').click();
+  await immersionQueue.waitFor();
+  await page.keyboard.press('Escape');
+  await immersionQueue.waitFor({state:'hidden'});
+  assert.equal(await room.getAttribute('data-listen-immersive'),'true');
+  await page.keyboard.press('Escape');
+  assert.equal(await room.getAttribute('data-listen-immersive'),'false');
+  assert.equal(await full.evaluate(element=>element.scrollTop),readingPosition);
+  assert.equal(await follow.isVisible(),true);
+  assert.equal(await enterImmersion.evaluate(element=>document.activeElement===element),true);
+  assert.ok(Math.abs(await page.evaluate(()=>SonicPlayback.position())-11.2)<.2);
+  await page.evaluate(()=>SonicPlayback.seek(15.4));
+  await line(7).and(full.locator('[aria-current="true"]')).waitFor({state:'attached'});
+  console.log('PASS immersion keeps the same track and restores full lyric reading after a seek and Escape');
+
+  await follow.focus();
+  await page.keyboard.press('Enter');
+  await follow.waitFor({state:'hidden'});
+  assert.equal(await full.evaluate(element=>document.activeElement===element),true);
+  const centeredLine = async index => {
+    await page.waitForFunction(index=>{
+      const scroll=document.querySelector('[data-full-lyrics]'), row=scroll.children[index];
+      return row?.getAttribute('aria-current')==='true'&&
+        Math.abs(row.getBoundingClientRect().top+row.offsetHeight/2-scroll.getBoundingClientRect().top-scroll.clientHeight/2)<2;
+    },index);
+  };
+  await centeredLine(7);
   await shortLyricList.evaluate(element=>element.remove());
-  console.log('PASS expanded lyrics and manual reading position survive search and home navigation');
+  await page.evaluate(() => SonicPlayback.seek(.5));
+  await centeredLine(0);
+  console.log('PASS manual reading survives navigation and playback updates, and returning centers the first and last lyrics');
   await line(4).click();
   await line(4).and(full.locator('[aria-current="true"]')).waitFor();
   assert.equal(await line(4).locator('.lr-timed-group').count(),0);
   assert.ok(Math.abs(await page.evaluate(() => SonicPlayback.snapshot().position) - 9) < .2);
+  await openLyricOptions();
   await room.locator('button[data-lyric-style="fly"]').click();
   assert.equal(await room.getAttribute('data-lyric-style'),'fly');
   const flightRows = room.locator('[data-lyric-timeline] .lr-lyric-row:visible');
@@ -524,7 +635,43 @@ async function verifyNowPlaying(page, folder, app) {
   console.log('PASS saving an untouched online suggestion preserves provenance, and verified sidecar takes priority without changing offset');
   assert.deepEqual(errors,[]);
   const finalIds=[...allIds,autoId];
-  return [{id,data:{...expected,ids:finalIds}},{id:longId,data:{...expectedLong,ids:finalIds}},
+  let movedPlaylist;
+  if(desktop){
+    const order=[longId,id,autoId];
+    const playlist=await page.evaluate(async order=>{
+      const id=SonicPlayback.savePlaylist('文件夹搬迁测试');
+      await SonicPlayback.editPlaylistMembership(id,order,true);
+      return id;
+    },order);
+    movedPlaylist={id:playlist,order};
+    const moved=folder+'-moved';
+    await fs.rename(folder,moved);
+    try{
+      const movedAudio=path.join(moved,'smoke.wav');
+      const changedTimestamp=new Date('2001-01-01T00:00:00Z');
+      await fs.utimes(movedAudio,changedTimestamp,changedTimestamp);
+      await folderInput.setInputFiles(moved);
+      const report=room.locator('[data-sl-import-status]');
+      await report.filter({hasText:/重新关联 2 首/}).waitFor();
+      await room.locator('[data-sl-import-details] summary').click();
+      await room.locator('[data-sl-import-details] li').filter({hasText:/smoke\.wav.*已接回原曲库条目/}).waitFor();
+      assert.deepEqual(await savedDetails(page,id),{...expected,ids:finalIds});
+      const library=await page.evaluate(()=>SonicPlayback.library());
+      assert.deepEqual(library.playlists.find(item=>item.id===playlist).trackIds,order);
+      assert.equal(library.tracks.find(track=>track.id===id).sourcePath,path.basename(moved)+'/smoke.wav');
+
+      await page.locator('#fileInput').setInputFiles(movedAudio);
+      await report.filter({hasText:/1 首音频未变/}).waitFor();
+      assert.deepEqual(await savedDetails(page,id),{...expected,ids:finalIds});
+      // The matching scan uses the stored copy even while the original directory is gone.
+      await playLocal(longId);
+      await waitForLocal(longId);
+      console.log('PASS renamed folder reconnects tracks after a timestamp change, keeps manual edits and ordered playlists, and skips repeated file imports');
+    }finally{
+      await fs.rename(moved,folder);
+    }
+  }
+  return [{id,data:{...expected,ids:finalIds},movedPlaylist},{id:longId,data:{...expectedLong,ids:finalIds}},
     {id:autoId,data:{ids:finalIds,...onlineLyricsTags,album:enrichment.album,lyricsRaw:verifiedSidecar,cover:null}}];
 }
 
@@ -546,7 +693,13 @@ async function run(folder) {
     try {
       const page = await reopened.firstWindow();
       await page.waitForFunction(() => window.SonicPlayback?.library().ready);
-      for (const { id, data } of expected) assert.deepEqual(await savedDetails(page,id),data);
+      for (const { id, data, movedPlaylist } of expected) {
+        assert.deepEqual(await savedDetails(page,id),data);
+        if(movedPlaylist){
+          const lists=await page.evaluate(()=>SonicPlayback.library().playlists);
+          assert.deepEqual(lists.find(item=>item.id===movedPlaylist.id).trackIds,movedPlaylist.order);
+        }
+      }
       console.log('PASS saved lyrics, cover and long metadata survive a full desktop application relaunch');
     } finally { await reopened.close(); }
     return;

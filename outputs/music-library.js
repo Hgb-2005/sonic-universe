@@ -9,7 +9,7 @@
   };
   const pageSize=40;
   const versionMarkers=[
-    ['现场版',/现场版|现场录音|演唱会版|\blive (?:at|from|version|recording)\b|(?:[-–—(\[（【]\s*|\s)live(?:\s*[)\]）】]|$)/i],
+    ['现场版',/现场版|现场录音|演唱会版|\blive (?:at|from|version|recording)\b|(?:^|[-–—(\[（【]\s*|\s)live(?:\s*[)\]）】]|$)/i],
     ['翻唱版',/翻唱|\bcover\b/i],
     ['原唱版',/原唱|\boriginal version\b/i],
     ['录音室版',/录音室版|\bstudio (?:version|recording)\b/i],
@@ -36,8 +36,19 @@
           <div><h1 id="sl-title">全部歌曲</h1><p data-sl-total role="status"></p></div>
           <div class="sl-heading-actions">
             <button class="sl-button" data-action="import">${icon('upload')}导入歌曲</button>
-            <button class="sl-button" data-action="folder">${icon('folder')}导入文件夹</button>
+            <button class="sl-button" data-action="folder" title="选择新文件夹，或重新扫描已导入、已移动的文件夹">${icon('folder')}导入 / 重扫文件夹</button>
           </div>
+        </div>
+        <div class="sl-import-report" data-sl-import-report hidden>
+          <div class="sl-import-heading">
+            <p data-sl-import-status role="status"></p>
+            <button type="button" class="lr-icon" data-sl-command="dismiss-import" aria-label="关闭导入结果">${icon('close')}</button>
+          </div>
+          <progress data-sl-import-progress aria-label="导入进度" hidden></progress>
+          <details data-sl-import-details hidden>
+            <summary></summary>
+            <ul></ul>
+          </details>
         </div>
         <div class="sl-search-page" data-sl-search-page hidden>
           <form class="sl-search-actions" role="search" aria-label="音乐搜索">
@@ -63,6 +74,7 @@
         </div>
         <div class="sl-selection" id="sl-selection" hidden>
           <button class="sl-button" type="button" data-sl-command="select-page">选择已显示歌曲</button>
+          <button class="sl-button" type="button" data-sl-command="select-filtered" hidden>选择全部筛选结果</button>
           <button class="sl-button" type="button" data-sl-command="select-clear">清除选择</button>
           <button class="sl-button" type="button" data-sl-command="batch-add" aria-haspopup="dialog">加入歌单</button>
           <button class="sl-button" type="button" data-sl-command="batch-remove" hidden>移出当前歌单</button>
@@ -91,6 +103,10 @@
         <section class="sl-qishui-results" id="sl-qishui-results" data-sl-qishui-results aria-label="汽水音乐搜索结果" hidden>
           <p class="sl-qishui-status" data-sl-qishui-status role="status"></p>
           <button class="sl-button" type="button" data-sl-qishui-retry hidden>重试搜索</button>
+          <div class="sl-qishui-recovery" data-sl-qishui-recovery hidden>
+            <button class="sl-button" type="button" data-sl-qishui-retry-track>重试播放</button>
+            <button class="sl-button" type="button" data-sl-qishui-skip-track>试下一条结果</button>
+          </div>
           <ol class="sl-qishui-list" data-sl-qishui-list></ol>
         </section>
       </section>
@@ -108,6 +124,7 @@
         <div class="lr-dialog-heading"><h2 id="sl-batch-title">加入歌单</h2><button class="lr-icon" type="button" data-sl-close aria-label="关闭加入歌单">${icon('close')}</button></div>
         <p class="lr-status" data-sl-batch-song hidden></p>
         <label class="lr-field"><span class="lr-field-title">选择歌单</span><select class="lr-search-input" name="playlistId" required></select></label>
+        <p class="lr-status" data-sl-batch-preview role="status" hidden></p>
         <div class="sl-dialog-actions"><button class="sl-button" type="button" data-sl-close>取消</button><button class="sl-button sl-play-all" type="submit">加入</button></div>
       </form></dialog>
       <dialog class="lr-dialog sl-qishui-action-dialog" id="sl-qishui-more-dialog" data-sl-qishui-more-dialog aria-labelledby="sl-qishui-more-title">
@@ -133,6 +150,8 @@
     const player=root.closest('#listeningRoom')?.querySelector('.lr-player-wrap');
     const edit=$('[data-sl-edit]'), membership=$('[data-sl-membership]'), queueOptions=$('[data-sl-queue]');
     const batchAdd=$('[data-sl-batch-add]'), selection=$('#sl-selection');
+    const importReport=$('[data-sl-import-report]');
+    let lastImportReport=null,dismissedImportReport=null;
     const qishuiMore=$('[data-sl-qishui-more-dialog]');
     const enrich=$('[data-sl-enrich]'), enrichStatus=$('[data-sl-enrich-status]'), enrichResults=$('[data-sl-enrich-results]');
     const scanButton=$('[data-sl-command="scan-enrich"]'), applyButton=$('[data-sl-command="apply-enrich"]');
@@ -148,6 +167,7 @@
     const sharedQuery=()=>localSearch.value.trim();
     let searchSource='local', composing=false;
     let qishui={query:'',status:'idle',items:[]}, qishuiRows=null, qishuiMessage='';
+    let qishuiFailure=null;
     let qishuiSearchJob=null, qishuiPlayJob=null;
     let qishuiMoreTrack=null, qishuiBatchTrack=null, qishuiNewPlaylistTrack=null;
     const qishuiSaves=new Set();
@@ -284,6 +304,9 @@
       const hiddenCount=selected.size-displayed.filter(track=>selected.has(track.id)).length;
       $('[data-sl-selection-count]').textContent='已选 '+selected.size+' 首'+(hiddenCount?'（'+hiddenCount+' 首未在当前显示）':'');
       $('[data-sl-command="select-page"]').disabled=playlistSaving||!displayed.some(track=>!selected.has(track.id));
+      const selectFiltered=$('[data-sl-command="select-filtered"]');
+      selectFiltered.hidden=filtered.length<=displayed.length;
+      selectFiltered.disabled=playlistSaving||!filtered.some(track=>!selected.has(track.id));
       $('[data-sl-command="select-clear"]').disabled=playlistSaving||!selected.size;
       $('[data-sl-command="batch-add"]').disabled=playlistSaving||!selected.size||!database.playlists.length;
       const remove=$('[data-sl-command="batch-remove"]');
@@ -358,7 +381,7 @@
       const title=button.querySelector('.sl-qishui-title'),meta=button.querySelector('.sl-qishui-meta');
       title.textContent=track.name;title.title=track.name;
       meta.textContent=metadata.join(' · ');meta.title=meta.textContent;meta.hidden=!metadata.length;
-      const availability={preview:'仅试听',direct:'全曲',unavailable:'暂不可播'}[track.availability]||'可播状态待确认';
+      const availability={preview:'仅试听',direct:'可播全曲',unavailable:'暂不可播'}[track.availability]||'可播状态待确认';
       const badges=button.querySelector('.sl-qishui-badges');
       for(const [kind,label] of [['source','汽水音乐'],['version',versions.join(' · ')||'版本未标明'],[track.availability,availability]]){
         const badge=document.createElement('span');
@@ -386,6 +409,8 @@
       if(!onQishui)return;
       qishuiSubmit.disabled=!sharedQuery()||qishui.status==='loading';
       qishuiRetry.hidden=!['timeout','unavailable','error'].includes(qishui.status);
+      $('[data-sl-qishui-recovery]').hidden=!qishuiFailure;
+      $('[data-sl-qishui-skip-track]').hidden=!nextQishuiResult();
       const feedback={
         idle:'输入歌名、歌手或专辑后搜索汽水音乐。',
         loading:'正在搜索汽水音乐…',
@@ -420,6 +445,7 @@
       cancelQishuiPlay();
       qishui={query:'',status:'idle',items:[]};
       qishuiMessage='';
+      qishuiFailure=null;
     }
 
     async function runQishuiSearch(){
@@ -455,11 +481,20 @@
       renderSearchSources();
     }
 
+    function nextQishuiResult(){
+      if(!qishuiFailure)return null;
+      const index=qishui.items.findIndex(track=>track.mediaId===qishuiFailure);
+      return qishui.items.slice(index+1).find(track=>track.availability!=='unavailable')||null;
+    }
+
     async function playQishuiResult(id){
       const track=qishui.items.find(item=>item.mediaId===id);
       if(searchSource!=='qishui'||!searchPage||!track||qishuiPlayJob?.id===id||
         playback?.playing&&playback.track?.id===track.id)return;
       cancelQishuiPlay();
+      const recovery=$('[data-sl-qishui-recovery]');
+      if(recovery.contains(document.activeElement))qishuiList.querySelector('[data-sl-qishui-track="'+CSS.escape(id)+'"]')?.focus({preventScroll:true});
+      qishuiFailure=null;
       const job={id,controller:new AbortController()};
       qishuiPlayJob=job;
       qishuiMessage='正在获取《'+track.name+'》的音源…';
@@ -471,9 +506,44 @@
       qishuiPlayJob=null;
       const availability={full:'direct',preview:'preview'}[result.status]||result.availability;
       if(availability&&availability!==track.availability)qishui.items=qishui.items.map(item=>item===track?{...item,availability}:item);
+      const failed=!['full','preview','cancelled'].includes(result.status);
+      if(failed)qishuiFailure=id;
       qishuiMessage=result.status==='preview'?'正在试听《'+track.name+'》。':
-        ['full','cancelled'].includes(result.status)?'':result.message||'这首歌暂时无法播放。';
+        failed?'《'+qishuiSongLabel(track)+'》未能播放。'+(result.message||'可以重试。'):'';
       renderSearchSources();
+    }
+
+    function renderImport() {
+      const report=api.importReport();
+      if(lastImportReport===report)return;
+      lastImportReport=report;
+      importReport.hidden=!report||report===dismissedImportReport;
+      if(importReport.hidden)return;
+      importReport.dataset.error=String(report.error);
+      $('[data-sl-import-status]').textContent=report.message;
+      $('[data-sl-command="dismiss-import"]').hidden=report.busy;
+      const progress=$('[data-sl-import-progress]');
+      progress.hidden=!report.busy;
+      if(report.total){progress.max=report.total;progress.value=report.completed;}
+      else progress.removeAttribute('value');
+      const details=$('[data-sl-import-details]');
+      details.open=false;
+      details.hidden=!report.detailCount;
+      const list=details.querySelector('ul');
+      list.replaceChildren();
+      if(report.detailCount){
+        details.querySelector('summary').textContent='查看文件明细（'+report.detailCount+'）';
+        for(const {path,reason} of report.details){
+          const item=document.createElement('li');
+          item.textContent=path+' · '+reason;
+          list.append(item);
+        }
+        if(report.detailCount>report.details.length){
+          const item=document.createElement('li');
+          item.textContent='显示前 '+report.details.length+' 条明细。';
+          list.append(item);
+        }
+      }
     }
 
     function render() {
@@ -487,7 +557,7 @@
       $('[data-sl-command="refresh-synced"]').hidden=!playlist?.synced;
       root.querySelectorAll('.sl-heading-actions button').forEach(button=>button.disabled=!database.ready||database.readFailed||database.importing);
       root.querySelectorAll('[data-sl-command="new"]').forEach(button=>button.disabled=!database.ready||database.readFailed);
-      renderNavigation();renderTracks();renderSearchSources();
+      renderImport();renderNavigation();renderTracks();renderSearchSources();
     }
 
     function updatePlayback(state,force=false) {
@@ -567,8 +637,19 @@
       qishuiBatchTrack=qishuiTrack;
       const song=$('[data-sl-batch-song]');song.hidden=!qishuiTrack;
       song.textContent=qishuiTrack?qishuiSongLabel(qishuiTrack):'';
+      renderBatchPreview();
       batchAdd.showModal();
       select.focus();
+    }
+
+    function renderBatchPreview(){
+      const preview=$('[data-sl-batch-preview]');
+      preview.hidden=Boolean(qishuiBatchTrack);
+      if(preview.hidden)return;
+      const target=database.playlists.find(playlist=>playlist.id===batchAdd.querySelector('select').value);
+      const existing=new Set(target?.trackIds);
+      const already=[...selected].filter(id=>existing.has(id)).length;
+      preview.textContent='待加入 '+(selected.size-already)+' 首 · 已在歌单 '+already+' 首';
     }
 
     async function saveQishuiSelection(track,options) {
@@ -664,6 +745,12 @@
       if(button.hasAttribute('data-sl-close')){button.closest('dialog').close();return;}
       if(button.dataset.slSearchSource){chooseSearchSource(button.dataset.slSearchSource);return;}
       if(button.hasAttribute('data-sl-qishui-retry')){void runQishuiSearch();return;}
+      if(button.hasAttribute('data-sl-qishui-retry-track')&&qishuiFailure){void playQishuiResult(qishuiFailure);return;}
+      if(button.hasAttribute('data-sl-qishui-skip-track')){
+        const next=nextQishuiResult();
+        if(next)void playQishuiResult(next.mediaId);
+        return;
+      }
       if(button.dataset.slQishuiTrack){void playQishuiResult(button.dataset.slQishuiTrack);return;}
       if(button.hasAttribute('data-sl-qishui-more-add')){
         const track=qishuiMoreTrack;
@@ -718,8 +805,8 @@
         if(!selectionMode)selected.clear();
         renderSelection();
       }
-      if(command==='select-page'){
-        for(const track of filtered.slice(0,shown))selected.add(track.id);
+      if(command==='select-page'||command==='select-filtered'){
+        for(const track of command==='select-page'?filtered.slice(0,shown):filtered)selected.add(track.id);
         renderSelection();
         $('[data-sl-command="select-clear"]').focus();
       }
@@ -729,6 +816,11 @@
         $('[data-sl-command="select-page"]').focus();
       }
       if(command==='batch-add')openBatchAdd();
+      if(command==='dismiss-import'){
+        dismissedImportReport=lastImportReport;
+        importReport.hidden=true;
+        $('[data-action="import"]').focus();
+      }
       if(command==='batch-remove'){
         const items=[...selected];
         void saveSelection(()=>api.editPlaylistMembership(view,items,false),count=>count?'已从当前歌单移出 '+count+' 首。':'当前歌单没有这些歌曲。',button);
@@ -813,13 +905,19 @@
       const items=sortTracks(viewTracks()).filter(track=>selected.has(track.id)).map(track=>track.id);
       batchAdd.close();
       if(target&&items.length){
-        void saveSelection(()=>api.editPlaylistMembership(target,items,true),count=>count?'已加入 '+count+' 首歌曲。':'所选歌曲均已在歌单中。',$('[data-sl-command="batch-add"]'));
+        void saveSelection(()=>api.editPlaylistMembership(target,items,true),count=>{
+          if(!count)return '所选歌曲均已在歌单中。';
+          const already=items.length-count;
+          return '已加入 '+count+' 首歌曲。'+(already?'另有 '+already+' 首已在歌单中。':'');
+        },$('[data-sl-command="batch-add"]'));
       }
     });
+    batchAdd.querySelector('select').addEventListener('change',renderBatchPreview);
     qishuiMore.addEventListener('close',()=>{if(!qishuiMore.open)qishuiMoreTrack=null;});
     batchAdd.addEventListener('close',()=>{if(!batchAdd.open)qishuiBatchTrack=null;});
     edit.addEventListener('close',()=>{if(!edit.open)qishuiNewPlaylistTrack=null;});
     window.addEventListener('sonic:library-change',render);
+    window.addEventListener('sonic:import-progress',renderImport);
     return {
       setVisible(visible,searching=false) {
         if(searchPage&&!searching){

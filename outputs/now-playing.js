@@ -7,21 +7,33 @@
   function mount(root,seek) {
     const preview=root.querySelector('[data-lyric-preview]');
     const rows=Array.from(preview.querySelectorAll('[data-preview-line]'));
+    const previewButtons=Array.from(preview.querySelectorAll('[data-preview-row]'));
     const previewTranslation=preview.querySelector('[data-preview-translation]');
+    const seekPreview=root.querySelector('[data-seek-lyrics]');
+    const seekTime=seekPreview.querySelector('[data-seek-time]');
+    const seekText=seekPreview.querySelector('[data-seek-line]');
+    const seekTranslation=seekPreview.querySelector('[data-seek-translation]');
     const scroll=root.querySelector('[data-full-lyrics]');
     const follow=root.querySelector('[data-lyric-follow]');
     const fullTools=root.querySelector('[data-lyric-full-tools]');
-    let lines, active=-2, fullIndex=-2, lastPosition=0, followAfter=0, groups=[], currentNode;
-    let view, savedReading=null;
+    const fullNotice=document.createElement('p');
+    let lines, trackId, queueEntryId, active=-2, fullIndex=-2, lastPosition=0, groups=[], currentNode;
+    let view, following=true, readingTop=0, previewMessage='';
+    let targetLine, targetEnd, targetMessage, targetGroups=[];
+
+    function emptyMessage(state,nextLines) {
+      if(nextLines.length)return '歌词即将开始';
+      if(state.lyricsInfo?.state==='loading')return '正在查找同步歌词…';
+      if(state.external)return '正在联动外部声音';
+      return state.track?'此曲暂无同步歌词':'播放一首歌后显示歌词';
+    }
 
     function makeHighlight(container,line,end) {
-      currentNode=container;
-      if(!line){groups=[];return;}
-      const timed=karaoke.timedSpans?.(line,end)||[];
-      if(!timed.length){container.textContent=line.text;groups=[];return;}
+      const timed=karaoke.timedSpans(line,end);
+      if(!timed.length){container.textContent=line.text;return [];}
       const glyphs=Array.from(line.text), fragment=document.createDocumentFragment();
       let offset=0;
-      groups=timed.map(span=>{
+      const highlights=timed.map(span=>{
         if(span.index>offset)fragment.append(glyphs.slice(offset,span.index).join(''));
         const node=document.createElement('span');node.className='lr-timed-group';node.textContent=span.text;
         fragment.append(node);offset=span.index+Array.from(span.text).length;
@@ -29,14 +41,42 @@
       });
       if(offset<glyphs.length)fragment.append(glyphs.slice(offset).join(''));
       container.replaceChildren(fragment);
+      return highlights;
     }
 
-    function updateGroups(position) {
-      for(const group of groups) {
+    function updateGroups(highlights,position) {
+      for(const group of highlights) {
         const fill=Math.round(karaoke.progress(group,position)*100);
         if(fill===group.fill)continue;
         group.fill=fill;group.node.style.setProperty('--lr-word-fill',fill+'%');
       }
+    }
+
+    function showSeek(state,position) {
+      const visible=view!=='hidden'&&Number.isFinite(position);
+      if(seekPreview.hidden===visible){
+        seekPreview.hidden=!visible;
+        if(visible)root.dataset.lyricSeeking='true';
+        else delete root.dataset.lyricSeeking;
+      }
+      if(!visible)return;
+      const time=formatTime(position);
+      if(seekTime.textContent!==time)seekTime.textContent=time;
+      const lyricPosition=position+state.lyricPosition-state.position;
+      const {line,end}=lyricAt(state.lyrics,lyricPosition,state.lyricDuration);
+      const message=line?'':state.lyrics.length?'前奏':emptyMessage(state,state.lyrics);
+      if(line!==targetLine||end!==targetEnd||message!==targetMessage){
+        targetLine=line;targetEnd=end;targetMessage=message;
+        targetGroups=line?makeHighlight(seekText,line,end):[];
+        if(line)seekText.dataset.timing=targetGroups.length?'word':'line';
+        else {
+          delete seekText.dataset.timing;
+          seekText.textContent=message;
+        }
+        seekTranslation.textContent=line?.translation||'';
+        seekTranslation.hidden=!line?.translation;
+      }
+      updateGroups(targetGroups,lyricPosition);
     }
 
     function fillFull(nextLines) {
@@ -54,78 +94,134 @@
         }
         row.append(time,content);fragment.append(row);
       });
-      if(!nextLines.length){const blank=document.createElement('p');blank.textContent='此曲暂无同步歌词';fragment.append(blank);}
-      scroll.replaceChildren(fragment);scroll.scrollTop=0;
+      if(!nextLines.length)fragment.append(fullNotice);
+      scroll.replaceChildren(fragment);
+      scroll.scrollTo({top:following?0:readingTop,behavior:'instant'});
     }
 
     function centerLine(immediate) {
       const row=fullIndex>=0?scroll.children[fullIndex]:null;
-      if(!row)return;
-      const nextTop=scroll.scrollTop+row.getBoundingClientRect().top-scroll.getBoundingClientRect().top-(scroll.clientHeight-row.offsetHeight)/2;
+      let nextTop=0;
+      if(row){
+        const bounds=row.getBoundingClientRect();
+        nextTop=scroll.scrollTop+bounds.top-scroll.getBoundingClientRect().top-scroll.clientTop+(bounds.height-scroll.clientHeight)/2;
+      }
       scroll.scrollTo({top:Math.max(0,nextTop),behavior:immediate||matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});
     }
 
-    function sync(state,position,{expanded=false,full=false,force=false}={}) {
+    function showFollowButton(visible) {
+      if(follow.hidden===!visible)return;
+      if(!visible&&!scroll.hidden&&document.activeElement===follow)scroll.focus({preventScroll:true});
+      follow.hidden=!visible;
+    }
+
+    function resumeFollowing() {
+      following=true;
+      readingTop=0;
+      showFollowButton(false);
+    }
+
+    function rememberReading() {
+      if(view==='full'&&!following&&lines?.length)readingTop=scroll.scrollTop;
+    }
+
+    function sync(state,position,{full=false,force=false}={}) {
+      const trackChanged=trackId!==state.track?.id||queueEntryId!==state.queueEntryId;
+      trackId=state.track?.id;
+      queueEntryId=state.queueEntryId;
+      if(trackChanged)resumeFollowing();
+      if(view==='hidden'||view==='stage')return;
       const nextLines=state.lyrics.length?state.lyrics:empty;
       const {index,line,end}=lyricAt(nextLines,position,state.lyricDuration);
-      if(expanded&&!full)return;
-      const changed=lines!==nextLines;
-      const restored=full&&changed&&savedReading?.lines===nextLines;
+      const changed=trackChanged||lines!==nextLines;
       if(changed) {
-        lines=nextLines;active=fullIndex=-2;followAfter=0;groups=[];currentNode=null;
+        rememberReading();
+        lines=nextLines;active=fullIndex=-2;groups=[];currentNode=null;
         if(full)fillFull(lines);
-        if(restored) {
-          followAfter=performance.now()+savedReading.remaining;
-          follow.hidden=false;
-          scroll.scrollTop=savedReading.top;
-        }
-        savedReading=null;
       }
       if(full) {
-        if(index!==fullIndex) {
+        const currentChanged=index!==fullIndex;
+        if(currentChanged) {
           const previous=scroll.children[fullIndex];
           if(previous){previous.removeAttribute('aria-current');previous.querySelector('.lr-full-text').textContent=lines[fullIndex]?.text||'';}
           fullIndex=index;
           const row=scroll.children[index];
-          if(row){row.setAttribute('aria-current','true');makeHighlight(row.querySelector('.lr-full-text'),line,end);}
-          else groups=[];
-          if(performance.now()>=followAfter){follow.hidden=true;centerLine(force||changed||Math.abs(lastPosition-position)>1.3);}
+          if(row){
+            row.setAttribute('aria-current','true');
+            currentNode=row.querySelector('.lr-full-text');
+            groups=makeHighlight(currentNode,line,end);
+          }
+          else {groups=[];currentNode=null;}
         }
-      }else if(active!==index||currentNode!==rows[1]) {
+        if(!lines.length){
+          const message=emptyMessage(state,lines);
+          if(fullNotice.textContent!==message)fullNotice.textContent=message;
+        }
+        showFollowButton(!following&&Boolean(lines.length));
+        if(following&&(currentChanged||force))centerLine(force||changed||Math.abs(lastPosition-position)>1.3);
+      }else if(active!==index||currentNode!==rows[1]||(!line&&previewMessage!==emptyMessage(state,nextLines))) {
         active=index;
-        rows[0].textContent=lines[index-1]?.text||'';
-        rows[1].textContent=line?.text||(lines.length?'歌词即将开始':state.external?'正在联动外部声音':'此曲暂无同步歌词');
-        rows[2].textContent=lines[index+1]?.text||'';
+        previewMessage=line?'':emptyMessage(state,nextLines);
+        for(const [slot,button] of previewButtons.entries()) {
+          const text=lines[index+slot-1]?.text;
+          const isCurrent=slot===1;
+          button.hidden=!isCurrent&&!text;
+          button.disabled=!text;
+          rows[slot].textContent=text||(isCurrent?previewMessage:'');
+          if(isCurrent&&text)button.setAttribute('aria-current','true');
+          else button.removeAttribute('aria-current');
+        }
         previewTranslation.textContent=line?.translation||'';
         previewTranslation.hidden=!line?.translation;
-        makeHighlight(rows[1],line,end);
+        currentNode=rows[1];
+        groups=line?makeHighlight(currentNode,line,end):[];
       }
-      lastPosition=position;updateGroups(position);
-      if(full&&force&&!restored)centerLine(true);
+      lastPosition=position;updateGroups(groups,position);
     }
 
+    preview.addEventListener('click',event=>{
+      const row=event.target.closest('[data-preview-row]');
+      if(!row||row.disabled)return;
+      const line=lines?.[active+Number(row.dataset.previewRow)];
+      if(line)seek(line.time);
+    });
     scroll.addEventListener('click',event=>{
       const row=event.target.closest('[data-full-line]');
       const line=lines?.[Number(row?.dataset.fullLine)];
-      if(line){followAfter=0;follow.hidden=true;seek(line.time);}
+      if(line){resumeFollowing();seek(line.time);}
     });
-    function pauseFollow(){if(lines?.length){followAfter=performance.now()+6500;follow.hidden=false;}}
-    scroll.addEventListener('wheel',pauseFollow,{passive:true});
-    scroll.addEventListener('touchmove',pauseFollow,{passive:true});
-    scroll.addEventListener('keydown',event=>{if(['ArrowUp','ArrowDown','PageUp','PageDown','Home','End'].includes(event.key))pauseFollow();});
-    follow.addEventListener('click',()=>{followAfter=0;follow.hidden=true;centerLine(true);});
+    function pauseFollow() {
+      if(!following||!lines?.length||scroll.scrollHeight<=scroll.clientHeight)return;
+      following=false;
+      scroll.scrollTo({top:scroll.scrollTop,behavior:'instant'});
+      showFollowButton(true);
+    }
+    scroll.addEventListener('wheel',event=>{if(event.deltaY&&!event.ctrlKey)pauseFollow();},{passive:true});
+    scroll.addEventListener('touchmove',event=>{if(event.touches.length===1)pauseFollow();},{passive:true});
+    scroll.addEventListener('keydown',event=>{
+      if(['ArrowUp','ArrowDown','PageUp','PageDown','Home','End'].includes(event.key))pauseFollow();
+    });
+    scroll.addEventListener('pointerdown',event=>{
+      if(event.pointerType==='touch')return;
+      if(event.button===1){pauseFollow();return;}
+      if(event.button!==0)return;
+      const left=scroll.getBoundingClientRect().left+scroll.clientLeft;
+      const right=left+scroll.clientWidth;
+      const overlayEdge=getComputedStyle(scroll).direction==='rtl'?event.clientX-left:right-event.clientX;
+      if(event.clientX<left||event.clientX>=right||event.target===scroll&&overlayEdge<=12)pauseFollow();
+    });
+    follow.addEventListener('click',()=>{resumeFollowing();centerLine(true);});
 
     return {
-      sync,
+      sync,showSeek,
+      followAfterSeek(){if(view==='full')resumeFollowing();},
       setView(nextView) {
         if(view===nextView)return;
-        if(view==='full'&&nextView==='hidden') {
-          const remaining=followAfter-performance.now();
-          savedReading=remaining>0?{lines,top:scroll.scrollTop,remaining}:null;
-        }else if(nextView!=='full')savedReading=null;
+        rememberReading();
+        if(nextView==='preview')resumeFollowing();
         view=nextView;
-        preview.hidden=view!=='preview';scroll.hidden=view!=='full';fullTools.hidden=scroll.hidden;
-        follow.hidden=true;lines=null;
+        preview.hidden=view!=='preview'&&view!=='immersive';scroll.hidden=view!=='full';fullTools.hidden=scroll.hidden;
+        showFollowButton(false);lines=null;
       },
     };
   }

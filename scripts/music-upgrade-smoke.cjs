@@ -389,10 +389,20 @@ async function verifyUpgrade(page) {
 
   const before=companion.chartMatches.length;
   await items.getByRole('button',{name:'播放整榜'}).click();
-  await page.waitForFunction(()=>SonicPlayback.snapshot({queue:true}).queueCount===3&&SonicPlayback.snapshot().playing);
+  await page.waitForFunction(id=>{
+    const state=SonicPlayback.snapshot({queue:true});
+    return state.queueCount===3&&state.playing&&!state.busy&&state.track?.id==='online:qishui:'+id;
+  },matchedChartSong.mediaId);
   assert.deepEqual(companion.chartMatches.slice(before),[matchInput(chart)]);
   await page.evaluate(()=>SonicPlayback.next());
-  await page.waitForFunction(id=>SonicPlayback.snapshot().playing&&SonicPlayback.snapshot().track?.id==='online:qishui:'+id,matchedLastChartSong.mediaId);
+  try {
+    await page.waitForFunction(id=>SonicPlayback.snapshot().playing&&SonicPlayback.snapshot().track?.id==='online:qishui:'+id,matchedLastChartSong.mediaId);
+  } catch(error) {
+    const {playing,busy,track,queue,queueRecovery,queueEntryId}=await page.evaluate(()=>SonicPlayback.snapshot({queue:true}));
+    throw new Error('Chart advance did not reach a playable recording: '+JSON.stringify({
+      playing,busy,track:track?.id,queue:queue.map(item=>item.id),queueRecovery,queueEntryId,matches:companion.chartMatches.slice(before),
+    }),{cause:error});
+  }
   assert.deepEqual(companion.chartMatches.slice(before),[chart,unmatchedChartSong,lastChartSong].map(song=>matchInput(song)));
   const wrongRecording = await lyricResult(matchedLastChartSong,'missing');
   assert.deepEqual(wrongRecording.lines,[]);
@@ -426,7 +436,11 @@ async function verifyUpgrade(page) {
   await versions.getByRole('button',{name:/音乐节现场/}).click();
   await searchStatus.filter({hasText:'版权或会员保护内容无法在声波宇宙内播放'}).waitFor();
   assert.ok(requests.includes(`/api/qishui/tracks/${rejectedVersion.mediaId}/audio`));
-  assert.deepEqual(await currentPlayback(),active);
+  const rejected=await page.evaluate(()=>SonicPlayback.snapshot());
+  assert.equal(rejected.playing,false);
+  assert.equal(rejected.playbackRecovery.trackId,`online:qishui:${rejectedVersion.mediaId}`);
+  assert.equal(rejected.playbackRecovery.reason,'unplayable');
+  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('sonic-universe-session')).id),active.id);
 
   await chooseVersion.click();
   await versions.getByRole('button',{name:/剧场现场/}).click();
@@ -449,7 +463,7 @@ async function verifyUpgrade(page) {
   await page.locator('[data-online-provider="qishui"]').click();
   await page.locator('#queueDialog').evaluate(dialog=>dialog.close());
   await page.locator('[data-action="discovery"]').filter({visible:true}).first().click();
-  console.log('PASS public search checks audio identity, preserves playback on a rejected manual pick, and distinguishes preview from full playback');
+  console.log('PASS public search checks audio identity, retains the listening checkpoint on a rejected manual pick, and distinguishes preview from full playback');
 
   const fixtureVideo = await makeVideo(page);
   companion.setVideoBuffer(fixtureVideo.buffer);
@@ -634,7 +648,8 @@ async function verifyUpgrade(page) {
     const selected = page.evaluate(song=>SonicPlayback.playOnlineList([song],'保留当前歌词测试'),matchedChartSong);
     assert.equal((await Promise.all([requested,selected]))[1],true);
     await lyricResult(matchedChartSong,'loading');
-    await page.evaluate(song=>SonicPlayback.select('online:qishui:'+song.mediaId),recommendation);
+    const rejected=await page.evaluate(song=>SonicPlayback.playRecording(song,{singleQueue:false,preserveCurrent:true}),recommendation);
+    assert.equal(rejected.officialOnly,true);
     assert.equal((await page.evaluate(()=>SonicPlayback.snapshot())).track.id,`online:qishui:${matchedChartSong.mediaId}`);
     const text = '下一首未能播放，当前歌曲的歌词仍到达';
     assert.ok(delayed,'The current recording lyric request was held');

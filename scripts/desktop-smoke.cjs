@@ -165,6 +165,7 @@ async function run() {
     assert.ok(after.playing&&after.position>=before);
     await room.locator('.lr-now-cover').click();
     assert.equal(await room.getAttribute('data-lyric-style'),'list');
+    await room.locator('.lr-more-lyrics > summary').click();
     await room.locator('button[data-lyric-style="stage"]').click();
     assert.ok(await page.evaluate(()=>SonicPlayback.snapshot().playing));
     await room.locator('[data-action="play"]').click();
@@ -174,9 +175,12 @@ async function run() {
     await page.locator('#atelierDialog [aria-label="关闭创作台"]').click();
     const beforeScrub=await page.evaluate(()=>SonicPlayback.position());
     await room.locator('[data-seek]').evaluate(slider=>{slider.value='5.5';slider.dispatchEvent(new Event('input',{bubbles:true}));});
-    assert.equal(await room.locator('[data-current-line]').textContent(),'夜色落在湖面');
+    const seekPreview=room.locator('[data-seek-lyrics]');
+    await seekPreview.waitFor();
+    assert.equal(await seekPreview.locator('[data-seek-line]').textContent(),'夜色落在湖面');
     assert.equal(await page.evaluate(()=>SonicPlayback.position()),beforeScrub);
     await room.locator('[data-seek]').fill('10.5');
+    await seekPreview.waitFor({state:'hidden'});
     await page.waitForFunction(()=>document.querySelector('[data-current-line]').textContent==='让音乐慢慢流动'&&
       [...document.querySelectorAll('[data-current-line] [data-sing="voicing"]')].some(word=>
         word.textContent==='音乐'&&parseFloat(word.style.getPropertyValue('--lr-sung'))===75));

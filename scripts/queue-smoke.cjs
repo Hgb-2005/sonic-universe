@@ -21,6 +21,10 @@ const authOrder = ['9301', '9302', '9303'];
 const [authStarter, authBlocked, authLater] = authOrder;
 const crossProviderIds = ['9401', '9402'];
 const [earlierMatch, latestMatch] = crossProviderIds;
+const manualOrder = ['9601','9602','9603','9604'];
+const [manualFirst, manualRetry, manualSkip, manualNext] = manualOrder;
+const resumeOrder = ['9701','9702','9703','9704'];
+const [resumeFirst,resumeOldNext,resumeBlocked,resumePlayable] = resumeOrder;
 const orderedIds = [first, unavailable, unrecognizedMedia, interrupted, removeFromQueue, duplicate, moveUp];
 const playlistId = '9100';
 const unavailablePlaylistId = '9200';
@@ -65,9 +69,10 @@ async function mockQishui(page) {
   const edits = [];
   const matchRequests = [];
   const loginRequests = [];
+  const resumeFailures = new Map();
   const delayedMatch = Promise.withResolvers();
   const delayedMatchFinished = Promise.withResolvers();
-  let authenticated = true, serviceInterrupted = false, upstreamOffline = false, pendingLogin = null;
+  let authenticated = true, serviceInterrupted = false, upstreamOffline = false, pendingLogin = null, allowManualRetry = false;
   const shortWav = silentWav(1.2);
   const longWav = silentWav(25);
   const tracks = ids => ids.map(mediaId => ({
@@ -160,7 +165,12 @@ async function mockQishui(page) {
       if (serviceInterrupted && id === authLater) {
         return route.fulfill({ status:503, json:{ error:'音乐服务暂时不可用' } });
       }
-      if (id === unavailable || allUnavailable.includes(id) || retryAfterInterruption) {
+      const resumeFailure = resumeFailures.get(id);
+      if (resumeFailure) return route.fulfill({ status:resumeFailure, json:{
+        code:resumeFailure===502?'network':'not-playable',error:'续听音源失效',
+      } });
+      if (id === unavailable || allUnavailable.includes(id) || retryAfterInterruption ||
+          id === manualSkip || id === manualRetry && !allowManualRetry) {
         return route.fulfill({ status:422, json:{ code:'not-playable', error:'测试歌曲暂不可播' } });
       }
       return route.fulfill({ json:{ streamPath:`/media/queue-smoke/${id}`, preview:false } });
@@ -178,9 +188,11 @@ async function mockQishui(page) {
     return route.continue();
   });
   return { playlistReads, audioRequests, mediaRequests, edits, matchRequests, loginRequests,
+    allowManualRetry(){ allowManualRetry = true; },
     expireSession(){ authenticated = false; },
     setServiceInterrupted(value){ serviceInterrupted = value; },
     setUpstreamOffline(value){ upstreamOffline = value; },
+    setResumeFailure(id,status){if(status)resumeFailures.set(id,status);else resumeFailures.delete(id);},
     postponeAuthorization(){
       const pending = {gate:Promise.withResolvers(),finished:Promise.withResolvers()};
       pendingLogin = pending;
@@ -281,6 +293,7 @@ async function verifyQueue(page) {
   assert.equal(opened.queue[0].entryId,opened.queueEntryId);
 
   await waitForPlaying(interrupted);
+  await page.locator('.lr-toasts').filter({hasText:title(unavailable)}).waitFor();
   assert.deepEqual([...new Set(network.audioRequests)],[first,unavailable,unrecognizedMedia,interrupted]);
   assert.ok(network.audioRequests.filter(id=>id===unavailable).length<=2);
   assert.ok(network.mediaRequests.includes(unrecognizedMedia));
@@ -602,8 +615,111 @@ async function verifyQueue(page) {
     releaseMatch.resolve();
     await page.unroute(matchUrl,provideMatch);
   }
-  assert.deepEqual(errors,[]);
   console.log('PASS a late error from the old audio does not restart or seek a pending chart selection');
+
+  const manualQueueName = '手动点播失败验证';
+  await page.evaluate(({ids,label})=>SonicPlayback.playOnlineList(ids.map(mediaId=>({
+    provider:'qishui',mediaId,name:'队列样例 '+mediaId,artist:'本机测试音源',duration:25,
+  })),label),{ids:manualOrder,label:manualQueueName});
+  await waitForPlaying(manualFirst);
+  await room.locator('[data-room-mode="listen"]').click();
+  await room.locator('[data-action="enter-immersion"]:visible').click();
+  await room.locator('.lr-player [data-action="queue"]').click();
+  await visibleQueue.waitFor();
+  assert.equal(await visibleQueue.locator('[data-queue-source-label]').textContent(),manualQueueName);
+  const pickQueueSong = id => queueRow(id).locator('[data-queue-command="play"]').click();
+  const waitForHeldSong = id => page.waitForFunction(name=>{
+    const state=SonicPlayback.snapshot();
+    return !state.busy&&!state.playing&&state.playbackRecovery?.name===name&&state.playbackRecovery.canSkip===true;
+  },title(id));
+  await pickQueueSong(manualRetry);
+  await waitForHeldSong(manualRetry);
+  const heldId=(await state()).queueEntryId;
+  assert.equal(network.audioRequests.includes(manualSkip),false);
+  assert.equal(network.audioRequests.includes(manualNext),false);
+  await visibleQueue.locator('[data-action="queue-skip"]').waitFor();
+  network.allowManualRetry();
+  await visibleQueue.locator('[data-action="queue-retry"]').click();
+  await waitForPlaying(manualRetry);
+  assert.equal((await state()).queueEntryId,heldId);
+
+  await pickQueueSong(manualSkip);
+  await waitForHeldSong(manualSkip);
+  await visibleQueue.locator('[data-action="queue-skip"]').click();
+  await waitForPlaying(manualNext);
+  await page.keyboard.press('Escape');
+  assert.equal(await room.getAttribute('data-listen-immersive'),'true');
+  assert.equal(await room.locator('.lr-player [data-action="queue"]').evaluate(node=>document.activeElement===node),true);
+  console.log('PASS immersive queue holds a failed manual pick, retries it in place, and skips on command');
+
+  await page.evaluate(ids=>SonicPlayback.playOnlineList(ids.map(mediaId=>({
+    provider:'qishui',mediaId,name:'队列样例 '+mediaId,duration:25,
+  })),'续听验收队列',ids[0]),resumeOrder);
+  await waitForPlaying(resumeFirst);
+  await page.evaluate(async()=>{SonicPlayback.seek(12.3);await SonicPlayback.toggle();});
+  const audioBeforeReload=network.audioRequests.length;
+  const reloadHome=async()=>{
+    await page.reload();
+    await page.waitForFunction(()=>window.SonicPlayback?.snapshot().ready);
+    await room.locator('[data-action="home"]').click();
+    await homeRetry.waitFor();
+  };
+  await reloadHome();
+  assert.equal((await state()).playing,false);
+  assert.equal(await homeRetry.locator('[data-resume-label]').textContent(),'继续听');
+  await page.evaluate(([oldNext,blocked,playable])=>{
+    const queue=SonicPlayback.snapshot({queue:true}).queue;
+    const entry=id=>queue.find(item=>item.id==='online:qishui:'+id).entryId;
+    if(!SonicPlayback.moveQueueEntry(entry(blocked),entry(oldNext))||
+       !SonicPlayback.moveQueueEntry(entry(playable),entry(oldNext)))throw Error('Could not reorder a paused restored queue');
+  },[resumeOldNext,resumeBlocked,resumePlayable]);
+  await reloadHome();
+  const reordered=[resumeFirst,resumeBlocked,resumePlayable,resumeOldNext].map(title);
+  const restored=await state();
+  assert.deepEqual(restored.queue.map(track=>track.name),reordered);
+  assert.equal(restored.queueScope,'续听验收队列');
+  assert.ok(Math.abs(restored.position-12.3)<.1);
+  assert.equal(restored.playing,false);
+  assert.equal(network.audioRequests.length,audioBeforeReload);
+
+  const waitForResumeFailure=()=>page.waitForFunction(name=>{
+    const state=SonicPlayback.snapshot();
+    return !state.playing&&!state.busy&&!state.playbackRecovery?.phase&&state.playbackRecovery?.name===name;
+  },title(resumeFirst));
+  network.setResumeFailure(resumeFirst,422);
+  await homeRetry.click();
+  await waitForResumeFailure();
+  assert.equal((await state()).playbackRecovery.reason,'unplayable');
+  assert.ok(Math.abs((await state()).position-restored.position)<.1);
+  network.setResumeFailure(resumeFirst,0);
+  await homeRetry.click();
+  await waitForPlaying(resumeFirst);
+  assert.ok((await state()).position>=restored.position);
+  await room.locator('.lr-player [data-action="play"]').click();
+  await reloadHome();
+  network.setResumeFailure(resumeFirst,422);
+  await homeRetry.click();
+  await waitForResumeFailure();
+  const held=await state();
+  for(const id of [resumeBlocked,resumePlayable,resumeOldNext])network.setResumeFailure(id,422);
+  const beforeExhaustion=network.audioRequests.length;
+  await room.locator('[data-resume-skip]').click();
+  await page.waitForFunction(()=>SonicPlayback.snapshot().queueRecovery?.exhausted===true);
+  assert.deepEqual(network.audioRequests.slice(beforeExhaustion),[resumeBlocked,resumePlayable,resumeOldNext]);
+  assert.equal((await state()).position,held.position);
+  assert.deepEqual((await state()).queue.map(track=>track.name),reordered);
+  await room.locator('[data-resume-skip]').waitFor({state:'hidden'});
+
+  network.setResumeFailure(resumeBlocked,502);
+  network.setResumeFailure(resumePlayable,0);
+  await homeRetry.click();
+  await waitForResumeFailure();
+  await room.locator('[data-resume-skip]').click();
+  await waitForPlaying(resumePlayable);
+  assert.ok((await state()).position<2);
+  assert.deepEqual((await state()).queue.map(track=>track.name),reordered);
+  assert.deepEqual(errors,[]);
+  console.log('PASS cold online resume keeps edits, retries the saved time, and explicitly skips failed tracks in saved order');
 }
 
 withinPlayer(verifyQueue).catch(error => { console.error(error); process.exitCode = 1; });

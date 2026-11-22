@@ -32,6 +32,10 @@ const inlineVersions=[
   {...qishui[1],album:'Cover Version'},
   remote('8488',qishui[1].name,{album:'Live at the Test Hall'})
 ];
+const recoveryQuery='Playback Recovery Fixture';
+const recoveryTracks=[
+  remote('8491','Recovery First'),remote('8492','Recovery Second'),remote('8493','Recovery Third'),
+];
 const matches = [
   remote('8411','QQ Wrong Version',{album:'A Different Album'}),
   remote('8412','QQ First'),
@@ -65,6 +69,7 @@ function provideWav(route,body) {
 
 async function mockOnline(page,wav) {
   const searches=[],tickets=[],media=[],matchRequests=[];
+  const failedTickets=new Set(),failedMedia=new Set(),pendingTickets=new Map();
   const slowQuery=Promise.withResolvers(),slowDone=Promise.withResolvers();
   let inlineAttempts=0;
   await page.route('**/*', async route => {
@@ -80,6 +85,7 @@ async function mockOnline(page,wav) {
         if(inlineAttempts++===0)return route.fulfill({status:504,json:{error:'Fixture search timed out'}});
         return route.fulfill({json:{items:inlineVersions}});
       }
+      if(provider==='qishui'&&query===recoveryQuery)return route.fulfill({json:{items:recoveryTracks}});
       if(query==='Delayed'){
         await slowQuery.promise;
         try{await route.fulfill({json:{items:[remote('8499','Stale Result')]}});}
@@ -96,16 +102,30 @@ async function mockOnline(page,wav) {
     }
     const ticket=/^\/api\/qishui\/tracks\/(\d+)\/audio$/.exec(url.pathname);
     if(ticket){
-      tickets.push(ticket[1]);
-      return route.fulfill({json:{streamPath:`/media/library-search/${ticket[1]}`,preview:previewIds.has(ticket[1])}});
+      const id=ticket[1];
+      tickets.push(id);
+      const pending=pendingTickets.get(id);
+      if(pending)await pending.promise;
+      if(failedTickets.has(id))return route.fulfill({status:422,json:{code:'not-playable',error:'Fixture unavailable'}});
+      try{return await route.fulfill({json:{streamPath:`/media/library-search/${id}`,preview:previewIds.has(id)}});}
+      catch(error){if(request.failure()?.errorText!=='net::ERR_ABORTED')throw error;}
     }
     const audio=/^\/media\/library-search\/(\d+)$/.exec(url.pathname);
-    if(audio){media.push(audio[1]);return provideWav(route,wav);}
+    if(audio){
+      media.push(audio[1]);
+      if(failedMedia.has(audio[1]))return route.fulfill({contentType:'audio/wav',body:'Invalid audio contents'});
+      return provideWav(route,wav);
+    }
     if(/^\/api\/qishui\/songs\/\d+\/lyrics$/.test(url.pathname))return route.fulfill({json:{lrc:''}});
     if(url.pathname.startsWith('/api/'))return route.fulfill({status:404,json:{error:'Fixture endpoint not configured'}});
     return route.continue();
   });
-  return {searches,tickets,media,matchRequests,releaseSlow:()=>{slowQuery.resolve();return slowDone.promise;}};
+  return {searches,tickets,media,matchRequests,failedTickets,failedMedia,releaseSlow:()=>{slowQuery.resolve();return slowDone.promise;},
+    delayTicket(id){
+      const pending=Promise.withResolvers();
+      pendingTickets.set(id,pending);
+      return ()=>{pendingTickets.delete(id);pending.resolve();};
+    }};
 }
 
 async function verify(page,{electron=false}={}) {
@@ -276,8 +296,53 @@ async function verify(page,{electron=false}={}) {
   await previewResult.click();
   await waitForTrack(qishui[1].name);
   assert.ok(network.media.includes(qishui[1].mediaId));
+  await page.evaluate(names=>{
+    const library=SonicPlayback.library();
+    const ids=names.map(name=>library.tracks.find(track=>track.name===name).id);
+    return SonicPlayback.playFromLibrary(ids[0],'local',true,ids);
+  },[alpha,delta,echo]);
+  const protectedPlayback=await state();
+  assert.equal(protectedPlayback.track.name,alpha);
+  await sharedSearch.fill(recoveryQuery);
+  await sharedSearch.press('Enter');
+  const [firstRecovery,secondRecovery,thirdRecovery]=recoveryTracks;
+  const result=track=>room.locator('[data-sl-qishui-track="'+track.mediaId+'"]');
+  const playbackRetry=room.locator('[data-sl-qishui-retry-track]');
+  network.failedTickets.add(firstRecovery.mediaId);
+  await result(firstRecovery).click();
+  await playbackRetry.waitFor();
+  assert.match(await result(firstRecovery).innerText(),/暂不可播/);
+  const afterTicketFailure=await state();
+  assert.equal(afterTicketFailure.track.id,protectedPlayback.track.id);
+  assert.equal(afterTicketFailure.playing,true);
+  assert.equal(afterTicketFailure.queueRevision,protectedPlayback.queueRevision);
+  assert.deepEqual(afterTicketFailure.queue.map(item=>item.entryId),protectedPlayback.queue.map(item=>item.entryId));
+  network.failedTickets.clear();
+  await playbackRetry.click();
+  await waitForTrack(firstRecovery.name);
+  assert.match(await result(firstRecovery).innerText(),/可播全曲/);
+
+  network.failedMedia.add(secondRecovery.mediaId);
+  await result(secondRecovery).click();
+  await playbackRetry.waitFor();
+  assert.equal((await state()).track.name,firstRecovery.name);
+  assert.equal((await state()).playing,true);
+  await room.locator('[data-sl-qishui-skip-track]').click();
+  await waitForTrack(thirdRecovery.name);
+
+  network.failedMedia.clear();
+  const release=network.delayTicket(firstRecovery.mediaId);
+  try{
+    await Promise.all([page.waitForRequest(request=>request.url().endsWith('/tracks/'+firstRecovery.mediaId+'/audio')),result(firstRecovery).click()]);
+    const cancelled=page.waitForEvent('requestfailed',request=>request.url().endsWith('/tracks/'+firstRecovery.mediaId+'/audio'));
+    await result(secondRecovery).click();
+    await cancelled;
+    await waitForTrack(secondRecovery.name);
+  }finally{release();}
+  assert.equal((await state()).track.name,secondRecovery.name);
   assert.deepEqual(errors,[]);
   console.log('PASS legacy search still verifies public versions; inline Qishui results keep the active song until an explicit preview pick');
+  console.log('PASS failed online tickets and corrupt media keep current playback, retry and skip work, and a later selection wins');
 }
 
 async function openLibrary(page) {
@@ -333,6 +398,9 @@ async function verifyPlaylistEditing(page) {
   await room.locator('[data-sl-sort]').selectOption('name');
   assert.deepEqual(await displayedNames(room),editNames.slice(0,40));
   await command('select').click();
+  await command('select-filtered').click();
+  assert.match(await room.locator('[data-sl-selection-count]').textContent(),/已选 43 首.*3 首未在当前显示/);
+  await command('select-clear').click();
   const selectSong=name=>room.getByRole('checkbox',{name:'选择 '+name,exact:true});
   await selectSong(addedNames[0]).press('Space');
   await selectSong(addedNames[1]).check();
@@ -341,16 +409,23 @@ async function verifyPlaylistEditing(page) {
   await selectSong(addedNames[3]).check();
   assert.ok(await selectSong(addedNames[0]).isChecked());
   const waitForSave=text=>page.waitForFunction(expected=>document.querySelector('[data-sl-save-status]')?.textContent===expected,text);
-  async function addTo(name,status) {
+  await page.evaluate(async ({name,titles})=>{
+    const library=SonicPlayback.library();
+    const playlist=library.playlists.find(item=>item.name===name);
+    const ids=titles.map(title=>library.tracks.find(track=>track.name===title).id);
+    await SonicPlayback.editPlaylistMembership(playlist.id,ids,true);
+  },{name:savedList,titles:addedNames.slice(0,2)});
+  async function addTo(name,status,preview) {
     await command('batch-add').click();
     const dialog=room.getByRole('dialog',{name:'加入歌单',exact:true});
     await dialog.getByRole('combobox',{name:'选择歌单'}).selectOption({label:name});
+    assert.equal(await dialog.locator('[data-sl-batch-preview]').textContent(),preview);
     await dialog.getByRole('button',{name:'加入',exact:true}).click();
     await waitForSave(status);
   }
-  await addTo(savedList,'已加入 4 首歌曲。');
-  await addTo(savedList,'所选歌曲均已在歌单中。');
-  await addTo(otherList,'已加入 4 首歌曲。');
+  await addTo(savedList,'已加入 2 首歌曲。另有 2 首已在歌单中。','待加入 2 首 · 已在歌单 2 首');
+  await addTo(savedList,'所选歌曲均已在歌单中。','待加入 0 首 · 已在歌单 4 首');
+  await addTo(otherList,'已加入 4 首歌曲。','待加入 4 首 · 已在歌单 0 首');
 
   await openPlaylist(room,savedList);
   assert.deepEqual(await displayedNames(room),addedNames);
