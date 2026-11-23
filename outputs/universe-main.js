@@ -141,14 +141,15 @@
   motionQuery.addEventListener('change',e=>{reduced=e.matches;app.classList.toggle('reduced',reduced)});
   const bundledSample=Object.freeze({id:'demo-auld-lang-syne',kind:'demo',name:'友谊地久天长',artist:'Bautsch',duration:42.733583,cover:null,stored:true});
   const bundledLyrics=Object.freeze({
-    raw:`[00:01.03]Should old acquaintance be forgot,
-[00:05.85]And never brought to mind?
-[00:10.65]Should old acquaintance be forgot,
-[00:15.44]And auld lang syne?
-[00:20.23]For auld lang syne, my dear
-[00:25.03]For auld lang syne,
-[00:29.82]We'll take a cup of kindness yet,
-[00:34.63]For auld lang syne.`,
+    // Word cues follow the recording's phrase starts and the traditional melody's note values.
+    raw:`[1030,4820](1030,600,0)Should (1630,900,0)old (2530,1500,0)acquaintance (4030,900,0)be (4930,920,0)forgot,
+[5850,4800](5850,600,0)And (6450,1200,0)never (7650,600,0)brought (8250,600,0)to (8850,1800,0)mind?
+[10650,4790](10650,600,0)Should (11250,900,0)old (12150,1500,0)acquaintance (13650,900,0)be (14550,890,0)forgot,
+[15440,4790](15440,600,0)And (16040,1200,0)auld (17240,1200,0)lang (18440,1790,0)syne?
+[20230,4800](20230,600,0)For (20830,900,0)auld (21730,300,0)lang (22030,600,0)syne, (22630,600,0)my (23230,1800,0)dear
+[25030,4790](25030,600,0)For (25630,1200,0)auld (26830,1200,0)lang (28030,1790,0)syne,
+[29820,4810](29820,600,0)We'll (30420,900,0)take (31320,300,0)a (31620,600,0)cup (32220,600,0)of (32820,1200,0)kindness (34020,610,0)yet,
+[34630,5160](34630,600,0)For (35230,1200,0)auld (36430,1200,0)lang (37630,2160,0)syne.`,
     translationRaw:`[00:01.03]怎能忘记昔日的朋友，
 [00:05.85]从此再不想起？
 [00:10.65]怎能忘记昔日的朋友，

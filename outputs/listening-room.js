@@ -105,7 +105,7 @@
         </div>
         <div class="lr-full-lyrics" data-full-lyrics role="region" aria-labelledby="lrFullLyricsTitle" tabindex="0" hidden></div>
         <div class="lr-lyric-tools">
-          <div class="lr-view-links" role="group" aria-label="切换播放视图"><button type="button" class="lr-lyrics-entry" data-action="collapse-lyrics">返回正在播放</button><button type="button" class="lr-lyrics-entry" data-action="visual-stage" ${scenes?'':'hidden'}>视觉舞台</button></div>
+          <div class="lr-view-links" role="group" aria-label="切换播放视图"><button type="button" class="lr-lyrics-entry" data-action="collapse-lyrics">返回正在播放</button><button type="button" class="lr-lyrics-entry" data-action="full-lyrics" data-stage-full-lyrics hidden>全文歌词</button><button type="button" class="lr-lyrics-entry" data-action="visual-stage" ${scenes?'':'hidden'}>视觉舞台</button></div>
           <details class="lr-more-lyrics">
             <summary>更多</summary>
             <div class="lr-lyric-options">
@@ -314,16 +314,17 @@
     }catch{notify('当前窗口无法进入全屏，可以使用窗口最大化。');}
   }
   const karaoke = window.SonicLyricKaraoke;
-  let lyricExpanded=false,searchScroll=0;
+  let lyricExpanded=false,readingFullLyrics=false,searchScroll=0;
   let listenImmersive=false, immersionEntry=null, immersionScroll=0, immersionTimer=0, immersionKeyboard=false;
   const decorateLyrics=desktop?window.SonicLyricStyleMods.createDecoration($('[data-mod-decoration]')):null;
   const lyricMods=desktop?window.SonicLyricStyleMods.mount(root,mod=>{
-    if(mod)preferences.lyricStyle=mod.layout;
+    if(mod){readingFullLyrics=false;preferences.lyricStyle=mod.layout;}
     applyPreferences(true);
   }):null;
   const nowPlaying=window.SonicNowPlaying.mount(root,seekLyrics);
   let snapshot = api.snapshot(), legacy = false, occluded = false;
   let timer = 0, lyricFrameId=0, lastFrame = 0, lastPaint=0, lastUI = 0, renderedFrames = 0;
+  let coverMotion, lyricViewMotion;
   let backgroundDirty=true, lastPublishedState=[];
   const colors = { amber:[229,196,131], ocean:[149,188,209], lilac:[196,176,249] };
   const artworkTransitionMs=260;
@@ -345,13 +346,14 @@
   const effectSurface=$('[data-effect-surface]'),effectRenderer=window.SonicLyricRenderer?.create(effectSurface,()=>{
     invalidateLyricSurface();wake();
   });
-  const effectBeatPresets=new Set(['impact','echo','flare','orbit']),effectStageStyle={};
+  const effectStageStyle={};
   const effectStageMotion={
-    cut:['direction'],neon:['phase'],film:['direction'],flare:['phase'],orbit:['direction'],tide:['direction'],
-    ink:['phase'],mist:['phase'],sunrise:['phase'],petal:['phase'],prism:['direction'],paper:['enter','direction'],
+    neon:['phase'],film:['enter'],orbit:['direction'],
+    ink:['enter'],mist:['phase'],sunrise:['phase'],petal:['phase'],prism:['direction'],paper:['enter','direction'],
     clock:['phase','direction'],wide:['enter'],
   };
   let effectBeat=0, nextEffectFrame=0, nextSceneryFrame=0, sceneryAnimated=false;
+  let tideTrack=null,tideDepth=0;
   const lyricNotice=$('[data-lyric-notice]'),lyricNoticeText=$('[data-lyric-meta]'),lyricEditor=$('[data-listen] [data-action="lyrics"]');
   const seekSlider=$('[data-seek]'), volumeSlider=$('[data-volume]');
   function canSeek(state) {
@@ -459,12 +461,38 @@
     if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;fadeTime=0;}
     context?.setTransform(scale,0,0,scale,0,0);
   }
+  function animateLyricView(view, previousCover) {
+    // Measure again after the caller restores focus and document scroll.
+    queueMicrotask(()=>{
+      if(root.dataset.nowView!==view||reducedMotion.matches)return;
+      const cover=listenCover.getBoundingClientRect();
+      if(cover.width){
+        const x=previousCover.x+(previousCover.width-cover.width)/2-cover.x;
+        const y=previousCover.y+(previousCover.height-cover.height)/2-cover.y;
+        coverMotion=listenCover.animate([
+          {translate:`${x}px ${y}px`,scale:String(previousCover.width/cover.width)},
+          {translate:'0px 0px',scale:'1'},
+        ],{duration:280,easing:'cubic-bezier(.22,.74,.25,1)'});
+      }
+      const lyrics=$(view==='full'?'[data-expanded-lyrics]':'[data-lyric-preview]');
+      if(lyrics.getClientRects().length)lyricViewMotion=lyrics.animate([
+        {opacity:.55,translate:'0 8px'}, {opacity:1,translate:'0 0'},
+      ],{duration:220,easing:'ease-out'});
+    });
+  }
   function applyPreferences(save=false) {
     const mode=preferences.mode;
     if(mode!=='listen'&&listenImmersive)resetListeningImmersion();
     const expanded=mode==='listen'&&lyricExpanded&&!listenImmersive;
-    const style=preferences.lyricStyle,full=expanded&&style==='list',effectActive=expanded&&style==='effects';
-    nowPlaying.setView(mode!=='listen'?'hidden':listenImmersive?'immersive':full?'full':expanded?'stage':'preview');
+    const style=readingFullLyrics?'list':preferences.lyricStyle,full=expanded&&style==='list',effectActive=expanded&&style==='effects';
+    const view=mode!=='listen'?'hidden':listenImmersive?'immersive':full?'full':expanded?'stage':'preview';
+    const previousView=root.dataset.nowView;
+    const movingBetweenLyrics=view!==previousView&&!['hidden','stage',undefined].includes(previousView)&&
+      view!=='hidden'&&view!=='stage'&&!reducedMotion.matches&&onScreen();
+    const previousCover=movingBetweenLyrics?listenCover.getBoundingClientRect():null;
+    if(view!==previousView){coverMotion?.cancel();lyricViewMotion?.cancel();}
+    root.dataset.nowView=view;
+    nowPlaying.setView(view);
     root.dataset.mode=mode;root.dataset.background=preferences.background;root.dataset.lyricStyle=expanded?style:'compact';
     root.dataset.listenImmersive=String(listenImmersive);
     listenView.setAttribute('aria-label',listenImmersive?'沉浸播放':'正在播放');
@@ -474,6 +502,15 @@
     const preset=effects.get(preferences.lyricEffect);
     effectStage.hidden=!effectActive;
     effectStage.dataset.fx=preset.id;
+    const theme=effectActive&&preset.palette;
+    root.toggleAttribute('data-lyric-theme',Boolean(theme));
+    if(theme){
+      root.style.setProperty('--fx-lyric-waiting',theme.waiting);
+      root.style.setProperty('--fx-lyric-sung',theme.sung);
+    } else {
+      root.style.removeProperty('--fx-lyric-waiting');
+      root.style.removeProperty('--fx-lyric-sung');
+    }
     if(effectActive)root.dataset.lyricEffect=preset.id;
     else {
       delete root.dataset.lyricEffect;
@@ -489,7 +526,7 @@
     root.dataset.lyricExpanded=String(expanded);
     root.dataset.dockLayout=isLibraryMode(mode)||mode==='listen'&&(!expanded||full)?'full-progress':'default';
     $('[data-action="collapse-lyrics"]').textContent=full?'收起全文':'返回正在播放';
-    const selectedMod=expanded?lyricMods?.current():null;
+    const selectedMod=expanded&&!readingFullLyrics?lyricMods?.current():null;
     decorateLyrics?.(selectedMod,!preferences.energySaver);
     if(selectedMod) {
       root.dataset.lyricMod=selectedMod.id;root.dataset.modAlign=selectedMod.alignment;root.dataset.modMotion=selectedMod.motion;
@@ -497,6 +534,7 @@
     } else {delete root.dataset.lyricMod;delete root.dataset.modAlign;delete root.dataset.modMotion;}
     $('[data-expanded-lyrics]').hidden=!expanded;
     $('[data-stage-lyrics]').hidden=!expanded||full;
+    $('[data-stage-full-lyrics]').hidden=!expanded||full;
     $$('[data-action="expand-lyrics"], [data-now-lyrics]').forEach(button=>button.setAttribute('aria-expanded',String(expanded)));
     $$('[data-work-only]').forEach(element=>element.hidden=mode!=='work');
     listenView.hidden=mode!=='listen';$('[data-listen-link]').hidden=mode!=='listen';
@@ -509,7 +547,7 @@
     root.dataset.caption=String(preferences.desktopLyrics);
     $$('[data-room-mode]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.roomMode===preferences.mode)));
     $('[data-action="search"]').setAttribute('aria-pressed',String(mode==='search'));
-    $$('button[data-lyric-style]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.lyricStyle===preferences.lyricStyle)));
+    $$('button[data-lyric-style]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.lyricStyle===style)));
     $$('[data-background]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.background===preferences.background)));
     $$('[data-color]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.color===preferences.color)));
     for(const key of ['brightness','response']){ $('[data-'+key+']').value=preferences[key];$('[data-'+key+'-value]').textContent=preferences[key]+'%';fill($('[data-'+key+']')); }
@@ -518,6 +556,7 @@
     $('[data-background-label]').textContent=backgroundNames[preferences.background];$('[data-eco-label]').textContent=preferences.energySaver?'省电优先':'细腻呈现';
     if(scenes)syncSceneLabels();
     if(save)persist();resize();schedule();updateUI(true);
+    if(previousCover?.width)animateLyricView(view,previousCover);
   }
   function setMode(mode) {
     if(!['work','listen','library','search','visual'].includes(mode)||(mode==='visual'&&!scenes))return;
@@ -527,14 +566,14 @@
     if(mode!==previous)window.scrollTo({top:mode==='search'?searchScroll:0,behavior:'instant'});
   }
   function setLyricExpanded(expanded, full=false) {
-    if(full&&preferences.lyricStyle!=='list'){
-      lyricMods?.clear();
-      preferences.lyricStyle='list';
-    }
+    const previousFullEntry=readingFullLyrics;
+    readingFullLyrics=expanded&&full;
     lyricExpanded=expanded;
     setMode('listen');
     window.scrollTo({top:0,behavior:'instant'});
-    (expanded?(preferences.lyricStyle==='list'?$('[data-full-lyrics]'):$('[data-action="collapse-lyrics"]')):$('[data-now-lyrics]')).focus({preventScroll:true});
+    const focus=expanded?(root.dataset.lyricLayout==='list'?'[data-full-lyrics]':'[data-action="collapse-lyrics"]'):
+      previousFullEntry?'[data-now-lyrics]':'.lr-now-cover';
+    $(focus).focus({preventScroll:true});
   }
   function resetListeningImmersion() {
     listenImmersive=false;
@@ -590,10 +629,14 @@
   }
   function usesReactiveScene() {
     const mode=root.dataset.mode;
-    return scenes&&!listenImmersive&&!isLibraryMode(mode)&&(mode==='visual'||preferences.reactiveBackdrop||sceneDialog.open);
+    return scenes&&!listenImmersive&&!isLibraryMode(mode)&&
+      (mode==='visual'||sceneDialog.open||preferences.reactiveBackdrop&&!root.hasAttribute('data-lyric-theme'));
+  }
+  function usesImmersivePrism() {
+    return scenes&&listenImmersive&&preferences.background!=='plain';
   }
   function showsLyricEffects() {
-    return root.dataset.mode==='listen'&&lyricExpanded&&!listenImmersive&&preferences.lyricStyle==='effects';
+    return root.dataset.mode==='listen'&&root.dataset.lyricStyle==='effects';
   }
   function selectedScene() { return scenePins.get(snapshot.track?.id)||preferences.visualScene; }
   function syncSceneLabels() {
@@ -658,12 +701,12 @@
   function openSceneGallery() {
     mountSceneCards();filterScenes(sceneFilter);show(sceneDialog);syncSceneLabels();backgroundDirty=true;wake();
   }
-  function paintReactive(seconds,sound,animated,response,brightness) {
+  function paintReactive(seconds,sound,animated,response,brightness,focused=false) {
     const track=snapshot.track?.id||'';
     if(track!==visualTrack){visualTrack=track;visualTime=visualEnergy=0;jiangnanFrame=null;}
     if(animated)visualTime+=seconds;
-    const next=sceneDirector.update({track,selected:selectedScene(),active:animated&&response>0,elapsed:seconds,sound,position:snapshot.position});
-    if(next!==sceneId) {
+    const next=focused?'prism-bloom':sceneDirector.update({track,selected:selectedScene(),active:animated&&response>0,elapsed:seconds,sound,position:snapshot.position});
+    if(!focused&&next!==sceneId) {
       if(sceneId&&animated) {
         fadeCanvas ||= document.createElement('canvas');
         if(fadeCanvas.width!==canvas.width||fadeCanvas.height!==canvas.height){fadeCanvas.width=canvas.width;fadeCanvas.height=canvas.height;}
@@ -680,22 +723,24 @@
     if(animated)visualEnergy=core.approach(visualEnergy,level(sound?.presence)*.62+level(sound?.bass)*.38,seconds,1.4);
     if(strength!==1)for(let i=0;i<sceneBands.length;i++)sceneBands[i]*=strength;
     const accent=sound?.beat?.locked&&preferences.beatRatio!==1 ? .12 : 1;
-    const pulse=root.dataset.mode==='visual'&&preferences.beatClock
+    const pulse=(focused||root.dataset.mode==='visual')&&preferences.beatClock
       ?Math.max((sound?.pulse||0)*accent,(sound?.beat?.pulse||0)*.72):sound?.pulse;
-    if(sceneId==='jiangnan-rain'&&animated&&response>0)jiangnanFrame=directJiangnan({track,position:snapshot.position,duration:snapshot.duration,elapsed:seconds,sound});
-    const jiangnan=sceneId==='jiangnan-rain'?jiangnanFrame:null;
+    if(next==='jiangnan-rain'&&animated&&response>0)jiangnanFrame=directJiangnan({track,position:snapshot.position,duration:snapshot.duration,elapsed:seconds,sound});
+    const jiangnan=next==='jiangnan-rain'?jiangnanFrame:null;
     if(jiangnan&&root.dataset.jiangnanPhase!==String(jiangnan.phase))root.dataset.jiangnanPhase=String(jiangnan.phase);
     else if(!jiangnan&&Object.hasOwn(root.dataset,'jiangnanPhase'))delete root.dataset.jiangnanPhase;
-    const painted=scenes.draw(context,sceneId,{
+    const painted=scenes.draw(context,next,{
       width:canvasWidth,height:canvasHeight,time:visualTime,bass:level(sound?.bass),mid:level(sound?.mid),high:level(sound?.high),
       pulse:level(pulse),energy:level(sound?.presence),spectrum:sceneBands,
-      quality:showsLyricEffects()?.52:preferences.energySaver?.64:1,seed,
-      morph:(visualTime*.089+visualEnergy*.83+(seed%29)/80)%3,palette,jiangnan,
+      quality:focused?(preferences.energySaver?.32:.5):showsLyricEffects()?.52:preferences.energySaver?.64:1,seed,
+      morph:(visualTime*(focused?.055:.089)+visualEnergy*.83+(seed%29)/80)%3,palette,jiangnan,
+      focus:focused?visualEnergy:null,
     });
     if(!painted)return false;
-    context.fillStyle='rgba(7,8,18,'+(root.dataset.mode==='visual'?(.17-brightness*.13):(.65-brightness*.32))+')';
+    const dim=focused?(.38-brightness*.30):root.dataset.mode==='visual'?(.17-brightness*.13):(.65-brightness*.32);
+    context.fillStyle=`rgba(7,8,18,${dim})`;
     context.fillRect(0,0,canvasWidth,canvasHeight);
-    if(fadeTime>0&&animated) {
+    if(!focused&&fadeTime>0&&animated) {
       context.save();context.globalAlpha=fadeTime/.64;context.drawImage(fadeCanvas,0,0,canvasWidth,canvasHeight);context.restore();
       fadeTime=Math.max(0,fadeTime-seconds);
     }else fadeTime=0;
@@ -748,7 +793,8 @@
       const breathe=(animated?(.64+core.clamp(sound?.presence,0,1)*response*.28):.64).toFixed(2);
       if(breathe!==stageBreathe){stageBreathe=breathe;root.style.setProperty('--lr-atmosphere-light',breathe);}
     }
-    if(usesReactiveScene()&&paintReactive(seconds,sound,animated,response,brightness))return;
+    const prism=usesImmersivePrism();
+    if((prism||usesReactiveScene())&&paintReactive(seconds,sound,animated,response,brightness,prism))return;
     if(root.hasAttribute('data-active-scene')){root.removeAttribute('data-active-scene');fadeTime=0;}
     if(animated) {
       energy=core.approach(energy,Math.min(1,sound.presence),seconds,.75);
@@ -758,7 +804,7 @@
     } else energy=bass=flow=0;
     const spotlight=root.dataset.mode==='listen'&&root.dataset.lyricLayout==='stage'&&preferences.background!=='plain';
     context.fillStyle=spotlight?'#0e1224':'#101019';context.fillRect(0,0,canvasWidth,canvasHeight);
-    if((preferences.background==='plain'&&!listenImmersive)||isLibraryMode(root.dataset.mode))return;
+    if(preferences.background==='plain'||isLibraryMode(root.dataset.mode))return;
     const radius=Math.max(canvasWidth,canvasHeight);
     function glow(x,y,size,color,opacity) {
       const light=context.createRadialGradient(x,y,0,x,y,size);
@@ -953,12 +999,13 @@
     element.className='lr-lyric-row';
     element.dataset.lyricIndex=index;
     const fly=preferences.lyricStyle==='fly',effect=preferences.lyricStyle==='effects';
-    const translatedText=fly||effect?'':line.translation;
+    const tide=effect&&preferences.lyricEffect==='tide';
+    const translatedText=fly||effect&&!tide?'':line.translation;
     element.setAttribute('aria-label',translatedText?`${line.text}\n${translatedText}`:line.text);
     const size=karaoke.split(line.text).reduce((total,char)=>total+(/[\u0000-\u00ff]/.test(char)?.55:1),0);
     element.dataset.density=size>40?'dense':size>21?'long':'normal';
     if(effect&&size<=8)element.setAttribute('data-short','');
-    if((fly||effect)&&size>40)element.style.setProperty('--lr-line-length',size);
+    if(tide||(fly||effect)&&size>40)element.style.setProperty('--lr-line-length',Math.max(1,size));
     const timed=karaoke.timedSpans(line,end);
     let spans=effect?effects.units(line,end,timed):timed;
     const row={element,words:[],start:line.time,index,density:size>40?.56:size>21?.78:1,timed:timed.length>0};
@@ -1077,7 +1124,7 @@
     let renderer='text';
     if (row&&!reducedMotion.matches&&effectRenderer) {
       renderer=effectRenderer.paint(row,id,position,pose.enter,moving);
-    } else {
+    } else if(!effectSurface.hidden||reducedMotion.matches) {
       effectRenderer?.hide();
     }
     if(root.dataset.lyricRenderer!==renderer)root.dataset.lyricRenderer=renderer;
@@ -1088,6 +1135,18 @@
     if(cache[name]===rounded)return;
     cache[name]=rounded;
     node.style.setProperty('--fx-'+name,rounded);
+  }
+  function updateTide(track,sound,seconds) {
+    if(track!==tideTrack){
+      tideTrack=track;
+      tideDepth=0;
+    }
+    if(sound&&track!==null){
+      const target=core.clamp((Math.sqrt(sound.rms)-.1)*2.7+sound.presence*.16,0,1);
+      tideDepth=core.approach(tideDepth,target,seconds,target>tideDepth?1.35:2.8);
+    }
+    const depth=Math.round(tideDepth*Math.sqrt(preferences.response/100)*48)/48;
+    setEffectValue(effectStage,effectStageStyle,'water',depth);
   }
   function drawSungWord(word,position) {
     const fill=Math.round(karaoke.progress(word,position)*1000)/10;
@@ -1107,7 +1166,7 @@
   }
   function prepareNextLyric(lines,index,position){
     const next=index+1,line=lines[next];
-    if(index<0||!line||line.time-position<.15||preparedLyric?.index===next||performance.now()<nextLyricPrepareAttempt)return;
+    if(!line||line.time-position<.15||preparedLyric?.index===next||performance.now()<nextLyricPrepareAttempt)return;
     clearPreparedLyric();
     const preset=preferences.lyricEffect;
     const job={index:next,row:null,cancel:null};
@@ -1200,7 +1259,8 @@
       return;
     }
     const track=snapshot.track?.id,style=preferences.lyricStyle,fly=style==='fly',effect=style==='effects';
-    const sourceChanged=lines!==renderedLyrics||lyricTrack!==track||renderedLyricStyle!==style;
+    const layout=effect?preferences.lyricEffect:style;
+    const sourceChanged=lines!==renderedLyrics||lyricTrack!==track||renderedLyricStyle!==layout;
     const advance = position - lastLyricPosition;
     const flowing = !sourceChanged && !snap && !seekPreview && !reducedMotion.matches && root.dataset.modMotion!=='still' && lyricsPlaying() && onScreen() &&
       advance >= -.018 && advance < .4 && index >= lyricIndex && index <= lyricIndex + 1;
@@ -1215,7 +1275,7 @@
       lyricIndex=-2;
       lyricTrack=track;
       renderedLyrics=lines;
-      renderedLyricStyle=style;
+      renderedLyricStyle=layout;
     }
     if(effect&&(snap||seekPreview||!Number.isFinite(advance)||Math.abs(advance)>.4))clearPreparedLyric();
     if(index!==lyricIndex) {
@@ -1246,7 +1306,7 @@
       const animated=preferences.lyricEffect!=='still'&&!seekPreview&&!reducedMotion.matches&&
         root.dataset.modMotion!=='still'&&lyricsPlaying()&&onScreen();
       drawEffectFrame(position,line,end,row,animated);
-      if(animated&&effectRenderer&&root.dataset.lyricRenderer!=='text')prepareNextLyric(lines,index,position);
+      if(animated&&effectRenderer&&(!row||root.dataset.lyricRenderer!=='text'))prepareNextLyric(lines,index,position);
       else clearPreparedLyric();
       return;
     }
@@ -1561,7 +1621,7 @@
     lyricSurfaceDirty=false;
     nowPlaying.showSeek(snapshot,seekPreview?.position);
     const expanded=lyricExpanded&&!listenImmersive;
-    if(root.dataset.mode==='listen'&&(!expanded||preferences.lyricStyle==='list')) {
+    if(root.dataset.mode==='listen'&&(!expanded||root.dataset.lyricLayout==='list')) {
       nowPlaying.sync(snapshot,position,{full:expanded,force:snap||layoutChanged});
     }else if(!seekPreview||root.dataset.mode!=='listen'){
       renderLyrics(seekPreview?lyricPosition(seekPreview.position):position,snap);
@@ -1602,29 +1662,33 @@
     if(refresh){lastUI=now;updateUI();}
     const mode=root.dataset.mode,reduced=reducedMotion.matches;
     const active=snapshot.playing||snapshot.external;
-    const reactive=usesReactiveScene();
+    const prism=usesImmersivePrism(),reactive=prism||usesReactiveScene();
     const lyricEffects=showsLyricEffects();
-    const animate=active&&!reduced&&!isLibraryMode(mode)&&(reactive||!lyricEffects&&(listenImmersive||preferences.background!=='plain'));
+    const animate=active&&!reduced&&!isLibraryMode(mode)&&(reactive||!lyricEffects&&preferences.background!=='plain');
     const showSpectrum=mode==='work';
     const coverBeat=active&&!reduced&&!listenImmersive&&(mode==='listen'&&!lyricExpanded||mode==='work');
-    const lyricBeat=lyricEffects&&!reduced&&lyricsPlaying()&&effectBeatPresets.has(preferences.lyricEffect);
+    const lyricBeat=lyricEffects&&!reduced&&preferences.response>0&&lyricsPlaying()&&effects.get(preferences.lyricEffect).beat;
+    const tideActive=root.dataset.lyricEffect==='tide'&&!reduced&&preferences.response>0;
+    const tideMoving=tideActive&&lyricsPlaying()&&!seekPreview;
     const stageBeat=active&&mode==='visual'&&preferences.beatClock;
     const followLyrics=mode==='listen'&&lyricsPlaying()&&snapshot.lyrics.length>0;
     const artworkMoving=Boolean(coverTransition);
-    const fps=core.frameRate({active:artworkMoving||active&&(animate||showSpectrum||snapshot.external||followLyrics||coverBeat||stageBeat),reduced,mode,energySaver:preferences.energySaver});
+    const fps=core.frameRate({active:artworkMoving||active&&(animate||showSpectrum||snapshot.external||followLyrics||coverBeat||stageBeat||tideMoving),reduced,mode,energySaver:preferences.energySaver});
     const wasActive=lastFrame>0;
     const seconds=wasActive?Math.min(.1,(now-lastFrame)/1000):1/(fps||20);
     lastFrame=fps?now:0;
-    const sound=active&&(animate||showSpectrum||snapshot.external||coverBeat||stageBeat||lyricBeat)?api.sample(seconds):null;
+    const sound=active&&(animate||showSpectrum||snapshot.external||coverBeat||stageBeat||lyricBeat||tideMoving)?api.sample(seconds):null;
+    if(tideActive||tideTrack!==null)updateTide(tideActive?snapshot.track?.id??null:null,tideMoving?sound:null,seconds);
     if(sound)sound.beat=SonicMusicMotion.correctBeat(sound.beat,preferences.beatRatio);
     const beat=sound?.beat, age=beat?.age??Infinity;
-    const lyricPulse=lyricBeat&&beat?.locked?Math.round(beat.pulse*preferences.response*.5)/50:0;
+    const effectPulse=beat?.locked?beat.pulse:preferences.lyricEffect==='orbit'?0:(sound?.pulse||0)*.65;
+    const lyricPulse=lyricBeat?Math.round(effectPulse*preferences.response*.5)/50:0;
     if(lyricPulse!==effectBeat){effectBeat=lyricPulse;effectStage.style.setProperty('--fx-beat',String(lyricPulse));}
     if(mode==='visual')renderBeatClock(beat,active,reduced);
     const pulse=coverBeat&&age<.37?beat.strength*(1-Math.exp(-age*70))*Math.exp(-age*11):0;
     const pulseScale=1+Math.round(pulse*preferences.response*.91)/1000;
     if(pulseScale!==coverScale){coverScale=pulseScale;root.style.setProperty('--lr-cover-scale',String(coverScale));}
-    const sceneInterval=lyricEffects?(preferences.energySaver?83:56):mode==='listen'?(preferences.energySaver?56:40):0;
+    const sceneInterval=prism?(preferences.energySaver?64:42):lyricEffects?(preferences.energySaver?83:56):mode==='listen'?(preferences.energySaver?56:40):0;
     const redraw=Boolean(context)&&(backgroundDirty||artworkMoving||reactive&&!active&&wasActive||animate&&now-lastPaint>=sceneInterval);
     if(redraw){paint(now,lastPaint?Math.min(.12,(now-lastPaint)/1000):seconds,sound,animate);lastPaint=now;renderedFrames++;}
     if(showSpectrum&&(active||backgroundDirty||wasActive))drawSpectrum();
@@ -1899,7 +1963,8 @@
     if(queueDialog.open)return;
     const otherDialog=document.querySelector('dialog[open]');
     if(toast.parentElement===queueDialog&&!toast.hidden)(otherDialog||root).append(toast);
-    if(!otherDialog)queueOpener?.focus({preventScroll:true});
+    const focused=document.activeElement;
+    if(!otherDialog&&(focused===document.body||queueDialog.contains(focused)))queueOpener?.focus({preventScroll:true});
     queueOpener=null;
   });
   const actions={
@@ -1997,12 +2062,13 @@
     if(button.dataset.sceneFilter){filterScenes(button.dataset.sceneFilter);return;}
     if(button.dataset.sceneSelect){selectScene(button.dataset.sceneSelect);return;}
     if(button.dataset.effectChoice){
+      readingFullLyrics=false;
       lyricMods?.clear();
       preferences.lyricStyle='effects';preferences.lyricEffect=effects.get(button.dataset.effectChoice).id;
       effectDialog.close();applyPreferences(true);
       return;
     }
-    if(button.dataset.lyricStyle){lyricMods?.clear();preferences.lyricStyle=button.dataset.lyricStyle;applyPreferences(true);return;}
+    if(button.dataset.lyricStyle){readingFullLyrics=false;lyricMods?.clear();preferences.lyricStyle=button.dataset.lyricStyle;applyPreferences(true);return;}
     if(button.dataset.background){preferences.background=button.dataset.background;preferences.reactiveBackdrop=false;applyPreferences(true);return;}
     if(button.dataset.color){preferences.color=button.dataset.color;applyPreferences(true);return;}
     const action=actions[button.dataset.action];if(action)Promise.resolve(action(button)).catch(error=>notify(error.message||'操作没有完成，请重试。'));
@@ -2155,7 +2221,11 @@
     schedule();
   });
   window.addEventListener('resize',()=>{reserveDockSpace();resize();schedule();});
-  reducedMotion.addEventListener('change',schedule);
+  reducedMotion.addEventListener('change',()=>{
+    if(reducedMotion.matches){coverMotion?.cancel();lyricViewMotion?.cancel();}
+    if(showsLyricEffects()&&onScreen())renderListeningPosition(lyricPosition(),true);
+    schedule();
+  });
   document.fonts?.addEventListener('loadingdone',()=>{invalidateLyricSurface();wake();});
   document.addEventListener('keydown',event=>{
     const dialogOpen=document.querySelector('dialog[open]');

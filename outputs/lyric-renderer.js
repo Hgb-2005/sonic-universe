@@ -4,29 +4,34 @@
   const karaoke = root.SonicLyricKaraoke;
   const segmenter = typeof Intl.Segmenter === 'function' ? new Intl.Segmenter(undefined,{granularity:'grapheme'}) : null;
   const white = [1,.98,1], muted = [.71,.75,.83];
+  const rgb = hex => [1,3,5].map(channel => parseInt(hex.slice(channel,channel+2),16)/255);
+  const palettes = new Map(effects.groups.flatMap(group => group.entries)
+    .filter(preset => preset.palette)
+    .map(({id,palette}) => [id,{waiting:rgb(palette.waiting), sung:rgb(palette.sung)}]));
   const shadows = {
-    impact: [[.07,.105,[.48,.25,.18],.95]],
-    neon: [[-.055,0,[.30,.33,.71],.9],[.04,0,[.64,.25,.54],.85]],
-    echo: [[-.12,.08,[.52,.29,.69],.6],[.10,-.075,[.85,.47,.72],.55]],
-    flare: [[0,.03,[.98,.66,.30],.42]],
-    ink: [[0,.05,[.56,.40,.34],.65]],
+    impact: [[.019,.048,[.09,.07,.05],.96]],
+    neon: [[.036,.008,[.12,.46,.44],.48]],
+    echo: [[-.085,.055,[.47,.26,.64],.45],[.075,-.05,[.79,.39,.61],.39]],
+    flare: [[0,.043,[.68,.34,.15],.43]],
+    ink: [[-.014,.022,[.53,.46,.33],.32]],
   };
   const noShadows = [];
+  const maxSurfacePixels = 1_700_000;
 
   function glyphPose(id, word, position, animated) {
     const {rest:fade,note:lift,wave:swing}=animated?effects.wordFrame(word,position):{rest:0,note:0,wave:0};
     const side = word.order%2===0 ? 1 : -1;
     const pose = {x:0,y:0,sx:1,sy:1,angle:0,skew:0,opacity:1-fade*.44};
     switch(id) {
-      case 'impact': pose.y=.62*fade-.15*lift; pose.sx=pose.sy=1+.16*lift; pose.angle=side*fade*7; break;
-      case 'cut': pose.x=side*fade*.08; pose.y=side*fade*.09+swing*.12; pose.sx=1-.18*fade; pose.sy=1-.21*fade; break;
-      case 'neon': pose.sx=1+swing*.23; pose.skew=side*fade*.42; break;
-      case 'echo': pose.y=-swing*.16; break;
-      case 'film': pose.x=fade*.12; pose.sy=1-.31*fade; break;
-      case 'flare': pose.sx=pose.sy=1+swing*.13; break;
+      case 'impact': pose.y=-.085*lift; pose.sx=pose.sy=1+.066*lift; pose.opacity=1-.11*fade; break;
+      case 'cut': pose.x=side*fade*.074; pose.y=side*fade*.06-lift*.03; pose.opacity=1-.13*fade; break;
+      case 'neon': pose.y=-.046*lift; pose.sx=1+.028*lift; pose.opacity=1-.08*fade; break;
+      case 'echo': pose.y=-swing*.075; pose.opacity=1-.1*fade; break;
+      case 'film': pose.y=.032*fade; pose.sy=1-.07*fade; pose.opacity=1-.18*fade; break;
+      case 'flare': pose.y=-.061*lift; pose.sx=pose.sy=1+.047*lift; pose.opacity=1-.11*fade; break;
       case 'orbit': pose.x=side*fade*.20; pose.y=-swing*.29; pose.angle=side*fade*13; break;
-      case 'tide': pose.y=swing*.27+fade*.17; break;
-      case 'ink': pose.sx=1-.29*fade; break;
+      case 'tide': pose.y=-.027*lift; pose.opacity=1-.06*fade; break;
+      case 'ink': pose.opacity=1-.12*fade; break;
       case 'mist': pose.opacity=1-.68*fade; break;
       case 'sunrise': pose.y=.21*fade; break;
       case 'petal': pose.x=swing*.22; pose.y=-.68*fade; pose.angle=side*fade*31; break;
@@ -141,16 +146,14 @@
     context.fillStyle='#fff';
     context.scale(ratio,ratio);
     for(const sprite of cells)context.fillText(sprite.text,sprite.x/ratio-sprite.start,sprite.y/ratio+sprite.glyphTop);
-    return {atlas,glyphs,ratio,x,y,width,height,size,cx:rowBounds.left+rowBounds.width/2-hostBounds.left-x,
+    return {atlas,glyphs,ratio,x,y,width,height,size,hostWidth:hostBounds.width,cx:rowBounds.left+rowBounds.width/2-hostBounds.left-x,
       cy:rowBounds.top+rowBounds.height/2-hostBounds.top-y};
   }
 
   function create2D(canvas) {
     const context=canvas.getContext('2d',{alpha:true});
     if(!context)return null;
-    let atlas,tints=new Map();
-    function tinted(color) {
-      if(tints.has(color))return tints.get(color);
+    function tinted(atlas,color) {
       const layer=document.createElement('canvas');
       layer.width=atlas.width;layer.height=atlas.height;
       const mask=layer.getContext('2d');
@@ -159,13 +162,19 @@
       mask.globalCompositeOperation='source-in';
       mask.fillStyle=`rgb(${color.map(channel=>Math.round(channel*255)).join(',')})`;
       mask.fillRect(0,0,layer.width,layer.height);
-      tints.set(color,layer);
       return layer;
     }
     return {
       maxTextureSize:4096,
-      upload(source){atlas=source;tints=new Map();return true;},
-      draw(quads,width,height){
+      upload(atlas,quads){
+        const tints=new Map();
+        for(const {color,highlight} of quads)for(const tint of [color,highlight]){
+          if(!tints.has(tint))tints.set(tint,tinted(atlas,tint));
+        }
+        return tints;
+      },
+      release(tints){tints.clear();},
+      draw(tints,quads,width,height){
         const scaleX=canvas.width/width,scaleY=canvas.height/height;
         context.resetTransform();
         context.clearRect(0,0,canvas.width,canvas.height);
@@ -174,18 +183,19 @@
           const step=fill<=0?0:fill>=1?1:sprite.sweepStart+fill*(sprite.sweepEnd-sprite.sweepStart);
           context.setTransform(a*scaleX,b*scaleY,c*scaleX,d*scaleY,x*scaleX,y*scaleY);
           context.globalAlpha=opacity;
-          if(step>0)context.drawImage(tinted(highlight),sprite.x,sprite.y,sprite.width*step,sprite.height,0,0,w*step,h);
-          if(step<1)context.drawImage(tinted(color),sprite.x+sprite.width*step,sprite.y,sprite.width*(1-step),sprite.height,w*step,0,w*(1-step),h);
+          if(step>0)context.drawImage(tints.get(highlight),sprite.x,sprite.y,sprite.width*step,sprite.height,0,0,w*step,h);
+          if(step<1)context.drawImage(tints.get(color),sprite.x+sprite.width*step,sprite.y,sprite.width*(1-step),sprite.height,w*step,0,w*(1-step),h);
         }
         return true;
       },
-      close(){atlas=null;tints.clear();},
+      close(){},
     };
   }
 
   function transformLine(id, enter) {
     const rest=1-enter;
-    if(id==='film')return {x:rest*.62,y:0,a:1,b:0,c:0,d:1};
+    if(id==='film')return {x:rest*.12,y:0,a:1,b:0,c:0,d:1};
+    if(id==='tide')return {x:0,y:rest*.046,a:1,b:0,c:0,d:1};
     if(id==='mist')return {x:0,y:rest*.32,a:1,b:0,c:0,d:1};
     if(id==='prism')return {x:0,y:0,a:1,b:0,c:Math.tan(rest*-.30),d:1};
     if(id==='clock'){
@@ -197,10 +207,17 @@
 
   function create(host, onContextLoss) {
     let canvas,backend,kind,layout,currentRow,currentId,currentPixelRatio,backendOpened=false;
-    let nextLine=null,prepares=0,prewarmHits=0;
-    function clearPrewarm(){nextLine=null;}
+    let nextLine=null,prepares=0,prewarmHits=0,surfaceResizes=0;
+    function releaseLine(line) {
+      if(!line?.resource)return;
+      backend.release(line.resource);
+      line.resource=null;
+    }
+    function clearPrewarm(){releaseLine(nextLine?.layout);nextLine=null;}
     function open(allowGPU) {
       clearPrewarm();
+      releaseLine(layout);
+      backend?.close();
       canvas=document.createElement('canvas');
       backend=allowGPU?root.SonicLyricGpu?.create(canvas):null;
       kind=backend?'webgl':'canvas2d';
@@ -216,26 +233,42 @@
     }
     function hide(){
       host.hidden=true;
-      invalidate();layout=null;
+      invalidate();
     }
-    function invalidate(){currentRow=null;clearPrewarm();}
+    function invalidate(){currentRow=null;clearPrewarm();releaseLine(layout);layout=null;}
     function ensureBackend() {
       if(!backendOpened){backendOpened=true;open(true);}
       return Boolean(backend);
     }
-    function configure(next){
+    function configureSurface(next){
+      const width=Math.max(1,Math.round(next.width*next.ratio));
+      const height=Math.max(1,Math.round(next.height*next.ratio));
+      if(width>canvas.width||height>canvas.height){
+        // Reserve space for wider lines so their arrival does not recreate the drawing buffer.
+        const reserveHeight=Math.max(canvas.height,Math.ceil(height/128)*128);
+        const availableWidth=Math.floor(maxSurfacePixels/reserveHeight);
+        const reserveWidth=Math.max(width,canvas.width,Math.min(Math.ceil(next.hostWidth*next.ratio),availableWidth));
+        const fits=reserveWidth*reserveHeight<=maxSurfacePixels;
+        const backingWidth=fits?reserveWidth:width,backingHeight=fits?reserveHeight:height;
+        if(canvas.width!==backingWidth)canvas.width=backingWidth;
+        if(canvas.height!==backingHeight)canvas.height=backingHeight;
+        surfaceResizes++;
+      }
+      next.surfaceWidth=canvas.width*next.width/width;
+      next.surfaceHeight=canvas.height*next.height/height;
       canvas.style.left=next.x+'px';canvas.style.top=next.y+'px';
-      canvas.style.width=next.width+'px';canvas.style.height=next.height+'px';
-      const width=Math.max(1,Math.round(next.width*next.ratio)),height=Math.max(1,Math.round(next.height*next.ratio));
-      if(canvas.width!==width)canvas.width=width;
-      if(canvas.height!==height)canvas.height=height;
-      return backend.upload(next.atlas);
+      canvas.style.width=next.surfaceWidth+'px';canvas.style.height=next.surfaceHeight+'px';
+    }
+    function upload(next) {
+      next.resource=backend.upload(next.atlas,next.quads);
+      return Boolean(next.resource);
     }
     function prepare(row,id) {
       prepares++;
       const next=measureLine(row,host,id,kind==='webgl',backend.maxTextureSize);
       if(!next)return null;
       const styles=shadows[id]||noShadows;
+      const {waiting=muted,sung=white}=palettes.get(id)||{};
       next.quads=[];
       next.words=new Map();
       for(const glyph of next.glyphs){
@@ -243,7 +276,7 @@
         if(!next.words.has(glyph.word))next.words.set(glyph.word,{});
         glyph.frame=next.words.get(glyph.word);
         for(const [x,y,color,alpha] of styles)glyph.poses.push({sprite:glyph.sprite,w:glyph.w,h:glyph.h,color,highlight:color,shiftX:x,shiftY:y,alpha,shadow:true});
-        glyph.poses.push({sprite:glyph.sprite,w:glyph.w,h:glyph.h,color:muted,highlight:white,shiftX:0,shiftY:0,alpha:1});
+        glyph.poses.push({sprite:glyph.sprite,w:glyph.w,h:glyph.h,color:waiting,highlight:sung,shiftX:0,shiftY:0,alpha:1});
         next.quads.push(...glyph.poses);
       }
       return next;
@@ -258,9 +291,9 @@
       if(row===currentRow&&id===currentId&&pixelRatio===currentPixelRatio&&layout)return false;
       if(preparedLine(row,id,pixelRatio))return true;
       clearPrewarm();
-      // Keep GPU upload on activation so the current line keeps its atlas.
       const prepared=prepare(row,id);
-      if(!prepared)return false;
+      if(!prepared||!upload(prepared))return false;
+      if(!layout&&host.hidden)configureSurface(prepared);
       nextLine={row,id,backend,pixelRatio,layout:prepared};
       return true;
     }
@@ -269,15 +302,17 @@
       const pixelRatio=devicePixelRatio||1;
       if(row!==currentRow||id!==currentId||pixelRatio!==currentPixelRatio){
         const prepared=preparedLine(row,id,pixelRatio);
-        clearPrewarm();
+        if(prepared)nextLine=null;
+        else clearPrewarm();
+        releaseLine(layout);
         currentRow=row;currentId=id;currentPixelRatio=pixelRatio;
         if(prepared)prewarmHits++;
         layout=prepared||prepare(row,id);
-        if(layout&&!configure(layout)){
-          backend.close();
-          if(kind==='webgl'&&open(false)){layout=prepare(row,id);if(layout&&!configure(layout))layout=null;}
-          else {layout=null;backend=null;}
+        if(layout&&!layout.resource&&!upload(layout)){
+          layout=kind==='webgl'&&open(false)?prepare(row,id):null;
+          if(layout&&!upload(layout))layout=null;
         }
+        if(layout)configureSurface(layout);
       }
       if(!layout){host.hidden=true;return 'text';}
       if(position===layout.position&&animated===layout.animated)return kind;
@@ -285,7 +320,7 @@
       const line=transformLine(id,enter);
       const {size,cx,cy}=layout;
       for(const [word,frame] of layout.words) {
-        const moves=animated&&!word.leading;
+        const moves=animated&&!word.leading&&(row.timed||id!=='tide');
         const {begin,finish}=word.motion;
         const interval=position<begin?-1:position<finish?0:1;
         if(!frame.pose||moves!==frame.moves||moves&&(interval===0||interval!==frame.interval)){
@@ -310,21 +345,24 @@
           quad.x=cx+line.a*x+line.c*y+line.x*size;quad.y=cy+line.b*x+line.d*y+line.y*size;
           quad.a=line.a*a+line.c*b;quad.b=line.b*a+line.d*b;
           quad.c=line.a*c+line.c*d;quad.d=line.b*c+line.d*d;
-          quad.opacity=pose.opacity*quad.alpha;
+          const bleed=id==='ink'&&quad.shadow?Math.max(.22,1-enter):1;
+          quad.opacity=pose.opacity*quad.alpha*bleed;
           quad.fill=quad.shadow?0:Math.max(0,Math.min(1,(fill-glyph.from)/(glyph.to-glyph.from)));
         }
       }
-      if(!backend.draw(layout.quads,layout.width,layout.height)){
-        backend.close();
-        if(!(kind==='webgl'&&open(false)&&configure(layout)&&backend.draw(layout.quads,layout.width,layout.height))){
-          backend=null;hide();
+      if(!backend.draw(layout.resource,layout.quads,layout.surfaceWidth,layout.surfaceHeight)){
+        if(kind==='webgl'&&open(false)&&upload(layout)){
+          configureSurface(layout);
+        } else {
+          hide();
           return 'text';
         }
+        backend.draw(layout.resource,layout.quads,layout.surfaceWidth,layout.surfaceHeight);
       }
       layout.drawn=true;host.hidden=false;
       return kind;
     }
-    return {paint,hide,invalidate,prewarm,clearPrewarm,stats:()=>({prepares,prewarmHits})};
+    return {paint,hide,invalidate,prewarm,clearPrewarm,stats:()=>({prepares,prewarmHits,surfaceResizes})};
   }
   root.SonicLyricRenderer=Object.freeze({create});
 })(globalThis);

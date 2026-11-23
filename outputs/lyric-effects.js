@@ -5,19 +5,29 @@
   else root.SonicLyricEffects = api;
 })(globalThis, function () {
   'use strict';
+  const palettes = {
+    impact: ['#ada69c', '#fff7e6'],
+    cut: ['#a6bac5', '#ecfbff'],
+    neon: ['#8bb6b5', '#ccfff5'],
+    echo: ['#bea0bb', '#ffeff9'],
+    film: ['#b5b4af', '#f8f3e5'],
+    flare: ['#d0ae96', '#fff0cd'],
+    tide: ['#91aeb2', '#e9f9f0'],
+    ink: ['#a3aca0', '#eadfc7'],
+  };
   const groups = [
-    { name: '节奏', entries: [
-      ['impact', '重拍', '唱到的字弹起，随后落回基线'],
-      ['cut', '切片', '左右错位的字块分段入场'],
-      ['neon', '电台', '电蓝与粉红的扫描线划过文字'],
-      ['echo', '叠声', '每个字展开层叠的色影'],
-      ['film', '负片', '字从窄幅画框中逐段显影'],
-      ['flare', '耀斑', '光点在长音附近亮起'],
+    { name: '节奏', beat: true, entries: [
+      ['impact', '重拍', '暗铜车间里的暖色节拍线，唱到的字轻弹'],
+      ['cut', '切片', '冷色斜切舞台，字块错位后轻轻归位'],
+      ['neon', '电台', '青绿调谐刻度，信号线沿着歌词推进'],
+      ['echo', '叠声', '莓紫色声波从两侧散开，字边带着轻微回声'],
+      ['film', '负片', '黑白宽银幕，歌词在胶片边框中显影'],
+      ['flare', '耀斑', '暖色光环托住歌词，长音时字轻轻上浮'],
     ] },
     { name: '氛围', entries: [
       ['orbit', '星屑', '细小光点跟随字词向两侧散开'],
-      ['tide', '潮线', '文字沿柔和的波形浮起'],
-      ['ink', '洇墨', '字形由墨晕逐渐收清'],
+      ['tide', '潮线', '暮色海面借封面取色，反光随音乐缓缓展开'],
+      ['ink', '洇墨', '深墨山影上的暖色书法，换句时墨影轻轻晕开'],
       ['mist', '晨雾', '整句穿过薄雾慢慢显现'],
       ['sunrise', '晨曦', '暖色光沿着歌词底部铺开'],
       ['petal', '花信', '深浅花瓣伴着字词轻轻翻落'],
@@ -30,8 +40,12 @@
       ['wide', '远景', '大字向两侧拉开，再收回中间'],
       ['still', '静止', '只显示居中的原词'],
     ] },
-  ].map(({name, entries}) => Object.freeze({
-    name, entries: Object.freeze(entries.map(([id,label,description]) => Object.freeze({id,label,description}))),
+  ].map(({name, beat = false, entries}) => Object.freeze({
+    name, entries: Object.freeze(entries.map(([id,label,description]) => {
+      const [waiting, sung] = palettes[id] || [];
+      return Object.freeze({id, label, description, beat:beat||id==='orbit',
+        palette:waiting ? Object.freeze({waiting, sung}) : null});
+    })),
   }));
   const presets = new Map(groups.flatMap(group => group.entries).map(preset => [preset.id,preset]));
   const get = id => presets.get(id) || presets.get('orbit');

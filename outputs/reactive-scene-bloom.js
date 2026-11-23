@@ -110,6 +110,8 @@
 
   function paintBloom(context, frame) {
     const { width, height, time, bass, mid, high, pulse, energy, spectrum, quality, seed } = frame;
+    const focused = Number.isFinite(frame.focus);
+    const opening = focused ? smooth(clamp((frame.focus - .16) / .38, 0, 1)) : 0;
     const requestedMorph = Number.isFinite(frame.morph) ? frame.morph : time / 9;
     const phase = ((requestedMorph % 3) + 3) % 3;
     const from = Math.floor(phase), to = (from + 1) % 3;
@@ -118,8 +120,8 @@
     const colors = channels[from].map((color, index) => colorAt(color, channels[to][index], bend, frame.palette));
     const aspect = Math.min(width, height);
     const centerX = width * (.5 + .018 * Math.sin(time * .22));
-    const centerY = height * (.452 + .016 * Math.sin(time * .19 + .5));
-    const radius = Math.min(width * .43, height * .365);
+    const centerY = height * ((focused ? .5 : .452) + .016 * Math.sin(time * .19 + .5));
+    const radius = focused ? Math.min(width * .51, height * .48) : Math.min(width * .43, height * .365);
     const level = (quality || 1) * (width * height > 4_600_000 ? .76 : 1);
     const strainCount = clamp(Math.round(18 + level * 18), 18, STRANDS);
     const stride = level < .8 ? 2 : 1;
@@ -131,7 +133,7 @@
     const cosX = Math.cos(tilt), sinX = Math.sin(tilt);
     const cosY = Math.cos(yaw), sinY = Math.sin(yaw);
     const cosZ = Math.cos(roll), sinZ = Math.sin(roll);
-    const swell = 1 + bass * .11 + pulse * .12;
+    const swell = 1 + bass * .11 + pulse * .12 + opening * .16;
     const pixel = clamp(radius / 390, .67, 2.35);
     const timeSeed = ((time * 1000) | 0) / 1000;
 

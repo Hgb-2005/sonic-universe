@@ -63,9 +63,11 @@ Thumbs.db
 !/outputs/lyric-style-mods.js
 !/outputs/lyric-effects.js
 !/outputs/lyric-effects.css
+!/outputs/lyric-rhythm.css
 !/outputs/lyric-gpu.js
 !/outputs/lyric-renderer.js
 !/outputs/assets/lyric-stage-glass.webp
+!/outputs/assets/lyric-backdrop-*.webp
 !/outputs/music-library.css
 !/outputs/music-library.js
 !/outputs/music-discovery.css

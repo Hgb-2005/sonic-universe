@@ -241,6 +241,12 @@ async function verifyNowPlaying(page, folder, app) {
   console.log('PASS native touch cancellation keeps the current position and release seeks after capture is lost');
 
   await openLyrics();
+  assert.equal(await room.getAttribute('data-lyric-effect'),'tide');
+  await page.evaluate(() => SonicPlayback.seek(5.2));
+  await room.locator('[data-current-line] .lr-lyric-translation').getByText('测试翻译',{exact:true}).waitFor();
+  await page.evaluate(() => SonicPlayback.seek(2.4));
+  const stageFullLyrics=room.locator('[data-stage-full-lyrics]');
+  await stageFullLyrics.click();
   await full.waitFor();
   assert.equal(await preview.isVisible(),false);
   assert.deepEqual(await full.locator('.lr-full-text').allTextContents(),['引子','逐字推进','夜色','起风','普通整行','回声','远山','尾声']);
@@ -267,6 +273,7 @@ async function verifyNowPlaying(page, folder, app) {
   const enterImmersion = room.locator('[data-lyric-full-tools] [data-action="enter-immersion"]');
   await enterImmersion.click();
   assert.equal(await room.getAttribute('data-listen-immersive'),'true');
+  await page.waitForFunction(()=>document.querySelector('#listeningRoom').dataset.activeScene==='prism-bloom');
   assert.equal(await full.isVisible(),false);
   await seek.fill('11.2');
   await page.waitForFunction(()=>document.querySelector('[data-preview-line="0"]').textContent==='回声');
@@ -278,6 +285,7 @@ async function verifyNowPlaying(page, folder, app) {
   assert.equal(await room.getAttribute('data-listen-immersive'),'true');
   await page.keyboard.press('Escape');
   assert.equal(await room.getAttribute('data-listen-immersive'),'false');
+  await page.waitForFunction(()=>!document.querySelector('#listeningRoom').hasAttribute('data-active-scene'));
   assert.equal(await full.evaluate(element=>element.scrollTop),readingPosition);
   assert.equal(await follow.isVisible(),true);
   assert.equal(await enterImmersion.evaluate(element=>document.activeElement===element),true);
@@ -350,14 +358,27 @@ async function verifyNowPlaying(page, folder, app) {
   assert.equal(await effectChoices.count(),18);
   const ids=await effectChoices.evaluateAll(nodes=>nodes.map(node=>node.dataset.effectChoice));
   assert.equal(new Set(ids).size,18);
+  const themed=['impact','cut','neon','echo','film','flare','tide','ink'];
+  const stageBackgrounds=new Set();
   for(const [index,id] of ids.entries()){
     if(index>0)await effectButton.click();
     await effectChoices.nth(index).click();
     assert.equal(await room.getAttribute('data-lyric-effect'),id);
     assert.equal(await stage.getAttribute('data-fx'),id);
+    const theme=await room.evaluate(node=>({
+      active:node.hasAttribute('data-lyric-theme'),
+      background:getComputedStyle(node).backgroundImage,
+      fallbackInk:getComputedStyle(node).getPropertyValue('--fx-lyric-sung'),
+      ambientVisible:getComputedStyle(node.querySelector('.lr-background')).visibility==='visible',
+    }));
+    assert.equal(theme.active,themed.includes(id),id);
+    assert.equal(theme.ambientVisible,!theme.active,id);
+    assert.equal(Boolean(theme.fallbackInk),theme.active,id);
+    if(theme.active)stageBackgrounds.add(theme.background);
     assert.deepEqual(await flightRows.allTextContents(),['普通整行']);
     assert.equal(await flightRows.getAttribute('data-lyric-timing'),'line');
   }
+  assert.equal(stageBackgrounds.size,themed.length);
   assert.equal(await currentEffectLyric.getAttribute('aria-current'),'true');
 
   const captureEffect=()=>effectCanvas.screenshot({
@@ -401,16 +422,31 @@ async function verifyNowPlaying(page, folder, app) {
   await seekEffect(5.2);
   await currentEffectLyric.filter({hasText:/^夜色$/}).waitFor();
   assert.deepEqual(await flightRows.allTextContents(),['夜色']);
+  if(await room.getAttribute('data-lyric-renderer')==='webgl') {
+    const simulatedLoss=await effectCanvas.evaluate(canvas=>{
+      const extension=canvas.getContext('webgl')?.getExtension('WEBGL_lose_context');
+      extension?.loseContext();
+      return Boolean(extension);
+    });
+    if(simulatedLoss){
+      await page.waitForFunction(()=>document.querySelector('#listeningRoom').dataset.lyricRenderer==='canvas2d');
+      await effectCanvas.waitFor();
+      assert.equal(await currentEffectLyric.getAttribute('aria-current'),'true');
+    }
+  }
+  await play.click();
+  await page.waitForFunction(()=>!SonicPlayback.snapshot().playing);
   await page.emulateMedia({reducedMotion:'reduce'});
   await effectCanvas.waitFor({state:'hidden'});
   await page.waitForFunction(()=>document.querySelector('#listeningRoom')?.dataset.lyricRenderer==='text');
   assert.equal(await currentEffectLyric.getAttribute('aria-current'),'true');
   await currentEffectLyric.filter({hasText:/^夜色$/}).waitFor();
-  await play.click();
-  await page.waitForFunction(()=>!SonicPlayback.snapshot().playing);
   await page.evaluate(()=>SonicPlayback.seek(9));
   await currentEffectLyric.filter({hasText:/^普通整行$/}).waitFor();
   await page.emulateMedia({reducedMotion:'no-preference'});
+  await closeLyrics();
+  await room.locator('[data-now-lyrics]').click();
+  await full.waitFor();
   await closeLyrics();
   await openLyrics();
   assert.equal(await room.getAttribute('data-lyric-effect'),'impact');

@@ -1,0 +1,211 @@
+/* 切片 */
+#listeningRoom[data-lyric-effect=cut], #listeningRoom .lr-effect-sample[data-fx=cut] {
+  background:
+    radial-gradient(ellipse at 92% 8%, #395b69 0%, transparent 57%),
+    linear-gradient(151deg, #202e39, #0f161d 57%, #161d24);
+}
+#listeningRoom[data-lyric-effect=cut] {
+  --room-ink: #eff8ff;
+  --room-muted: #becbd5;
+  --fx-panel: #16242df3;
+  --fx-edge: #92bbc34f;
+  --fx-selection: #95bbc12b;
+  --fx-button-ink: #14262e;
+  --fx-signal: #a9d1df;
+}
+#listeningRoom [data-fx=cut] { --fx-color: #ecfbff; --fx-secondary: #527d92; }
+#listeningRoom [data-fx=cut] .lr-fx-shapes i:first-child {
+  inset: 16% 2% 31% -1%;
+  background: linear-gradient(152deg, #6b97ad80, #253848 65%, #293e4b4d);
+  clip-path: polygon(0 34%, 71% 0, 100% 0, 69% 41%, 0 100%);
+}
+#listeningRoom [data-fx=cut] .lr-fx-shapes i:nth-child(2) {
+  inset: 32% 0 20%;
+  background: linear-gradient(99deg, #141e29, #1b2936 67%, #6e96a19e);
+  clip-path: polygon(0 20%, 81% 0, 100% 0, 100% 58%, 24% 100%, 0 100%);
+}
+#listeningRoom [data-fx=cut] .lr-fx-shapes i:nth-child(3) {
+  inset: 69% auto auto 13%;
+  width: 73%; height: max(1px, .3%);
+  background: linear-gradient(90deg, #e7a287 0 12%, #b3d2dc64 12% 68%, transparent);
+  transform-origin: left;
+  transform: skewY(-6deg) scaleX(calc(.86 + .14 * var(--fx-beat)));
+}
+#listeningRoom[data-lyric-effect=cut] .lr-lyric-row {
+  left: 11%; top: 52%; width: 84%; padding-inline: 0;
+  text-align: start; font-weight: 780;
+}
+
+/* 电台 */
+#listeningRoom[data-lyric-effect=neon], #listeningRoom .lr-effect-sample[data-fx=neon] {
+  background:
+    radial-gradient(ellipse at 70% 75%, #174a45, transparent 62%),
+    linear-gradient(130deg, #132e2d, #101c20 76%, #0e1619);
+}
+#listeningRoom[data-lyric-effect=neon] {
+  --room-ink: #def9ef;
+  --room-muted: #a9c9c2;
+  --fx-panel: #142927f5;
+  --fx-edge: #8bd9bd42;
+  --fx-selection: #93e1c42b;
+  --fx-button-ink: #122824;
+  --fx-signal: #aef5d7;
+}
+#listeningRoom [data-fx=neon] { --fx-color: #ccfff5; --fx-secondary: #45a28d; }
+#listeningRoom [data-fx=neon] .lr-fx-shapes i:first-child {
+  inset: 20% 8% 22%;
+  border-block: 1px solid #7bd7bc32;
+  background:
+    linear-gradient(#101f2400, #101f24 41% 57%, #101f2400),
+    repeating-linear-gradient(90deg, #8cf9d31c 0 1px, transparent 1px 4%),
+    repeating-linear-gradient(0deg, #8cf9d314 0 1px, #10212336 1px 10%);
+  mask-image: linear-gradient(90deg, transparent, #000 16% 84%, transparent);
+}
+#listeningRoom [data-fx=neon] .lr-fx-shapes i:nth-child(2) {
+  inset: 69% 12% auto;
+  height: max(4px, 4%);
+  background:
+    linear-gradient(90deg, #597e71, #76bba3 70%, #597e71) top / 100% 1px no-repeat,
+    repeating-linear-gradient(90deg, #9fe6ce53 0 1px, transparent 1px 3.2%);
+}
+#listeningRoom [data-fx=neon] .lr-fx-shapes i:nth-child(3) {
+  inset: 68% auto auto 12%;
+  width: 12%; height: max(2px, .4%);
+  background: linear-gradient(90deg, transparent, #b4f5dc, #a5e8d2, transparent);
+  opacity: calc(.58 + .42 * var(--fx-beat));
+  transform: translateX(calc(var(--fx-phase) * 533%));
+}
+#listeningRoom[data-lyric-effect=neon] .lr-lyric-row { top: 49%; letter-spacing: .04em; }
+
+/* 叠声 */
+#listeningRoom[data-lyric-effect=echo], #listeningRoom .lr-effect-sample[data-fx=echo] {
+  background:
+    radial-gradient(ellipse at 8% 84%, #5a304d, transparent 56%),
+    radial-gradient(ellipse at 90% 16%, #453455, transparent 59%),
+    linear-gradient(137deg, #281b2c, #180f20 53%, #2a1d34);
+}
+#listeningRoom[data-lyric-effect=echo] {
+  --room-ink: #f9eafa;
+  --room-muted: #d3b6d1;
+  --fx-panel: #281b2df3;
+  --fx-edge: #cb9fc849;
+  --fx-selection: #da98c234;
+  --fx-button-ink: #2e1930;
+  --fx-signal: #ecafd4;
+}
+#listeningRoom [data-fx=echo] { --fx-color: #ffeff9; --fx-secondary: #965b89; }
+#listeningRoom [data-fx=echo] .lr-fx-shapes i:first-child {
+  inset: 25% 6% 24%;
+  background: radial-gradient(ellipse, #311d32 22%, #49305b6a 49%, transparent 72%);
+}
+#listeningRoom [data-fx=echo] .lr-fx-shapes i:nth-child(2),
+#listeningRoom [data-fx=echo] .lr-fx-shapes i:nth-child(3) {
+  inset: 19% 8% 23%;
+  border-radius: 50%;
+  border: 1px solid #dc8bc876;
+  box-shadow: inset 0 0 0 clamp(2px, 1vw, 14px) #95638f29;
+  mask-image: linear-gradient(101deg, #000, #0000 41% 61%, #000);
+  transform: rotate(-11deg) scaleX(calc(.95 + .05 * var(--fx-beat)));
+}
+#listeningRoom [data-fx=echo] .lr-fx-shapes i:nth-child(3) {
+  inset: 29% 6% 16%;
+  border-color: #b695ef64;
+  box-shadow: inset 0 0 0 clamp(2px, .7vw, 10px) #9c7ccd28;
+  transform: rotate(11deg) scaleX(calc(1 - .05 * var(--fx-beat)));
+}
+#listeningRoom[data-lyric-effect=echo] .lr-lyric-row { font-weight: 720; letter-spacing: .04em; }
+
+/* 负片 */
+#listeningRoom[data-lyric-effect=film], #listeningRoom .lr-effect-sample[data-fx=film] {
+  background:
+    radial-gradient(ellipse at 69% 15%, #474646, transparent 60%),
+    linear-gradient(156deg, #333233, #1c1c1d 56%, #252425);
+}
+#listeningRoom[data-lyric-effect=film] {
+  --room-ink: #f8f3e5;
+  --room-muted: #c9c6be;
+  --fx-panel: #242425f5;
+  --fx-edge: #e0d9bd38;
+  --fx-selection: #d7c69f25;
+  --fx-button-ink: #252323;
+  --fx-signal: #e0d4b8;
+}
+#listeningRoom [data-fx=film] { --fx-color: #f8f3e5; --fx-secondary: #948b74; }
+#listeningRoom [data-fx=film] .lr-fx-shapes i:first-child {
+  inset: 24% 5% 24%;
+  border-block: 1px solid #a7a29965;
+  background:
+    radial-gradient(ellipse at 64% 46%, #353433, transparent 65%),
+    linear-gradient(90deg, #1c1c1e, #29292a 48%, #19191b);
+  box-shadow: 0 0 0 1px #1118;
+}
+#listeningRoom [data-fx=film] .lr-fx-shapes i:nth-child(2),
+#listeningRoom [data-fx=film] .lr-fx-shapes i:nth-child(3) {
+  inset: auto 5% 79%;
+  height: clamp(2px, 2.3%, 14px);
+  background: repeating-linear-gradient(90deg, #aeaa9c6b 0 1.65%, transparent 1.65% 3.1%);
+}
+#listeningRoom [data-fx=film] .lr-fx-shapes i:nth-child(3) { inset: 79% 5% auto; }
+#listeningRoom [data-fx=film] .lr-fx-shapes::after {
+  content: "";
+  position: absolute;
+  inset: 27% 7% auto 7%; height: max(1px, .35%);
+  background: linear-gradient(90deg, #cfa77c, #d8cec284 22%, transparent 66%);
+  transform-origin: left;
+  transform: scaleX(calc(.42 + .53 * var(--fx-enter) + .05 * var(--fx-beat)));
+}
+#listeningRoom[data-lyric-effect=film] .lr-lyric-row {
+  font-family: "Songti SC", SimSun, "Times New Roman", serif;
+  font-weight: 700; letter-spacing: .065em;
+}
+
+/* 耀斑 */
+#listeningRoom[data-lyric-effect=flare], #listeningRoom .lr-effect-sample[data-fx=flare] {
+  background:
+    radial-gradient(ellipse at 95% -17%, #f49b59a3, transparent 48%),
+    radial-gradient(ellipse at 4% 108%, #713b2b, transparent 60%),
+    linear-gradient(155deg, #402d29, #21191d 44%, #2b2022);
+}
+#listeningRoom[data-lyric-effect=flare] {
+  --room-ink: #fff2dc;
+  --room-muted: #d9beb0;
+  --fx-panel: #2e211ff5;
+  --fx-edge: #e9ab7552;
+  --fx-selection: #ecac6a37;
+  --fx-button-ink: #38221b;
+  --fx-signal: #f6b777;
+}
+#listeningRoom [data-fx=flare] { --fx-color: #fff0cd; --fx-secondary: #c1744c; }
+#listeningRoom [data-fx=flare] .lr-fx-shapes i:first-child {
+  inset: 29% -30% -121% -16%;
+  border-radius: 50%;
+  transform: rotate(-10deg);
+  background:
+    radial-gradient(ellipse at 51% 9%, #e2935a47, transparent 38%),
+    linear-gradient(165deg, #d8784673, #3e26290a 48%);
+  border-top: 1px solid #f7c58670;
+}
+#listeningRoom [data-fx=flare] .lr-fx-shapes {
+  mask-image: linear-gradient(0deg, transparent, #000 25% 82%, transparent),
+    linear-gradient(90deg, transparent, #000 11% 89%, transparent);
+  mask-composite: intersect;
+}
+#listeningRoom [data-fx=flare] .lr-fx-shapes i:nth-child(2) {
+  inset: 20% 0 28%;
+  background:
+    radial-gradient(ellipse at 78% 15%, #fbd79b53, transparent 34%),
+    radial-gradient(ellipse at 24% 81%, #e9955b55, transparent 27%);
+  opacity: calc(.49 + .31 * var(--fx-beat));
+}
+#listeningRoom [data-fx=flare] .lr-fx-shapes i:nth-child(3) {
+  inset: 24% 6% auto auto;
+  width: 48%; height: max(1px, .35%);
+  transform: rotate(-9deg) scaleX(calc(.92 + .08 * var(--fx-beat)));
+  background: linear-gradient(90deg, transparent, #edb27c56, #ffe5bdbb, transparent);
+}
+#listeningRoom[data-lyric-effect=flare] .lr-lyric-row { top: 55%; }
+
+@media (max-width: 700px) {
+  #listeningRoom[data-lyric-effect=cut] .lr-lyric-row { left: 5%; width: 90%; padding-inline: 0; }
+  #listeningRoom[data-lyric-effect=film] .lr-lyric-row { padding-inline: 2vw; letter-spacing: .035em; }
+}

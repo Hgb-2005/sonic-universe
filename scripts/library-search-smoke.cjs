@@ -572,6 +572,7 @@ async function verifyStorageFailures(page) {
 async function verifySampleLyrics(page, room) {
   const {lyrics, duration}=await page.evaluate(()=>SonicPlayback.snapshot());
   assert.ok(lyrics.length>=3,'The packaged sample offers several timed lyric lines');
+  assert.ok(lyrics.every(line=>line.points.length>=4),'Each sample line has explicit word cues');
   const first=lyrics.findIndex((line,index)=>{
     const next=lyrics[index+1];
     return line.time>=1.3&&next&&next.time<duration/2&&line.text&&next.text&&line.text!==next.text&&next.time-line.time>=1.4;
@@ -594,6 +595,7 @@ async function verifySampleLyrics(page, room) {
     const row=document.querySelector(`[data-full-line="${index}"]`);
     return state.playing&&Math.abs(state.position-time)<.8&&row?.getAttribute('aria-current')==='true'&&state.position;
   },{index:first,time:lyrics[first].time});
+  assert.ok(await line(first).locator('.lr-timed-group').count()>=4,'The active sample line renders word highlights');
   const timed=await page.waitForFunction(({index,time})=>{
     const state=SonicPlayback.snapshot();
     const row=document.querySelector(`[data-full-line="${index}"]`);
@@ -611,6 +613,7 @@ async function verifySampleLyrics(page, room) {
   await page.mouse.move(progressX(await timed.jsonValue()),y);
   await page.mouse.down();
   await page.mouse.move(progressX((lyrics[target].time+lyrics[target+1].time)/2),y,{steps:4});
+  assert.equal(await room.locator('[data-seek-line]').getAttribute('data-timing'),'word');
   await page.mouse.up();
   await page.waitForFunction(({index,start,end})=>{
     const {position,playing}=SonicPlayback.snapshot();
@@ -664,6 +667,8 @@ async function verifyFirstRun(page,{electron=false}={}) {
       `${await control.innerText()} must be visible without scrolling`);
   }
   await homeLyrics.click();
+  await room.locator('[data-effect-stage][data-fx="tide"]').waitFor();
+  await room.locator('[data-stage-full-lyrics]').click();
   await room.locator('[data-full-lyrics]').waitFor();
   assert.ok(await room.locator('[data-full-line]').count()>=3);
   assert.equal(await page.evaluate(()=>SonicPlayback.snapshot().playing),false);
@@ -689,6 +694,8 @@ async function verifyFirstRun(page,{electron=false}={}) {
   const before=await state();
   await home.click();
   await homeLyrics.click();
+  await room.locator('[data-effect-stage][data-fx="tide"]').waitFor();
+  await room.locator('[data-stage-full-lyrics]').click();
   await room.locator('[data-full-lyrics]').waitFor();
   await home.click();
   await searchButton.click();

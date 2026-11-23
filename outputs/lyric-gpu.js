@@ -86,18 +86,21 @@
     const program = link(gl);
     const vertexBuffer = gl.createBuffer();
     const indexBuffer = gl.createBuffer();
-    const texture = gl.createTexture();
+    const textures = new Set();
+    const spareTextures = [];
     const maxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);
     let closed = false;
     function close() {
       if (closed) return;
       closed = true;
-      gl.deleteTexture(texture);
+      for (const texture of textures) gl.deleteTexture(texture);
+      textures.clear();
+      spareTextures.length = 0;
       gl.deleteBuffer(vertexBuffer);
       gl.deleteBuffer(indexBuffer);
       gl.deleteProgram(program);
     }
-    if (!program || !vertexBuffer || !indexBuffer || !texture) {
+    if (!program || !vertexBuffer || !indexBuffer) {
       close();
       return null;
     }
@@ -115,29 +118,45 @@
     }
     const sizeUniform = gl.getUniformLocation(program, 'u_size');
     gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.uniform1i(gl.getUniformLocation(program, 'u_atlas'), 0);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     gl.clearColor(0, 0, 0, 0);
 
-    let atlasWidth = 0, atlasHeight = 0;
-    function upload(atlas) {
+    function release(atlas) {
+      const texture = atlas.texture;
+      if (!textures.has(texture)) return;
+      atlas.texture = null;
+      spareTextures.push(texture);
+    }
+
+    function upload(atlas, quads) {
       if (closed || gl.isContextLost() || !atlas.width || !atlas.height ||
-          atlas.width > maxTextureSize || atlas.height > maxTextureSize) return false;
+          atlas.width > maxTextureSize || atlas.height > maxTextureSize || quads.length > maxQuads) return null;
+      const spare = spareTextures.pop();
+      const texture = spare || gl.createTexture();
+      if (!texture) return null;
+      textures.add(texture);
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      if (!spare) {
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      }
+      const resource = {texture, width:atlas.width, height:atlas.height};
       try {
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, atlas);
       } catch {
-        return false;
+        release(resource);
+        return null;
       }
-      if (gl.getError() !== gl.NO_ERROR) return false;
-      atlasWidth = atlas.width;
-      atlasHeight = atlas.height;
-      return true;
+      if (gl.getError() !== gl.NO_ERROR) {
+        release(resource);
+        return null;
+      }
+      reserve(quads.length);
+      return resource;
     }
 
     let capacity = 0, vertices, offset = 0;
@@ -176,9 +195,8 @@
     }
 
     let logicalWidth = 0, logicalHeight = 0, pixelWidth = 0, pixelHeight = 0;
-    function draw(quads, width, height) {
-      if (closed || gl.isContextLost() || !atlasWidth || width <= 0 || height <= 0 ||
-          quads.length > maxQuads) return false;
+    function draw(atlas, quads, width, height) {
+      if (closed || gl.isContextLost() || !atlas?.texture || width <= 0 || height <= 0) return false;
       if (width !== logicalWidth || height !== logicalHeight) {
         logicalWidth = width;
         logicalHeight = height;
@@ -189,14 +207,14 @@
         pixelHeight = gl.drawingBufferHeight;
         gl.viewport(0, 0, pixelWidth, pixelHeight);
       }
+      gl.bindTexture(gl.TEXTURE_2D, atlas.texture);
       gl.clear(gl.COLOR_BUFFER_BIT);
-      reserve(quads.length);
       offset = 0;
       for (const quad of quads) {
         if (quad.opacity <= 0) continue;
         const {sprite, x, y, w, h, a, b, c, d} = quad;
-        const left = sprite.x / atlasWidth, right = (sprite.x + sprite.width) / atlasWidth;
-        const top = sprite.y / atlasHeight, bottom = (sprite.y + sprite.height) / atlasHeight;
+        const left = sprite.x / atlas.width, right = (sprite.x + sprite.width) / atlas.width;
+        const top = sprite.y / atlas.height, bottom = (sprite.y + sprite.height) / atlas.height;
         const sweepStart = sprite.sweepStart ?? 0;
         const sweepWidth = Math.max(.01, (sprite.sweepEnd ?? 1) - sweepStart);
         const sweepLeft = -sweepStart / sweepWidth, sweepRight = (1 - sweepStart) / sweepWidth;
@@ -213,7 +231,7 @@
       return true;
     }
 
-    return {upload, draw, close, maxTextureSize};
+    return {upload, release, draw, close, maxTextureSize};
   }
 
   root.SonicLyricGpu = Object.freeze({create});
