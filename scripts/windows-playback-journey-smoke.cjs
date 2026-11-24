@@ -123,7 +123,7 @@ async function verifyOnlineInPowerMode(page,wav) {
   await room.locator('[data-sl-qishui-track="'+tracks[0].mediaId+'"]').click();
   const waitPlaying=track=>page.waitForFunction(name=>SonicPlayback.snapshot().track?.name===name&&SonicPlayback.snapshot().playing,track.name);
   await waitPlaying(tracks[0]);
-  await room.locator('.lr-player-wrap [data-action="now-playing"]').click();
+  await page.waitForFunction(()=>document.querySelector('#listeningRoom').dataset.mode==='listen');
   await page.waitForFunction(text=>document.querySelector('[data-preview-line="0"]').textContent===text,ordinary);
   await page.evaluate(items=>SonicPlayback.playOnlineList(items,'窄窗在线测试',items[0].mediaId),tracks);
   await waitPlaying(tracks[0]);
@@ -255,17 +255,19 @@ async function verifyJourney(profile,fixtures,config) {
     await page.mouse.move(viewport.width*.48,viewport.height*.51);
     await page.mouse.wheel(0,650);
     await page.waitForFunction(()=>window.scrollY>100);
-    await room.getByRole('button',{name:'播放 '+testedTitle,exact:true}).click();
-    await page.waitForFunction(title=>SonicPlayback.snapshot().track?.name===title&&SonicPlayback.snapshot().playing&&SonicPlayback.position()>.1,testedTitle);
+    const result=room.getByRole('button',{name:'播放 '+testedTitle,exact:true});
+    await result.scrollIntoViewIfNeeded();
     const searchTop=await pageScroll(page);
     assert.ok(searchTop>100);
+    await result.click();
+    await page.waitForFunction(title=>SonicPlayback.snapshot().track?.name===title&&SonicPlayback.snapshot().playing&&
+      SonicPlayback.position()>.1&&document.querySelector('#listeningRoom').dataset.mode==='listen',testedTitle);
     await page.evaluate(()=>{
       window.journeyAudioStops=[];
       const audio=document.getElementById('audio');
       for(const event of ['pause','emptied','error'])audio.addEventListener(event,()=>window.journeyAudioStops.push(event));
     });
     const initial=await state(page);
-    await dock.locator('[data-action="now-playing"]').click();
     await searchButton.click();
     assert.equal(await search.inputValue(),'Windows Flow');
     assert.equal(await pageScroll(page),searchTop);

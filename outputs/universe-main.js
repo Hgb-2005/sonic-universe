@@ -2609,11 +2609,13 @@
     const recording=SonicOnlineMusic.normalizeTrack(track);
     if(!recording)return {status:'failed',message:'这条汽水歌曲结果无效，请重新搜索。'};
     const outcome=await playRecording(recording,{signal,singleQueue:false,preserveCurrent:true,holdOnFailure:true});
+    if(signal?.aborted)return {status:'cancelled'};
     if(['full','preview','cancelled'].includes(outcome.status))return {status:outcome.status};
     if(outcome.officialOnly){
       rememberOnlineAvailability(recording.mediaId,'unavailable');
       return {status:'unavailable',availability:'unavailable',message:'这首歌暂无法在应用内播放。'};
     }
+    rememberOnlineAvailability(recording.mediaId,'unknown');
     const message={unavailable:'暂时无法连接汽水音乐，请重试。',
       'auth-required':'这首歌需要登录汽水音乐。',failed:'这首歌未能开始播放，请重试。'}[outcome.status];
     return {status:outcome.status,message};
@@ -2622,6 +2624,24 @@
     onlineResultAvailability.delete(mediaId);
     if(onlineResultAvailability.size>=300)onlineResultAvailability.delete(onlineResultAvailability.keys().next().value);
     onlineResultAvailability.set(mediaId,availability);
+  }
+  async function checkQishuiSearchTrack(track,{signal}={}){
+    if(!onlineReady||!onlineClient||!onlineLoggedIn)return {message:'连接汽水音乐并登录后可检查音源。'};
+    const recording=SonicOnlineMusic.normalizeTrack(track);
+    if(!recording)return {message:'这条结果已失效，请重新搜索。'};
+    let availability;
+    try{
+      const data=await requestOnlineAudio(recording,{signal,retry:false});
+      availability=data.preview===true?'preview-source':'full-source';
+    }catch(error){
+      if(signal?.aborted)return {};
+      if(isOnlineAuthError(error))return {message:'汽水音乐登录已过期，请重新登录。'};
+      if(error?.status!==422&&error?.code!=='not-playable')
+        return {message:'暂时无法检查音源，可以再试一次。'};
+      availability='unavailable';
+    }
+    if(signal?.aborted)return {};
+    return {availability};
   }
   function nextSearchAction(index){
     const rows=$('onlineResults').querySelectorAll('.online-result');
@@ -3879,7 +3899,19 @@
     if(sessionQueue&&!preserveQueueIntent)sessionQueue.autoplay=false;
     generation++;if(mode==='demo'){offset=getPosition();stopDemo()}else audio.pause();playing=false;updatePlaying();updateTimeline();saveSession();
   }
-  function seekTo(position){if(clipLocked())return;if(externalStream||pendingFile||onlinePending||busy||trackLoading||sessionQueue?.recovery||standaloneRecovery?.id===activeId)return;if(deferredResume&&activeId===resumePoint?.id)return;const pos=clamp(position,0,localDuration());beatTracker.reset();memoryHold=false;beginSeekVisual(pos);if(mode==='demo'){offset=pos;if(playing)startDemoAt(pos>=duration?0:pos)}else{try{audio.currentTime=mode==='online'?pos+onlineMediaStart:pos}catch{}}updateTimeline();updatePlaying();saveSession()}
+  function seekTo(position){
+    if(!Number.isFinite(position)||clipLocked()||externalStream||pendingFile||onlinePending||busy||trackLoading||
+      sessionQueue?.recovery||standaloneRecovery?.id===activeId||deferredResume&&activeId===resumePoint?.id)return false;
+    const pos=clamp(position,0,localDuration());
+    if(mode!=='demo'){
+      try{audio.currentTime=mode==='online'?pos+onlineMediaStart:pos;}
+      catch{return false;}
+    }
+    beatTracker.reset();memoryHold=false;beginSeekVisual(pos);
+    if(mode==='demo'){offset=pos;if(playing)startDemoAt(pos>=duration?0:pos);}
+    updateTimeline();updatePlaying();saveSession();
+    return true;
+  }
   function handleEnded(){
     clearOnlineStall(false);
     if(externalStream)return;playing=false;offset=duration;
@@ -6191,7 +6223,7 @@
     toggle: () => {cancelOnlinePick();return play();}, previous: () => navigateTrack(-1), next: () => navigateTrack(1),
     select: id => {cancelOnlinePick();usePlaybackScope(playbackScope);return playScopedFrom(id);}, seek: position => seekTo(Number(position)),
     openDiscovery: root=>window.SonicMusicDiscovery.open(root,onlineClient,window.SonicPlayback),
-    searchQishui,playQishuiSearchTrack,saveQishuiSearchTrack,playOnlineList,playChartList,playRecording,refreshSyncedPlaylist:refreshQishuiMirror,
+    searchQishui,checkQishuiSearchTrack,playQishuiSearchTrack,saveQishuiSearchTrack,playOnlineList,playChartList,playRecording,refreshSyncedPlaylist:refreshQishuiMirror,
     retryQueue,retryPlayback,skipPlayback,
     selectQueueEntry: id => {cancelOnlinePick();return sessionQueue?playQueueFrom(id,{holdOnFailure:true}):playScopedFrom(id);},
     moveQueueEntry:moveSessionEntry,removeQueueEntry:removeSessionEntry,queueTrack:addSessionTrack,

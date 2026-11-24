@@ -256,7 +256,7 @@ async function verify(page,{electron=false}={}) {
   const ticketCount=network.tickets.length;
   await sharedSearch.fill(inlineQuery);
   assert.match(await room.locator('[data-sl-empty-text]').innerText(),/没有找到匹配的歌曲/);
-  await room.locator('[data-sl-search-source="qishui"]').click();
+  await room.getByRole('button',{name:'用当前关键词搜汽水',exact:true}).click();
   await room.locator('[data-sl-qishui-status]').filter({hasText:'超时'}).waitFor();
   await room.locator('[data-sl-qishui-retry]').click();
   const previewResult=room.locator('[data-sl-qishui-track="'+qishui[1].mediaId+'"]');
@@ -293,9 +293,20 @@ async function verify(page,{electron=false}={}) {
   assert.equal(beforePick.queueRevision,oldPlayback.queueRevision);
   assert.deepEqual(beforePick.queue.map(({id,entryId})=>({id,entryId})),oldPlayback.queue.map(({id,entryId})=>({id,entryId})));
   assert.equal(network.tickets.length,ticketCount);
+  const check=liveRow.getByRole('button',{name:/检查可播状态/});
+  await check.click();
+  await live.locator('[data-kind="full-source"]').getByText('已找到全曲音源',{exact:true}).waitFor();
+  assert.equal(await live.locator('[data-kind="direct"]').count(),0);
+  assert.equal((await state()).track.id,oldPlayback.track.id);
+  assert.deepEqual(network.tickets.slice(ticketCount),[inlineVersions[1].mediaId]);
+  assert.ok(!network.media.includes(inlineVersions[1].mediaId));
   await previewResult.click();
   await waitForTrack(qishui[1].name);
+  await page.waitForFunction(()=>document.querySelector('#listeningRoom').dataset.mode==='listen');
   assert.ok(network.media.includes(qishui[1].mediaId));
+  const returnToSearch=()=>room.getByRole('button',{name:'搜索音乐',exact:true}).click();
+  await returnToSearch();
+  assert.equal(await sharedSearch.inputValue(),inlineQuery);
   await page.evaluate(names=>{
     const library=SonicPlayback.library();
     const ids=names.map(name=>library.tracks.find(track=>track.name===name).id);
@@ -320,15 +331,24 @@ async function verify(page,{electron=false}={}) {
   network.failedTickets.clear();
   await playbackRetry.click();
   await waitForTrack(firstRecovery.name);
+  await page.waitForFunction(()=>document.querySelector('#listeningRoom').dataset.mode==='listen');
+  await returnToSearch();
   assert.match(await result(firstRecovery).innerText(),/可播全曲/);
 
+  const secondRow=result(secondRecovery).locator('..');
+  await secondRow.getByRole('button',{name:/检查可播状态/}).click();
+  await secondRow.locator('[data-kind="full-source"]').waitFor();
   network.failedMedia.add(secondRecovery.mediaId);
   await result(secondRecovery).click();
   await playbackRetry.waitFor();
+  assert.equal(await secondRow.locator('[data-kind="failed"]').textContent(),'播放失败');
+  assert.equal(await secondRow.locator('[data-kind="direct"], [data-kind="full-source"]').count(),0);
   assert.equal((await state()).track.name,firstRecovery.name);
   assert.equal((await state()).playing,true);
   await room.locator('[data-sl-qishui-skip-track]').click();
   await waitForTrack(thirdRecovery.name);
+  await page.waitForFunction(()=>document.querySelector('#listeningRoom').dataset.mode==='listen');
+  await returnToSearch();
 
   network.failedMedia.clear();
   const release=network.delayTicket(firstRecovery.mediaId);
@@ -340,6 +360,11 @@ async function verify(page,{electron=false}={}) {
     await waitForTrack(secondRecovery.name);
   }finally{release();}
   assert.equal((await state()).track.name,secondRecovery.name);
+  await page.waitForFunction(()=>document.querySelector('#listeningRoom').dataset.mode==='listen');
+  await returnToSearch();
+  assert.equal(await secondRow.locator('[data-kind="direct"]').textContent(),'可播全曲');
+  assert.equal(await result(firstRecovery).locator('[data-kind="direct"]').textContent(),'可播全曲');
+  assert.equal(await playbackRetry.isVisible(),false);
   assert.deepEqual(errors,[]);
   console.log('PASS legacy search still verifies public versions; inline Qishui results keep the active song until an explicit preview pick');
   console.log('PASS failed online tickets and corrupt media keep current playback, retry and skip work, and a later selection wins');
@@ -475,6 +500,8 @@ async function verifyDockSearchReturn(page) {
   await search.fill('Playlist Fixture');
   await room.getByRole('button',{name:'播放 '+editNames[14],exact:true}).click();
   await page.waitForFunction(name=>SonicPlayback.snapshot().track?.name===name&&SonicPlayback.snapshot().playing,editNames[14]);
+  await page.waitForFunction(()=>document.querySelector('#listeningRoom').dataset.mode==='listen');
+  await searchButton.click();
   const scroll=await page.evaluate(()=>{window.scrollTo({top:780,behavior:'instant'});return window.scrollY;});
   assert.ok(scroll>0);
   const queueButton=dock.getByRole('button',{name:'打开当前播放队列',exact:true});

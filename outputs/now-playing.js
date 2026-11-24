@@ -54,8 +54,13 @@
 
     function emptyMessage(state,nextLines) {
       if(nextLines.length)return '歌词即将开始';
-      if(state.lyricsInfo?.state==='loading')return '正在查找同步歌词…';
+      const status={
+        loading:'正在查找同步歌词…',unavailable:'暂时无法获取歌词',disabled:'此曲歌词已关闭',cleared:'此曲歌词已清除',
+      }[state.lyricsInfo?.state];
+      if(status)return status;
       if(state.external)return '正在联动外部声音';
+      if(state.track&&/纯音乐|纯伴奏|伴奏版|\binstrumental\b/i.test([state.track.name,state.track.album].join(' ')))
+        return '这版录音为纯音乐或伴奏，暂无同步歌词';
       return state.track?'此曲暂无同步歌词':'播放一首歌后显示歌词';
     }
 
@@ -115,7 +120,7 @@
       nextLines.forEach((line,index)=>{
         const row=document.createElement('button');row.type='button';row.dataset.fullLine=String(index);
         const time=document.createElement('span'),content=document.createElement('span'),text=document.createElement('span');
-        time.className='lr-full-time';time.textContent=formatTime(line.time);time.setAttribute('aria-hidden','true');
+        time.className='lr-full-time';time.textContent=formatTime(line.time);
         content.className='lr-full-content';
         text.className='lr-full-text';text.textContent=line.text;
         content.append(text);
@@ -324,7 +329,7 @@
     follow.addEventListener('click',()=>{resumeFollowing();centerLine(true);});
 
     return {
-      sync,showSeek,
+      sync,showSeek,followPlayback:resumeFollowing,
       setScrollMode(mode) {
         if(mode===scrollMode)return;
         scrollMode=mode;scroll.dataset.scrollEffect=mode;

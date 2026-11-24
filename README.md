@@ -1,8 +1,14 @@
 # 声波宇宙 · Sonic Universe
 
-[打开网页版](https://hgb-2005.github.io/sonic-universe/) · [Windows 预发行版 0.46.2-preview.17](https://github.com/Hgb-2005/sonic-universe/releases/tag/v0.46.2-preview.17) · [Windows 正式版 0.42.0](https://github.com/Hgb-2005/sonic-universe/releases/tag/v0.42.0)
+[打开网页版](https://hgb-2005.github.io/sonic-universe/) · [Windows 预发行版 0.46.2-preview.19](https://github.com/Hgb-2005/sonic-universe/releases/tag/v0.46.2-preview.19) · [Windows 正式版 0.42.0](https://github.com/Hgb-2005/sonic-universe/releases/tag/v0.42.0)
 
 声波宇宙是一款带逐字歌词、音乐可视化舞台和本地歌单的 Windows 音乐播放器，网页端也可以导入本地音乐体验。
+
+## 0.46.2-preview.19 · Windows 预发行版
+
+- 本机搜不到歌曲时，可以用同一个关键词搜索汽水音乐。点播成功后直接进入「正在播放」，返回搜索会恢复关键词和浏览位置。
+- 「查可播」显示找到的是全曲音源还是试听音源。点播失败会更新结果标签，保留上一首，并提供重试或试下一条结果。
+- 全文歌词的时标更清晰，点歌词或拖动进度后可以继续跟随播放。播放页显示专辑和来源，新封面加载完成后再换图，自动星空会随音乐强弱改变运动幅度。
 
 ## 0.46.2-preview.17 · Windows 预发行版
 

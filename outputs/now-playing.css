@@ -105,6 +105,17 @@
   overflow-wrap: anywhere;
 }
 #listeningRoom .lr-now-artist:empty { display: none; }
+#listeningRoom .lr-now-recording {
+  max-width: 100%;
+  margin: 0;
+  color: var(--lr-now-caption);
+  font-size: 12px;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#listeningRoom[data-listen-immersive=true] .lr-now-recording { display: none; }
 
 #listeningRoom .lr-now-content, #listeningRoom .lr-now-preview, #listeningRoom .lr-expanded-lyrics { min-width: 0; }
 #listeningRoom .lr-now-content {
@@ -289,10 +300,10 @@
 #listeningRoom .lr-full-lyrics > button {
   --lr-row-scale: .93;
   --lr-row-opacity: .68;
-  --lr-time-opacity: .43;
+  --lr-time-opacity: .78;
   --lr-translation-opacity: .74;
   display: grid;
-  grid-template-columns: 39px minmax(0, 1fr);
+  grid-template-columns: 42px minmax(0, 1fr);
   align-items: baseline;
   gap: 9px;
   padding: 12px 8px;
@@ -334,7 +345,7 @@
 #listeningRoom .lr-full-lyrics > button[aria-current=true] .lr-full-text {
   text-shadow: 0 2px 22px color-mix(in srgb, var(--lr-lyric-cover-tone) 18%, transparent);
 }
-#listeningRoom .lr-full-lyrics .lr-full-time { color: #c6bdcf; opacity: var(--lr-time-opacity); font: 10px/1.4 ui-monospace, monospace; }
+#listeningRoom .lr-full-lyrics .lr-full-time { color: #c6bdcf; opacity: var(--lr-time-opacity); font: 11px/1.4 ui-monospace, monospace; }
 #listeningRoom .lr-full-lyrics .lr-full-text { overflow-wrap: anywhere; font-size: clamp(17px, 2vw, 25px); font-weight: 650; line-height: 1.35; white-space: pre-wrap; }
 #listeningRoom .lr-full-lyrics .lr-full-content {
   display: flex;

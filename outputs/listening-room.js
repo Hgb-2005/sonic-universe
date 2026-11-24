@@ -73,6 +73,7 @@
           <button type="button" class="lr-now-cover" data-action="expand-lyrics" aria-label="打开歌词视图" aria-controls="lrLyricReading" aria-expanded="false"><span data-now-cover-placeholder>${icon('music')}</span><img data-now-cover decoding="async" alt="" hidden></button>
           <h1 class="lr-now-title" data-now-title>选择一首歌</h1>
           <p class="lr-now-artist" data-now-artist></p>
+          <p class="lr-now-recording" data-now-recording hidden></p>
         </div>
         <div class="lr-now-content">
         <section class="lr-seek-lyrics" data-seek-lyrics aria-label="进度预览" hidden>
@@ -327,7 +328,7 @@
   }
   const dockResize=new ResizeObserver(reserveDockSpace);
   dockResize.observe(playerDock);
-  const musicLibrary=window.SonicMusicLibrary.mount($('[data-music-library]'),{api,icon,formatTime:core.formatTime});
+  const musicLibrary=window.SonicMusicLibrary.mount($('[data-music-library]'),{api,icon,formatTime:core.formatTime,openNowPlaying:openSearchPlayback});
   const isLibraryMode=mode=>mode==='library'||mode==='search';
   const canvas=$('.lr-background'),context=canvas.getContext('2d');
   const backgroundPhoto=$('.lr-background-photo'),backgroundFade=$('.lr-background-transition');
@@ -382,7 +383,7 @@
   const demoCover = new URL('./assets/interstellar-drift-cover.webp',document.baseURI).href;
   let palette = [...(colors[preferences.color]||colors.lilac)], coverPalette = defaultArtworkPalette, coverRequest = 0, canvasWidth = 0, canvasHeight = 0;
   let coverTransition=null, artworkEntrance=null;
-  let skyTime=0, skyBreath=0;
+  let skyTime=0, skyBreath=0, skyDrive=0;
   let prismTime=0, prismBreath=0;
   let playbackBackdrop=null, playbackBackdropRequest=0, playbackBackdropTimer=0;
   let shownPhoto=null, paintedPlaybackBackdrop=null, playbackBackdropFade=null, playbackBackdropTime=0, playbackBackdropEnergy=0;
@@ -421,9 +422,9 @@
   }
   function seekLyrics(time) {
     const state=api.snapshot();
-    if(!matchesSeek(seekTarget(snapshot),state))return;
-    api.seek(time+state.position-state.lyricPosition);
-    updateUI(false,true);
+    const target=seekTarget(snapshot);
+    if(matchesSeek(target,state))return commitSeek({...target,position:time+state.position-state.lyricPosition});
+    return false;
   }
   function cancelSeek() {
     if(seekPointer)seekPointer.target=null;
@@ -442,10 +443,13 @@
     revealListeningControls();
   }
   function commitSeek(target) {
-    if(matchesSeek(target,api.snapshot()))api.seek(target.position);
-    updateUI(false,true);
+    const state=api.snapshot();
+    const accepted=matchesSeek(target,state)&&api.seek(target.position);
+    if(accepted&&!listenImmersive)nowPlaying.followPlayback();
+    updateUI(false,true,api.snapshot());
     revealListeningControls();
     wake();
+    return accepted;
   }
   function stepSeek(seconds) {
     if(seekPointer)return;
@@ -491,7 +495,7 @@
   } else if(preferences.mode==='visual') preferences.mode='work';
   const playbackNames = { sequence:'顺序播放', list:'列表循环', single:'单曲循环', shuffle:'随机播放' };
   const idleFields=['ready','busy','playing','demoOnly','importing','buffering','playbackInterrupted','external','externalPending','externalSignal','volume','duration','position','lyricPosition','lyricDuration','playbackMode'];
-  const trackFields=['id','name','artist','kind','cover','favorite'];
+  const trackFields=['id','name','artist','album','kind','cover','favorite'];
   const toast = $('[data-toast]');
   function notify(message, error = false, playNew = false) {
     clearTimeout(toastTimer);
@@ -664,6 +668,12 @@
     if(previous==='search'&&mode!==previous)searchScroll=window.scrollY;
     preferences.mode=mode;applyPreferences(true);
     if(mode!==previous&&mode!=='library')window.scrollTo({top:mode==='search'?searchScroll:0,behavior:'instant'});
+  }
+  function openSearchPlayback() {
+    lyricExpanded=false;
+    readingFullLyrics=false;
+    setMode('listen');
+    listenView.focus({preventScroll:true});
   }
   function setLyricExpanded(expanded, full=false) {
     const previousFullEntry=readingFullLyrics;
@@ -1001,11 +1011,15 @@
     const full=root.dataset.nowView==='full';
     const coverX=w*(narrow?.50:full?.19:.25), coverY=h*(narrow?(full?.19:.24):.43);
     if(moving){
-      skyTime=(skyTime+seconds)%(2*Math.PI*100);
+      const drive=Math.min(1,core.clamp(sound?.mid,0,1)*.45+core.clamp(sound?.presence,0,1)*.55)*response;
+      skyDrive=core.approach(skyDrive,drive,seconds,1.1);
+      skyTime=(skyTime+seconds*(.7+skyDrive*.8))%(2*Math.PI*100);
       skyBreath=core.approach(skyBreath,core.clamp(sound?.bass,0,1)*response*.038,seconds,.55);
     }
-    const driftX=w*.032*Math.sin(skyTime*.08);
-    const driftY=h*.025*Math.sin(skyTime*.06+.8);
+    const isLive=target===context&&!reducedMotion.matches;
+    const motion=isLive?skyDrive:0, time=isLive?skyTime:0;
+    const driftX=w*(.032+motion*.018)*Math.sin(time*.08);
+    const driftY=h*(.025+motion*.012)*Math.sin(time*.06+.8);
     const rgb=channels=>channels.map(Math.round).join(',');
     const light=rgb(artwork.primary), distant=rgb(artwork.secondary);
     const shade=rgb(artwork.base.map(channel=>channel*.36+3));
@@ -1034,18 +1048,18 @@
     cloud(w*.13-driftX,h*.91-driftY,w*.76,h*.37,-.37,distant,tint*.38);
     cloud(coverX+driftX,coverY+driftY,w*(narrow?.91:.58),h*.43,-.36,light,tint*.36);
     cloud(coverX-w*.08-driftX*.4,coverY+h*.18,w*.50,h*.23,-.51,light,tint*.16);
-    cloud(coverX+w*.03,coverY-h*.06,w*.34,h*.25,-.36,light,tint*.13+skyBreath);
+    cloud(coverX+w*.03,coverY-h*.06,w*.34,h*.25,-.36,light,tint*.13+(isLive?skyBreath:0));
     cloud(w*(narrow?.54:.72),h*(narrow?.64:.53),w*.56,h*.43,-.14,shade,.66);
 
-    const orbit=Math.max(w,h)*(narrow?.36:.37);
+    const orbit=Math.max(w,h)*(narrow?.36:.37)*(1+motion*.08);
     target.lineWidth=1;
     target.strokeStyle='rgba('+distant+','+tint*.15+')';
     target.beginPath();
-    target.ellipse(coverX,coverY+h*.16,orbit,orbit*.29,-.36,Math.PI*.12,Math.PI*1.14);
+    target.ellipse(coverX,coverY+h*.16,orbit,orbit*.29,-.36,Math.PI*.12,Math.PI*(1.14+motion*.16));
     target.stroke();
     for(const [index,star] of nowStars.entries()){
       const besideLyrics=narrow?star.y>.43:star.x>.47&&star.y>.19;
-      const opacity=(besideLyrics?.28:1)*(.065+tint*(index%13===0?.25:.14));
+      const opacity=(besideLyrics?.28:1)*(.065+tint*(index%13===0?.25+motion*.13:.14));
       target.fillStyle='rgba('+(index%4===0?distant:light)+','+opacity+')';
       target.beginPath();target.arc(star.x*w,star.y*h,star.radius,0,Math.PI*2);target.fill();
     }
@@ -1278,27 +1292,33 @@
       [$('[data-now-cover]'),$('[data-now-cover-placeholder]')],
       [$('[data-thumb]'),$('[data-thumb-placeholder]')],
     ];
-    for(const [image,placeholder] of artwork){
-      image.hidden=true;placeholder.hidden=false;
-      image.referrerPolicy='no-referrer';
-      if(source)image.src=source;
-      else image.removeAttribute('src');
+    if(!source){
+      for(const [image,placeholder] of artwork){image.hidden=true;placeholder.hidden=false;image.removeAttribute('src');}
+      transitionArtwork(defaultArtworkPalette);
+      return;
     }
-    if(!source){transitionArtwork(defaultArtworkPalette);return;}
-    const decoded=artwork.map(([image,placeholder],index)=>image.decode().then(()=>{
-      if(request===coverRequest){
-        image.hidden=false;placeholder.hidden=true;
-        // Reveal this source once, even if the background sampler has to retry.
-        if(index===0&&onScreen()&&playbackCoverVisible()&&!reducedMotion.matches){
-          artworkEntrance=image.animate?.([{opacity:0},{opacity:1}],{duration:180,easing:'ease-out'});
-        }
+    const cover=new Image();
+    cover.referrerPolicy='no-referrer';
+    cover.src=source;
+    const firstImage=cover.decode().then(()=>{
+      if(request!==coverRequest)return null;
+      for(const [image,placeholder] of artwork){
+        image.referrerPolicy='no-referrer';
+        image.src=source;image.hidden=false;placeholder.hidden=true;
       }
-      return image;
-    }));
-    const firstImage=Promise.any(decoded).catch(()=>null);
+      if(onScreen()&&playbackCoverVisible()&&!reducedMotion.matches){
+        artworkEntrance=artwork[0][0].animate?.([{opacity:.65},{opacity:1}],{duration:180,easing:'ease-out'});
+      }
+      return cover;
+    }).catch(()=>{
+      if(request===coverRequest){
+        for(const [image,placeholder] of artwork){image.hidden=true;placeholder.hidden=false;image.removeAttribute('src');}
+      }
+      return null;
+    });
     const cached=artworkPalettes.get(source);
     if(cached){
-      transitionArtwork(cached);
+      void firstImage.then(image=>{if(request===coverRequest)transitionArtwork(image?cached:defaultArtworkPalette);});
       return;
     }
     const sample=firstImage.then(image=>{
@@ -1864,6 +1884,14 @@
     const artist=snapshot.track?.artist||(snapshot.track?.kind==='demo'?'Interstellar Drift':'');
     if($('[data-artist]').textContent!==artist){
       $('[data-artist]').textContent=artist;$('[data-home-artist]').textContent=artist;$('[data-now-artist]').textContent=artist;
+    }
+    if(force||trackChanged||['name','artist','album','kind'].some(key=>snapshot.track?.[key]!==previous.track?.[key])){
+      const album=snapshot.track?.album, source={file:'本地音乐',online:'汽水音乐',demo:'内置示例'}[snapshot.track?.kind];
+      const recording=[album&&album!==title&&album!==artist?album:'',source].filter(Boolean).join(' · ');
+      const element=$('[data-now-recording]');
+      if(element.textContent!==recording)element.textContent=recording;
+      element.hidden=!recording;
+      element.title=recording;
     }
     const statusLabel=snapshot.external?'声音联动':snapshot.buffering?'正在缓冲':snapshot.playing?'正在播放':
       snapshot.playbackInterrupted||snapshot.queueRecovery?'等待重试':snapshot.track?'已暂停':'待播';

@@ -266,7 +266,11 @@
 }
 #listeningRoom .sl-qishui-badge[data-kind=preview] { border-color: #dfba8057; color: #e6cca6; }
 #listeningRoom .sl-qishui-badge[data-kind=direct] { border-color: #8bd5bc4f; color: #b3decf; }
+#listeningRoom .sl-qishui-badge:is([data-kind=failed], [data-kind=unavailable]) { border-color: #ef9a9860; color: #f2b6b5; }
 #listeningRoom .sl-qishui-actions { display: flex; align-self: center; align-items: center; gap: 5px; padding-inline-end: 8px; }
+#listeningRoom .sl-qishui-actions .sl-qishui-check { min-height: 34px; min-width: 68px; padding-inline: 6px; white-space: nowrap; }
+#listeningRoom .sl-empty-actions .sl-online-primary { background: var(--room-accent); color: #191621; font-weight: 650; }
+#listeningRoom .sl-empty-actions .sl-online-primary:hover { filter: brightness(1.12); }
 #listeningRoom .sl-qishui-row :is(.sl-qishui-play, .sl-qishui-actions button):focus-visible { outline-offset: -2px; }
 #listeningRoom .sl-qishui-actions .sl-qishui-favorite[aria-pressed=true] { color: var(--room-accent); }
 #listeningRoom .sl-qishui-favorite[aria-pressed=true] svg { fill: currentColor; }
@@ -329,11 +333,13 @@
   #listeningRoom .sl-qishui-play { grid-template-columns: 29px minmax(0, 1fr); grid-template-areas: "play copy" "badges badges"; column-gap: 6px; padding-inline: 7px; }
   #listeningRoom .sl-qishui-play > svg { width: 29px; height: 29px; padding: 8px; }
   #listeningRoom .sl-qishui-actions { align-self: start; gap: 2px; padding-block-start: 5px; padding-inline-end: 5px; }
+  #listeningRoom .sl-qishui-actions .sl-qishui-check { min-width: 60px; }
 }
 @media (pointer: coarse) {
   #listeningRoom .sl-track-actions button { min-width: 34px; }
   #listeningRoom :is(.sl-source-tab, .sl-qishui-results > .sl-button, .sl-qishui-recovery .sl-button) { min-height: 44px; }
   #listeningRoom .sl-qishui-action-dialog .sl-qishui-membership { min-height: 44px; }
+  #listeningRoom .sl-qishui-actions .sl-qishui-check { min-height: 44px; }
 }
 @media (max-width: 440px) and (pointer: coarse) {
   #listeningRoom .sl-library { --sl-table: minmax(0, 1fr) 39px 112px; }
