@@ -3446,6 +3446,8 @@
     tap.smoothingTimeConstant=.12;
     return tap;
   }
+  // 音量滑块走感知曲线；没有音频调音模块时退回线性，保证旧环境仍能出声。
+  function masterGainFor(value){return window.SonicAudioTuning?.perceptualGain?window.SonicAudioTuning.perceptualGain(value):value}
   function initAudio(){
     if(audioContext)return;
     const AC=window.AudioContext||window.webkitAudioContext;
@@ -3455,7 +3457,7 @@
     const tone=window.SonicEqualizer?.create(audioContext);
     if(tone){trackGain.connect(tone.input);tone.output.connect(analyser)}
     else trackGain.connect(analyser);
-    masterGain=audioContext.createGain();masterGain.gain.value=volume;analyser.connect(masterGain);masterGain.connect(audioContext.destination);
+    masterGain=audioContext.createGain();masterGain.gain.value=masterGainFor(volume);analyser.connect(masterGain);masterGain.connect(audioContext.destination);
     beatAnalyser=createBeatAnalysisTap(analyser);
     freqData=new Uint8Array(analyser.frequencyBinCount);timeData=new Uint8Array(analyser.fftSize);
     beatFrequencyData=new Uint8Array(beatAnalyser.frequencyBinCount);beatTimeData=new Float32Array(beatAnalyser.fftSize);
@@ -3471,7 +3473,7 @@
   }
   async function decodeDemo(track){
     const isSample=track.id===bundledSample.id;
-    const asset=isSample?'./assets/auld-lang-syne.ogg':'./interstellar-drift.mp3';
+    const asset=isSample?'./assets/auld-lang-syne.m4a':'./interstellar-drift.mp3';
     const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),8000);
     try{
       app.dataset.demoAudio='loading';
@@ -3763,9 +3765,10 @@
     if(mode==='online'){
       return clamp((Number.isFinite(audio.currentTime)?audio.currentTime:onlineMediaStart)-onlineMediaStart,0,localDuration());
     }
+    if(mode==='demo')return clamp(Number.isFinite(audio.currentTime)?audio.currentTime:offset,0,duration);
     return clamp(offset+(playing&&audioContext?(audioContext.currentTime-startedAt)*playbackRate:0),0,duration);
   }
-  function stopDemo(){if(demoSource){demoSource.onended=null;try{demoSource.stop()}catch{}demoSource.disconnect();demoSource=null}}
+  function stopDemo(){if(mode==='demo')audio.pause()}
   function updatePlaying(){
     app.classList.toggle('playing',playing||Boolean(externalStream));playBtn.setAttribute('aria-label',playing?'暂停音乐':'播放音乐');
     playBtn.innerHTML=playing?'<svg viewBox="0 0 24 24"><path d="M6 4h4v16H6Zm8 0h4v16h-4Z"/></svg>':'<svg class="play-icon" viewBox="0 0 24 24"><path d="m7 3 15 9-15 9Z"/></svg>';
@@ -3778,12 +3781,23 @@
     if(listeningPresentation)window.dispatchEvent(new Event('sonic:transport-state'));
   }
   function updateTimeline(){if(externalStream){const info=externalPlayback?.snapshot(), timed=Number.isFinite(info?.position);$('currentTime').textContent=timed?formatTime(info.position):'LIVE';$('duration').textContent=timed?formatTime(info.duration):'外部播放';seek.disabled=true;seek.max=timed?info.duration:96;seek.value=timed?info.position:0;setFill(seek);seek.setAttribute('aria-valuetext',timed?formatTime(info.position)+' / '+formatTime(info.duration):'外部声音实时联动，进度由原播放器控制');updateJourneyTimeline();return}const pos=getPosition(),length=localDuration();$('currentTime').textContent=formatTime(pos);$('duration').textContent=formatTime(length);seek.max=length||96;if(!seeking){seek.value=pos;setFill(seek)}seek.setAttribute('aria-valuetext',formatTime(pos)+' / '+formatTime(length));updateJourneyTimeline();if(mode==='online')updateOnlineLyricDisplay()}
-  function startDemoAt(position){stopDemo();offset=clamp(position,0,Math.max(0,duration-.001));demoSource=audioContext.createBufferSource();demoSource.buffer=demoBuffers.get(activeId);demoSource.playbackRate.value=playbackRate;demoSource.connect(trackGain);demoSource.connect(beatAnalyser);startedAt=audioContext.currentTime;demoSource.start(0,offset);playing=true;demoSource.onended=handleEnded;updatePlaying()}
+  // 内置示例也走 <audio>：播放速度天然保调，也不必把整首解码进内存。
+  function demoSrcFor(track){return track?.id===bundledSample.id?'./assets/auld-lang-syne.m4a':'./interstellar-drift.mp3'}
+  async function startDemoAt(position){
+    const asset=demoSrcFor(currentTrack()),url=await resolveSharedAsset(asset);
+    const absolute=new URL(url,location.href).href;
+    // 必须和音频元素当前真实地址比：从本地文件切回同一首示例时，dataset 里的旧值不能作数。
+    if(audio.src!==absolute){audio.dataset.demoAsset=asset;audio.src=url;audio.load()}
+    offset=clamp(position,0,Math.max(0,duration-.001));
+    audio.playbackRate=playbackRate;audio.defaultPlaybackRate=playbackRate;
+    if(Number.isFinite(offset)&&Math.abs(audio.currentTime-offset)>.2)audio.currentTime=offset;
+    await audio.play();
+    app.dataset.demoAudio='asset';playing=true;updatePlaying();
+  }
   function setPlaybackRate(value){
     if(externalStream||instrumentOpen||clipLocked()||![.75,1,1.25,1.5,2].includes(value))return false;
-    const position=getLocalPosition();playbackRate=value;
+    playbackRate=value;
     audio.defaultPlaybackRate=value;audio.playbackRate=value;
-    if(playing&&mode==='demo')startDemoAt(position);
     beatTracker.reset();window.dispatchEvent(new Event('sonic:transport-state'));return true;
   }
   function setSleepTimer(minutes){
@@ -3829,12 +3843,9 @@
     try{
       initAudio();await audioContext.resume();if(token!==generation)return;fadeLocalIn();
       if(mode==='demo'){
-        if(!demoBuffers.has(activeId)){
-          busy=true;playBtn.disabled=true;$('orbitHint').textContent='正在准备示例音乐…';
-          try{await buildDemo(currentTrack())}finally{busy=false;renderActiveTrack()}
-        }
+        if(offset>=duration-.05)offset=0;
+        await startDemoAt(offset);
         if(token!==generation)return;
-        if(offset>=duration-.05)offset=0;startDemoAt(offset);
       }else{
         if(getLocalPosition()>=localDuration()-.05)audio.currentTime=mode==='online'?onlineMediaStart:0;
         if(queueSignal||mode==='online')await startQueuedAudio(queueSignal||loadAbort?.signal);else await audio.play();
@@ -3908,7 +3919,7 @@
       catch{return false;}
     }
     beatTracker.reset();memoryHold=false;beginSeekVisual(pos);
-    if(mode==='demo'){offset=pos;if(playing)startDemoAt(pos>=duration?0:pos);}
+    if(mode==='demo'){offset=pos;audio.currentTime=pos>=duration?0:pos;}
     updateTimeline();updatePlaying();saveSession();
     return true;
   }
@@ -4022,8 +4033,9 @@
   seek.addEventListener('input',()=>{seeking=true;setFill(seek);$('currentTime').textContent=formatTime(Number(seek.value))});
   seek.addEventListener('change',()=>{const pos=Number(seek.value);seeking=false;seekTo(pos)});
   function updateVolume(){
-    if(masterGain)masterGain.gain.setTargetAtTime(volume,audioContext.currentTime,.025);
-    $('volume').value=Math.round(volume*100);$('volume').setAttribute('aria-valuetext',Math.round(volume*100)+'%');setFill($('volume'));
+    if(masterGain)masterGain.gain.setTargetAtTime(masterGainFor(volume),audioContext.currentTime,.025);
+    const db=window.SonicAudioTuning?.formatDb?window.SonicAudioTuning.formatDb(window.SonicAudioTuning.dbOf(masterGainFor(volume))):'';
+    $('volume').value=Math.round(volume*100);$('volume').setAttribute('aria-valuetext',Math.round(volume*100)+'%'+(db?' · '+db:''));setFill($('volume'));
     $('muteBtn').setAttribute('aria-label',volume===0?'恢复音量':'静音');$('muteBtn').setAttribute('aria-pressed',String(volume===0));
     $('muteBtn').innerHTML=volume===0?'<svg viewBox="0 0 24 24"><path d="m11 4-6 5H2v6h3l6 5Zm5 5 6 6m0-6-6 6"/></svg>':'<svg viewBox="0 0 24 24"><path d="m11 4-6 5H2v6h3l6 5Zm4 4a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg>';
   }
