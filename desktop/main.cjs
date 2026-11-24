@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 const { app, BrowserWindow, Menu, Tray, nativeImage, ipcMain, shell, screen, powerMonitor, dialog, net, protocol } = require('electron');
 const path = require('node:path');
 const { createAppServer } = require('../companion/server.cjs');
@@ -173,7 +173,7 @@ function createMini() {
   if(quitting)return;
   if(mini&&!mini.isDestroyed()){mini.show();mini.focus();return;}
   const bounds=screen.getPrimaryDisplay().workArea;
-  const candidate=new BrowserWindow({width:370,height:148,minWidth:330,minHeight:148,maxHeight:148,x:bounds.x+bounds.width-394,y:bounds.y+bounds.height-172,title:'声波宇宙 · 迷你播放器',frame:false,resizable:true,alwaysOnTop:true,skipTaskbar:true,backgroundColor:'#151e2d',show:false,
+  const candidate=new BrowserWindow({width:370,height:148,minWidth:330,minHeight:148,maxHeight:148,x:bounds.x+bounds.width-394,y:bounds.y+bounds.height-172,title:'声波宇宙 · 迷你播放器',frame:false,resizable:false,alwaysOnTop:true,skipTaskbar:true,backgroundColor:'#151e2d',show:false,
     webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true}});
   mini=candidate;
   candidate.webContents.setWindowOpenHandler(()=>({action:'deny'}));

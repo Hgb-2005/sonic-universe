@@ -1347,8 +1347,19 @@
     }else if(root.hasAttribute('data-playback-tone'))delete root.dataset.playbackTone;
     root.toggleAttribute('data-playback-tone-transition',crossingTones);
   }
+  // 频谱画布按 CSS 尺寸 × DPR 重设缓冲区，避免 480×58 被拉伸成 624×34 后的模糊。
+  function sizeSpectrum(){
+    if(!spectrum)return;
+    const dpr=Math.min(2.5,window.devicePixelRatio||1);
+    const cssWidth=spectrum.clientWidth||480, cssHeight=spectrum.clientHeight||34;
+    const width=Math.max(1,Math.round(cssWidth*dpr)), height=Math.max(1,Math.round(cssHeight*dpr));
+    if(spectrum.width!==width||spectrum.height!==height){
+      spectrum.width=width;spectrum.height=height;lastSpectrumKey='';
+    }
+  }
   function drawSpectrum() {
     if(!spectrumContext||root.dataset.mode!=='work')return;
+    sizeSpectrum();
     api.readSpectrum(spectrumBands);
     const {width,height}=spectrum,step=width/spectrumBands.length;
     const levels=spectrumBands.map(value=>Math.round(Math.sqrt(value)*(height-7)));
