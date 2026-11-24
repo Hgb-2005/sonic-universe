@@ -71,6 +71,7 @@
                                             "zh-TW",
                                             "en-US"
                                         ],
-                  "compression":  "maximum"
+                  "compression":  "maximum",
+                  "afterPack":  "build/afterPack.cjs"
               }
 }
