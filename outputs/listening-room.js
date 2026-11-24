@@ -395,7 +395,7 @@
   }):null;
   const nowPlaying=window.SonicNowPlaying.mount(root,seekLyrics);
   let snapshot = api.snapshot(), legacy = false, occluded = false;
-  let timer = 0, lyricFrameId=0, lastFrame = 0, lastPaint=0, lastUI = 0, renderedFrames = 0;
+  let timer = 0, rafTick=0, frameDue=0, lyricFrameId=0, lastFrame = 0, lastPaint=0, lastUI = 0, renderedFrames = 0;
   let coverMotion, lyricViewMotion;
   let backgroundDirty=true, lastPublishedState=[];
   const colors = { amber:[229,196,131], ocean:[149,188,209], lilac:[196,176,249] };
@@ -489,6 +489,16 @@
   let renderedLyrics=emptyLyrics, lyricTrack, lyricIndex=-2, lastLyricPosition=0;
   let renderedLyricStyle, flyFrom=-Infinity, flyLineTransition=null;
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  // 插电就放开帧率，电池上回到省电档；拿不到电池信息时按插电处理（桌面主机居多）。
+  let onBattery = false;
+  if (navigator.getBattery) {
+    navigator.getBattery().then(battery => {
+      const sync = () => { onBattery = !battery.charging && !(battery.level >= .995); };
+      battery.addEventListener?.('chargingchange', sync);
+      battery.addEventListener?.('levelchange', sync);
+      sync();
+    }).catch(() => {});
+  }
   const backgroundNames = { geometry:'几何微光', mist:'流动光雾', plain:'纯净底色', universe:'星空' };
   const sceneDialog=$('[data-scene-dialog]'), sceneGrid=$('[data-scene-grid]');
   const atmosphere=$('[data-settings]');
@@ -2099,9 +2109,23 @@
     lastPublishedState=values;
     desktop.publish({track,playing,external:state.external,position:state.position,duration:state.duration,lyric:text,desktopLyric,nextLyric,previousLyric,translation});
   }
-  function queueTick(delay) {
-    clearTimeout(timer);
-    timer=setTimeout(tick,delay);
+  // 30 帧以上用 requestAnimationFrame 对齐屏幕刷新：setTimeout 的 15.6ms 粒度会把 60 帧拖成 40 帧。
+  function queueTick(fps) {
+    clearTimeout(timer); timer=0;
+    if(rafTick){cancelAnimationFrame(rafTick);rafTick=0;}
+    if(!fps){timer=setTimeout(tick,240);return;}
+    if(fps>=24&&!document.hidden){
+      frameDue=performance.now()+1000/fps;
+      const wait=now=>{
+        rafTick=0;
+        if(!onScreen())return;
+        if(now+0.5<frameDue){rafTick=requestAnimationFrame(wait);return;}
+        tick();
+      };
+      rafTick=requestAnimationFrame(wait);
+      return;
+    }
+    timer=setTimeout(tick,Math.max(0,1000/fps));
   }
   function onScreen() { return !legacy&&!document.hidden&&!occluded; }
   function lyricPosition(position=api.position()) {
@@ -2138,7 +2162,7 @@
   }
   function wake() {
     lastUI=-Infinity;
-    if(onScreen())queueTick(0);
+    if(onScreen()){clearTimeout(timer);timer=setTimeout(tick,0);}
   }
   function renderBeatClock(beat,active,reduced) {
     const ready=preferences.beatClock&&beat?.locked;
@@ -2193,7 +2217,7 @@
     const stageBeat=active&&mode==='visual'&&preferences.beatClock;
     const followLyrics=mode==='listen'&&lyricsPlaying()&&snapshot.lyrics.length>0;
     const artworkMoving=Boolean(coverTransition||playbackBackdropFade);
-    const fps=core.frameRate({active:artworkMoving||active&&(animate||showSpectrum||snapshot.external||followLyrics||coverBeat||stageBeat||tideMotion),reduced,mode,energySaver:preferences.energySaver});
+    const fps=core.frameRate({active:artworkMoving||active&&(animate||showSpectrum||snapshot.external||followLyrics||coverBeat||stageBeat||tideMotion),reduced,mode,energySaver:preferences.energySaver,onBattery});
     const wasActive=lastFrame>0;
     const seconds=wasActive?Math.min(.1,(now-lastFrame)/1000):1/(fps||20);
     lastFrame=fps?now:0;
@@ -2210,7 +2234,8 @@
     const pulse=coverBeat&&age<.37?beat.strength*(1-Math.exp(-age*70))*Math.exp(-age*11):0;
     const pulseScale=1+Math.round(pulse*preferences.response*.91)/1000;
     if(pulseScale!==coverScale){coverScale=pulseScale;root.style.setProperty('--lr-cover-scale',String(coverScale));}
-    const sceneInterval=prism||picked?(preferences.energySaver?64:42):lyricEffects?(preferences.energySaver?83:56):mode==='listen'?(preferences.energySaver?56:40):0;
+    // 背景重绘跟着目标帧率走；留 1ms 余量，避免 16.6ms 的刷新间隔被 16.67ms 的门槛判掉一帧。
+    const sceneInterval=fps?Math.max(8,Math.round(1000/fps)-1):240;
     const redraw=Boolean(context)&&(backgroundDirty||artworkMoving||reactive&&!active&&wasActive||animate&&now-lastPaint>=sceneInterval);
     if(redraw){paint(now,lastPaint?Math.min(.12,(now-lastPaint)/1000):seconds,sound,animate);lastPaint=now;renderedFrames++;}
     if(showSpectrum&&(active||backgroundDirty||wasActive))drawSpectrum();
@@ -2220,7 +2245,7 @@
     const cost=performance.now()-now,limit=String(fps);
     if(root.dataset.fpsLimit!==limit)root.dataset.fpsLimit=limit;
     if(fps||redraw)root.dataset.frameCost=cost.toFixed(2);
-    if(!timer)queueTick(Math.max(0,(fps?1000/fps:240)-cost));
+    if(!timer&&!rafTick)queueTick(fps);
   }
   function schedule() {
     clearTimeout(timer);timer=0;

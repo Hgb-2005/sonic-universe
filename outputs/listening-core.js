@@ -40,10 +40,13 @@
     const end = line ? Math.max(line.time + .05, lines[index + 1]?.time ?? (Number.isFinite(duration) && duration > line.time ? duration : line.time + 6)) : 0;
     return { index, line, end };
   }
-  function frameRate({ hidden = false, occluded = false, active = true, reduced = false, mode = 'work', energySaver = true } = {}) {
+  // 帧率策略：省电优先仍然最省；关掉省电后按供电状态放开（插电 60，电池 30）。
+  // 减少动态效果只留 10 帧，够看清歌词变化又不晕。
+  function frameRate({ hidden = false, occluded = false, active = true, reduced = false, mode = 'work', energySaver = true, onBattery = false } = {}) {
     if (hidden || occluded || !active) return 0;
-    if (reduced) return 8;
-    return mode === 'work' ? (energySaver ? 20 : 30) : (energySaver ? 30 : 45);
+    if (reduced) return 10;
+    const ceiling = mode === 'work' ? (onBattery ? 24 : 40) : (onBattery ? 30 : 60);
+    return energySaver ? Math.min(ceiling, mode === 'work' ? 20 : 30) : ceiling;
   }
   function playbackRenderScale(width,height,dpr,{energySaver,photo=false}={}) {
     const limit=energySaver?(photo?1.15:.8):(photo?1.6:2);

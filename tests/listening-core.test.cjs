@@ -56,12 +56,17 @@ test('lyric lookup handles lead-in, exact boundaries, seeks and the final line',
   assert.equal(core.lyricAt([], 1, 20).line, null);
 });
 
-test('hidden and occluded windows stop rendering, and work mode uses fewer frames', () => {
+test('hidden and occluded windows stop rendering, and power state sets the ceiling', () => {
   assert.equal(core.frameRate({ hidden: true }), 0);
   assert.equal(core.frameRate({ occluded: true }), 0);
   assert.equal(core.frameRate({ active: false }), 0);
-  assert.equal(core.frameRate({ reduced: true }), 8);
+  assert.equal(core.frameRate({ reduced: true }), 10);
   assert.ok(core.frameRate({ mode: 'work' }) < core.frameRate({ mode: 'listen' }));
+  assert.equal(core.frameRate({ mode: 'work', energySaver: false, onBattery: true }), 24);
+  assert.equal(core.frameRate({ mode: 'work', energySaver: false, onBattery: false }), 40);
+  assert.equal(core.frameRate({ mode: 'listen', energySaver: false, onBattery: false }), 60);
+  assert.equal(core.frameRate({ mode: 'listen', energySaver: false, onBattery: true }), 30);
+  assert.equal(core.frameRate({ mode: 'listen', energySaver: true, onBattery: false }), 30, 'the saver still wins while it is on');
 });
 
 test('smoothing is independent of drawing frequency', () => {
