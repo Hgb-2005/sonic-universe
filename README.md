@@ -1,6 +1,20 @@
-# 声波宇宙 · Sonic Universe
+﻿# 声波宇宙 · Sonic Universe
 
-[打开网页版](https://hgb-2005.github.io/sonic-universe/) · [Windows 预发行版 0.46.2-preview.20](https://github.com/Hgb-2005/sonic-universe/releases/tag/v0.46.2-preview.20) · [Windows 正式版 0.42.0](https://github.com/Hgb-2005/sonic-universe/releases/tag/v0.42.0)
+## 0.47.0 · 听感、歌词与工程地基
+
+- 内置示例改走 media element：倍速不再变调，长音频不必整首解码进内存。
+- 示例音频由 OGG 转 M4A：Chromium 对这类 Ogg 只认 37.3 秒，会截掉结尾 5 秒。
+- 音量滑块改感知曲线，无障碍标签补上 dB；新增响度归一化，按峰值余量封顶不削波。
+- 帧率按供电状态放开：插电工作 40 / 正在播放 60，电池 24 / 30，减少动效 10；实测正在播放 12.7 → 48 帧。
+- 歌词时间轴固定为词对象，重复字与标点在翻译合并后不再错位。
+- 新增副歌识别与片头署名处理：副歌动效加强，前奏读不完的署名整组隐藏。
+- 纯音乐应用歌词样式不再跳空白舞台，只保存并提示。
+- 18 种动效标注轻/中/强；歌词绘制按目标帧率节流，从 230 次/秒降到 30 次/秒。
+- 频谱画布按 DPR 一比一绘制；迷你播放器锁定尺寸。
+- 新增本机只读歌词接口 `GET http://127.0.0.1:17865/api/lyric`；示例音频可用 `sonic-asset-base` 指向 CDN。
+
+自动测试 181 项。
+[打开网页版](https://hgb-2005.github.io/sonic-universe/) · [Windows 版 0.47.0](https://github.com/Hgb-2005/sonic-universe/releases) · [Windows 正式版 0.42.0](https://github.com/Hgb-2005/sonic-universe/releases/tag/v0.42.0)
 
 声波宇宙是一款带逐字歌词、音乐可视化舞台和本地歌单的 Windows 音乐播放器，网页端也可以导入本地音乐体验。
 
