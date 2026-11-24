@@ -400,3 +400,7 @@ localStorage.setItem('sonic-asset-base', 'https://cdn.example.com/sonic-assets/'
 
 之后示例音频从该地址读取（`assets/auld-lang-syne.m4a`、`interstellar-drift.mp3`），清空该键即回到本地。
 视频预览与背景图仍按原路径加载。
+
+### 可选：单文件打包
+
+网页端想减少请求数时，可执行 `node scripts/bundle-assets.cjs`，它会把 `index.html` 里按顺序引用的 30 个脚本合并成 `outputs/bundle.js`（约 1 MB），并打印版本号。桌面版走本机 HTTP，保持分文件更便于调试，因此默认不启用。

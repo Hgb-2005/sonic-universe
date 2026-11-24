@@ -13,7 +13,8 @@
                     "predesktop:pack":  "node scripts/stamp-assets.cjs \u0026\u0026 node scripts/build-now-playing.cjs",
                     "predesktop:build":  "node scripts/check-release.cjs \u0026\u0026 node scripts/stamp-assets.cjs \u0026\u0026 node scripts/build-now-playing.cjs",
                     "desktop:build":  "electron-builder --win nsis --x64",
-                    "check:release":  "node scripts/check-release.cjs"
+                    "check:release":  "node scripts/check-release.cjs",
+                    "bundle:assets":  "node scripts/bundle-assets.cjs"
                 },
     "engines":  {
                     "node":  "\u003e=24"
