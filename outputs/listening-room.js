@@ -14,6 +14,7 @@
   const effectShapes='<span class="lr-fx-shapes" aria-hidden="true"><i></i><i></i><i></i></span>';
   const icons = {
     library:'<path d="M4 4h5v16H4Zm8 0v16m4-15 4 14"/>',
+    muted:'<path d="M11 4 5 9H2v6h3l6 5Zm5 5 6 6m0-6-6 6"/>',
     settings:'<path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/>',
     search:'<circle cx="10.5" cy="10.5" r="5.5"/><path d="m15 15 5 5"/>',
     expand:'<path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/>',
@@ -35,34 +36,36 @@
     arrow:'<path d="M5 12h14m-6-6 6 6-6 6"/>', folder:'<path d="M3 7a2 2 0 0 1 2-2h4l3 3h7a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/>',
   };
   const icon = name => '<svg viewBox="0 0 24 24" aria-hidden="true">' + icons[name] + '</svg>';
+  const lyricStyleNames={list:'列表排版',stage:'逐行舞台',fly:'单句飞入'};
+  const tideHorizon='<div class="lr-tide-horizon"><i></i><i></i><i></i></div>';
   const root = document.createElement('div'); root.id = 'listeningRoom';
   root.innerHTML = `
     <div class="lr-background-photo" aria-hidden="true"></div>
     <canvas class="lr-background" aria-hidden="true"></canvas>
     <div class="lr-background-transition" aria-hidden="true" hidden></div>
     <div class="lr-lyric-atmosphere" aria-hidden="true"></div>
+    <div class="lr-tide-atmosphere" data-tide-atmosphere aria-hidden="true" hidden>
+      ${tideHorizon}
+      <div class="lr-tide-ripple"></div><div class="lr-tide-ripple"></div>
+    </div>
     <div class="lr-mod-decoration" data-mod-decoration aria-hidden="true" hidden></div>
     <div class="lr-titlebar" data-desktop-only hidden aria-hidden="true"></div>
     <button type="button" class="lr-immersion-exit" data-action="exit-immersion" aria-keyshortcuts="Escape" hidden>${icon('close')}退出沉浸</button>
-    <button type="button" class="lr-immersion-atmosphere lr-icon" data-action="settings" aria-label="调整沉浸氛围" title="调整沉浸氛围" hidden>${icon('settings')}</button>
+    <button type="button" class="lr-immersion-atmosphere lr-icon" data-action="settings" aria-label="背景与播放画面" title="背景与播放画面" hidden>${icon('settings')}</button>
     <header class="lr-header">
       <button type="button" class="lr-brand" data-action="home" aria-label="声波宇宙首页"><img src="./assets/sonic-mark.svg" alt=""><span><span class="lr-brand-name">声波宇宙</span><small class="lr-brand-sub">SONIC UNIVERSE</small></span></button>
       <nav class="lr-tabs" aria-label="页面导航"><button class="lr-tab" data-room-mode="work" aria-pressed="true">${icon('headphones')}工作陪伴</button><button class="lr-tab" data-room-mode="listen" aria-pressed="false">${icon('music')}正在播放</button><button class="lr-tab" data-room-mode="visual" aria-pressed="false" ${scenes?'':'hidden'}>${icon('scene')}视觉舞台</button><button class="lr-tab" data-room-mode="library" aria-pressed="false">${icon('library')}音乐库</button></nav>
-      <div class="lr-header-actions"><button class="lr-text-button" data-action="discovery" aria-label="音乐发现" title="音乐发现">${icon('music')}<span>发现</span></button><button class="lr-text-button" data-action="search" aria-label="搜索音乐" title="搜索音乐" aria-pressed="false">${icon('search')}<span>搜索</span></button><button class="lr-icon" data-action="external" data-external-header aria-label="管理外部声音联动" title="管理外部声音联动" hidden>${icon('sound')}</button><button class="lr-icon" data-action="settings" aria-label="调整氛围" title="调整氛围">${icon('settings')}</button><button class="lr-icon" data-action="fullscreen" aria-label="全屏欣赏">${icon('expand')}</button></div>
+      <div class="lr-header-actions"><button class="lr-text-button" data-action="discovery" aria-label="音乐发现" title="音乐发现">${icon('music')}<span>发现</span></button><button class="lr-text-button" data-action="search" aria-label="搜索音乐" title="搜索音乐" aria-pressed="false">${icon('search')}<span>搜索</span></button><button class="lr-icon" data-action="external" data-external-header aria-label="管理外部声音联动" title="管理外部声音联动" hidden>${icon('sound')}</button><button class="lr-text-button" data-action="settings" aria-label="工作陪伴画面" title="工作陪伴画面">${icon('settings')}<span data-settings-label>画面</span></button><button class="lr-icon" data-action="fullscreen" aria-label="全屏欣赏">${icon('expand')}</button></div>
     </header>
     <main class="lr-stage">
       <span class="lr-live" data-live role="status" hidden></span>
       <section class="sl-library" data-music-library aria-label="本机音乐库" hidden></section>
       <button type="button" class="lr-beat-clock" data-action="beat-clock" aria-label="视觉舞台节拍联动" aria-pressed="true" title="根据音频实时估算速度。四拍分组仅作参考。" hidden>
-        <span class="lr-beat-clock-steps" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span data-beat-status>等待音乐</span>
+        <span class="lr-beat-clock-steps" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span data-beat-status>未播放歌曲</span>
       </button>
       <section class="lr-visual-view" data-visual-view hidden aria-label="视觉舞台">
-        <div class="lr-visual-caption"><p data-visual-mode>自动随曲</p><h1 data-visual-title></h1></div>
-        <div class="lr-view-links" role="group" aria-label="视觉舞台操作">
-          <button type="button" class="lr-scene-open" data-action="now-playing">正在播放</button>
-          <button type="button" class="lr-scene-open" data-action="expand-lyrics" aria-controls="lrLyricReading" aria-expanded="false">${icon('lyrics')}同步歌词</button>
-          <button type="button" class="lr-scene-open" data-action="scene-gallery">${icon('scene')}选择场景</button>
-        </div>
+        <div class="lr-visual-caption"><button type="button" class="lr-scene-open" data-action="scene-gallery" aria-haspopup="dialog"><span data-visual-title>选择场景</span><span aria-hidden="true">▾</span></button><p data-visual-mode>自动随曲</p></div>
+        <button type="button" class="lr-scene-open" data-action="full-lyrics" aria-controls="lrLyricReading">${icon('lyrics')}查看歌词</button>
       </section>
       <section class="lr-listen-view" id="lrListenView" data-listen hidden aria-label="正在播放" tabindex="-1">
         <div class="lr-now-composition">
@@ -86,8 +89,9 @@
           <div class="lr-now-actions">
             <div class="lr-view-links" role="group" aria-label="切换播放视图">
               <button type="button" class="lr-view-link lr-view-link-primary" data-now-lyrics data-action="full-lyrics" aria-controls="lrLyricReading" aria-expanded="false">${icon('lyrics')}全文歌词</button>
+              <button type="button" class="lr-view-link lr-view-link-primary" data-import-current-lyrics data-action="import-current-lyrics" hidden>${icon('upload')}导入歌词</button>
               <button type="button" class="lr-view-link lr-immersion-entry" data-action="enter-immersion" aria-controls="lrListenView">${icon('expand')}沉浸播放</button>
-              <button type="button" class="lr-view-link" data-action="visual-stage" ${scenes?'':'hidden'}>${icon('scene')}视觉舞台</button>
+              <button type="button" class="lr-view-link" data-action="lyric-effects" aria-haspopup="dialog">歌词样式</button>
             </div>
             <p class="lr-lyric-source" data-lyric-source-info role="status" hidden></p>
             <button type="button" class="lr-view-link" data-action="retry-lyrics" hidden>重新获取歌词</button>
@@ -103,28 +107,32 @@
         <div class="lr-full-tools" data-lyric-full-tools hidden>
           <h2 id="lrFullLyricsTitle">全文歌词</h2>
           <div class="lr-full-actions">
-            <label class="lr-scroll-choice"><span>滚动效果</span><select class="lr-choice" data-lyric-scroll aria-label="滚动效果">
+            <label class="lr-scroll-choice"><span>全文滚动</span><select class="lr-choice" data-lyric-scroll aria-label="全文滚动">
               <option value="smooth">顺滑滚动</option><option value="track">聚焦轨道</option><option value="rise">上浮</option>
             </select></label>
+            <button type="button" class="lr-choice" data-action="lyric-effects" aria-haspopup="dialog">歌词样式 · 全文</button>
             <button type="button" class="lr-choice" data-lyric-follow hidden>回到当前句</button>
             <button type="button" class="lr-choice lr-immersion-entry" data-action="enter-immersion" aria-controls="lrListenView">${icon('expand')}沉浸播放</button>
           </div>
         </div>
         <div class="lr-full-lyrics" data-full-lyrics role="region" aria-labelledby="lrFullLyricsTitle" tabindex="0" hidden></div>
+        </div>
         <div class="lr-lyric-tools">
-          <div class="lr-view-links" role="group" aria-label="切换播放视图"><button type="button" class="lr-lyrics-entry" data-action="collapse-lyrics">返回正在播放</button><button type="button" class="lr-lyrics-entry" data-action="full-lyrics" data-stage-full-lyrics hidden>全文歌词</button><button type="button" class="lr-lyrics-entry" data-action="visual-stage" ${scenes?'':'hidden'}>视觉舞台</button></div>
+          <div class="lr-view-links" data-expanded-actions role="group" aria-label="切换播放视图" hidden><button type="button" class="lr-lyrics-entry" data-action="collapse-lyrics">返回正在播放</button><button type="button" class="lr-lyrics-entry" data-action="full-lyrics" data-stage-full-lyrics hidden>全文歌词</button></div>
+          <button type="button" class="lr-lyrics-entry" data-action="lyric-effects" data-stage-style aria-haspopup="dialog" hidden>歌词样式 · 全文</button>
           <details class="lr-more-lyrics">
             <summary>更多</summary>
             <div class="lr-lyric-options">
-              <div class="lr-lyric-styles" role="group" aria-label="歌词样式"><button data-lyric-style="list" aria-pressed="true">全文</button><button data-lyric-style="stage" aria-pressed="false">滚动</button><button data-lyric-style="fly" aria-pressed="false">飞入</button><button data-action="lyric-effects" aria-haspopup="dialog" aria-pressed="false">动效</button></div>
               <button class="lr-lyrics-entry" data-action="lyric-mods" data-desktop-only hidden>样式模组</button>
-              <div class="lr-lyric-timing" data-lyric-timing role="group" aria-label="歌词时间校准" hidden><button type="button" class="lr-lyrics-entry" data-lyric-adjust="-0.1">提前 0.1 秒</button><output data-lyric-offset aria-live="polite"></output><button type="button" class="lr-lyrics-entry" data-lyric-adjust="0.1">延后 0.1 秒</button></div>
+              <details class="lr-lyric-timing" data-lyric-timing hidden>
+                <summary>时间校准 <output data-lyric-offset aria-live="polite"></output></summary>
+                <div class="lr-choice-row" aria-label="歌词时间校准"><button type="button" class="lr-lyrics-entry" data-lyric-adjust="-0.1">提前 0.1 秒</button><button type="button" class="lr-lyrics-entry" data-lyric-adjust="0.1">延后 0.1 秒</button><button type="button" class="lr-lyrics-entry" data-lyric-adjust="0">恢复默认</button></div>
+              </details>
               <button class="lr-lyrics-entry" data-action="lyrics">${icon('settings')}导入或调整歌词</button>
               <span class="lr-lyric-source" data-lyric-source-info role="status" hidden></span>
               <button type="button" class="lr-lyrics-entry" data-action="retry-lyrics" hidden>重新获取歌词</button>
             </div>
           </details>
-        </div>
         </div>
         </div>
         </div>
@@ -185,6 +193,7 @@
         <section class="lr-ambience lr-work-panel" aria-labelledby="workAmbienceHeading">
           <div class="lr-panel-heading"><h2 id="workAmbienceHeading">背景氛围</h2><button class="lr-panel-link" data-action="scene-gallery" ${scenes?'':'hidden'}>动态场景 ${icon('arrow')}</button></div>
           <div class="lr-ambience-options"><button data-background="geometry"><span></span>几何微光</button><button data-background="mist"><span></span>流动光雾</button><button data-background="plain"><span></span>纯净底色</button></div>
+          <label class="lr-check lr-work-lyrics-setting"><input type="checkbox" data-desktop-lyrics>工作时显示小歌词</label>
         </section>
       </aside>
     </main>
@@ -201,7 +210,7 @@
           <button type="button" class="lr-play" data-action="play" aria-label="播放音乐"><span class="lr-play-icon" data-play-icon>${icon('play')}</span></button>
           <button type="button" class="lr-icon" data-action="next" aria-label="下一首">${icon('next')}</button>
         </div>
-        <div class="lr-player-right"><button type="button" class="lr-icon" data-action="favorite" aria-label="收藏歌曲" aria-pressed="false">${icon('heart')}</button><label class="lr-volume">${icon('volume')}<input class="lr-range" data-volume type="range" min="0" max="100" value="65" aria-label="音量"></label><button type="button" class="lr-icon" data-action="queue" aria-label="打开当前播放队列" aria-haspopup="dialog" title="播放队列">${icon('queue')}</button></div>
+        <div class="lr-player-right"><button type="button" class="lr-icon" data-action="favorite" aria-label="收藏歌曲" aria-pressed="false">${icon('heart')}</button><button type="button" class="lr-icon lr-mute" data-action="mute" aria-label="静音" title="静音" aria-pressed="false">${icon('volume')}</button><div class="lr-volume"><input class="lr-range" data-volume type="range" min="0" max="100" value="65" aria-label="音量"></div><button type="button" class="lr-icon" data-action="queue" aria-label="打开当前播放队列" aria-haspopup="dialog" title="播放队列">${icon('queue')}</button></div>
         <p class="lr-transport-status" data-transport-status role="status" hidden></p>
         <div class="lr-playback-recovery" data-playback-recovery hidden>
           <p id="lrPlaybackRecoveryStatus" data-playback-recovery-status role="status"></p>
@@ -212,19 +221,21 @@
         </div>
       </section>
     </div>
-    <footer class="lr-footer"><div class="lr-footer-group"><button data-action="settings" data-background-label>几何微光</button><span data-eco-label>省电优先</span><button data-action="external" data-listen-link hidden>外部声音联动</button></div><div class="lr-footer-group"><button data-action="playback-settings">播放设置</button><button data-action="equalizer">均衡器</button><button data-action="desktop-lyrics-window" data-desktop-only aria-pressed="false" hidden>桌面歌词</button><button data-action="mini" data-desktop-only hidden>迷你播放器</button><button data-action="desktop" data-desktop-only hidden>桌面设置</button><button data-action="legacy">星空与创作 ↗</button></div></footer>
+    <footer class="lr-footer"><div class="lr-footer-group"><span data-background-label>几何微光</span><button data-action="external" data-listen-link hidden>外部声音联动</button></div><div class="lr-footer-group"><button data-action="playback-settings">通用设置</button><button data-action="equalizer">均衡器</button><button data-action="desktop-lyrics-window" data-desktop-only aria-pressed="false" hidden>桌面歌词</button><button data-action="mini" data-desktop-only hidden>迷你播放器</button><button data-action="desktop" data-desktop-only hidden>桌面设置</button><button data-action="legacy">星空与创作 ↗</button></div></footer>
     <dialog class="lr-dialog" data-playback-dialog aria-labelledby="playbackSettingsTitle">
-      <div class="lr-dialog-heading"><h2 id="playbackSettingsTitle">播放设置</h2><button class="lr-icon" data-close aria-label="关闭播放设置">${icon('close')}</button></div>
+      <div class="lr-dialog-heading"><h2 id="playbackSettingsTitle">通用设置</h2><button class="lr-icon" data-close aria-label="关闭通用设置">${icon('close')}</button></div>
       <label class="lr-field"><span class="lr-field-title">输出设备</span><select class="lr-search-input" data-output-device><option value="">系统默认</option></select></label>
       <label class="lr-field"><span class="lr-field-title">播放速度</span><select class="lr-search-input" data-playback-rate><option value="0.75">0.75×</option><option value="1">1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></label>
       <label class="lr-field"><span class="lr-field-title">定时停止</span><select class="lr-search-input" data-sleep-timer><option value="0">关闭</option><option value="15">15 分钟</option><option value="30">30 分钟</option><option value="45">45 分钟</option><option value="60">60 分钟</option><option value="90">90 分钟</option><option value="120">120 分钟</option></select></label>
+      <label class="lr-check"><input type="checkbox" data-energy>省电优先</label>
       <p class="lr-status" role="status" data-playback-status></p>
     </dialog>
     <dialog class="lr-dialog lr-effect-dialog" data-effect-dialog aria-labelledby="lyricEffectsHeading">
-      <div class="lr-dialog-heading"><h2 id="lyricEffectsHeading">歌词动效</h2><button class="lr-icon" data-close aria-label="关闭歌词动效">${icon('close')}</button></div>
-      ${effects.groups.map(({name,entries})=>`<section><h3>${name}</h3><div class="lr-effect-grid">${entries.map(preset=>`
+      <div class="lr-dialog-heading"><h2 id="lyricEffectsHeading">歌词样式</h2><button class="lr-icon" data-close aria-label="关闭歌词样式">${icon('close')}</button></div>
+      <div class="lr-choice-row" role="group" aria-label="基础歌词样式">${Object.entries(lyricStyleNames).map(([id,label])=>`<button type="button" class="lr-choice" data-lyric-style="${id}" aria-pressed="false">${label}</button>`).join('')}</div>
+      ${effects.groups.map(({name,entries},row)=>`<section><h3>${name}</h3><div class="lr-effect-grid">${entries.map((preset,column)=>`
         <button type="button" class="lr-effect-card" data-effect-choice="${preset.id}" aria-pressed="false" aria-label="${preset.label}" title="${preset.description}">
-          <span class="lr-effect-sample" data-fx="${preset.id}" aria-hidden="true">${effectShapes}<strong>听见光</strong></span><span>${preset.label}</span>
+          <span class="lr-effect-sample" data-fx="${preset.id}" aria-hidden="true" style="--lr-preview-x:${column*20}%;--lr-preview-y:${row*50}%"></span><span>${preset.label}</span>
         </button>`).join('')}</div></section>`).join('')}
     </dialog>
     <dialog class="lr-dialog lr-scene-dialog" data-scene-dialog aria-labelledby="sceneGalleryHeading">
@@ -237,15 +248,31 @@
       <div class="lr-scene-preferences"><label class="lr-check"><input type="checkbox" data-scene-backdrop>用于陪伴和歌词背景</label><button class="lr-choice" data-action="scene-pin" aria-pressed="false">记住这首歌的场景</button><label>节拍校正 <select class="lr-choice" data-beat-ratio><option value="1">自动</option><option value="0.5">半速</option><option value="2">倍速</option></select></label></div>
     </dialog>
     <dialog class="lr-dialog lr-scene-dialog lr-player-bg-dialog" data-player-bg-dialog aria-labelledby="playerBackgroundHeading">
-      <div class="lr-dialog-heading"><div><h2 id="playerBackgroundHeading">播放背景库</h2><p data-player-bg-status role="status"></p></div><button class="lr-icon" data-close aria-label="关闭播放背景库">${icon('close')}</button></div>
+      <div class="lr-dialog-heading"><div><h2 id="playerBackgroundHeading">播放画面</h2><p data-player-bg-status role="status"></p></div><button class="lr-icon" data-close aria-label="关闭播放画面">${icon('close')}</button></div>
       <div class="lr-player-bg-controls">
-        <button type="button" class="lr-choice" data-player-bg-select="default">默认</button>
+        <button type="button" class="lr-choice" data-player-bg-select="default">自动画面</button>
+        <button type="button" class="lr-choice" data-player-bg-select="geometry">几何微光</button>
+        <button type="button" class="lr-choice" data-player-bg-select="mist">流动光雾</button>
         <button type="button" class="lr-choice" data-player-bg-select="clean">纯净底色</button>
         <label><span>分类</span><select class="lr-choice" data-player-bg-group aria-label="背景分类"></select></label>
       </div>
+      <div class="lr-player-bg-composition" data-player-bg-composition aria-label="背景、歌词和动效合成预览">
+        <canvas aria-hidden="true"></canvas>
+        <div class="lr-tide-atmosphere" data-player-bg-tide hidden aria-hidden="true">${tideHorizon}</div>
+        <div class="lr-effect-stage" data-player-bg-effect hidden aria-hidden="true">${effectShapes}</div>
+        <div class="lr-player-bg-sample"><strong></strong><span hidden></span></div>
+        <span class="lr-player-bg-style"></span>
+      </div>
+      <div class="lr-playback-picture-settings">
+        <div class="lr-field"><div class="lr-field-title">配色</div><div class="lr-choice-row"><button class="lr-choice" data-color="amber"><i class="lr-swatch" style="--swatch:#e5c483"></i>暖金</button><button class="lr-choice" data-color="ocean"><i class="lr-swatch" style="--swatch:#95bcd1"></i>雾蓝</button><button class="lr-choice" data-color="lilac"><i class="lr-swatch" style="--swatch:#b8a9db"></i>浅紫</button><button class="lr-choice" data-color="cover">跟随封面</button></div></div><label class="lr-field"><span class="lr-field-title">背景亮度 <output data-brightness-value></output></span><input class="lr-range" data-brightness type="range" min="10" max="100" step="5" aria-label="背景亮度"></label><label class="lr-field" data-response-field><span class="lr-field-title">声音响应 <output data-response-value></output></span><input class="lr-range" data-response type="range" min="0" max="100" step="5" aria-label="声音响应强度"></label>
+      </div>
       <div class="lr-scene-grid lr-player-bg-grid" data-player-bg-grid></div>
     </dialog>
-    <dialog class="lr-dialog" data-settings aria-labelledby="roomSettingsHeading"><div class="lr-dialog-heading"><div><h2 id="roomSettingsHeading">让氛围，刚刚好。</h2><p>选一份舒服的背景，之后交给音乐。</p></div><button class="lr-icon" data-close aria-label="关闭氛围设置">${icon('close')}</button></div><div class="lr-field"><div class="lr-field-title">背景</div><div class="lr-choice-row"><button class="lr-choice" data-background="geometry">几何微光</button><button class="lr-choice" data-background="mist">流动光雾</button><button class="lr-choice" data-background="plain">纯净底色</button></div></div><div class="lr-field"><div class="lr-field-title">配色</div><div class="lr-choice-row"><button class="lr-choice" data-color="amber"><i class="lr-swatch" style="--swatch:#e5c483"></i>暖金</button><button class="lr-choice" data-color="ocean"><i class="lr-swatch" style="--swatch:#95bcd1"></i>雾蓝</button><button class="lr-choice" data-color="lilac"><i class="lr-swatch" style="--swatch:#b8a9db"></i>浅紫</button><button class="lr-choice" data-color="cover">跟随封面</button></div></div><label class="lr-field"><span class="lr-field-title">背景亮度 <output data-brightness-value></output></span><input class="lr-range" data-brightness type="range" min="10" max="100" step="5" aria-label="背景亮度"></label><label class="lr-field"><span class="lr-field-title">声音响应 <output data-response-value></output></span><input class="lr-range" data-response type="range" min="0" max="100" step="5" aria-label="声音响应强度"></label><label class="lr-check"><input type="checkbox" data-desktop-lyrics>工作时显示小歌词</label><label class="lr-check"><input type="checkbox" data-energy>省电优先</label><p class="lr-dialog-note" data-save-note role="status">设置自动保存在这台设备。</p></dialog>
+    <dialog class="lr-dialog" data-settings aria-labelledby="roomSettingsHeading">
+      <div class="lr-dialog-heading"><h2 id="roomSettingsHeading">工作陪伴画面</h2><button class="lr-icon" data-close aria-label="关闭工作陪伴画面">${icon('close')}</button></div>
+      <div class="lr-field"><div class="lr-field-title">配色</div><div class="lr-choice-row"><button class="lr-choice" data-work-color="amber"><i class="lr-swatch" style="--swatch:#e5c483"></i>暖金</button><button class="lr-choice" data-work-color="ocean"><i class="lr-swatch" style="--swatch:#95bcd1"></i>雾蓝</button><button class="lr-choice" data-work-color="lilac"><i class="lr-swatch" style="--swatch:#b8a9db"></i>浅紫</button><button class="lr-choice" data-work-color="cover">跟随封面</button></div></div>
+      <p class="lr-dialog-note" data-save-note role="status">设置自动保存在这台设备。</p>
+    </dialog>
     <dialog class="lr-dialog" data-queue-dialog aria-labelledby="roomQueueHeading" aria-describedby="roomQueueSource">
       <div class="lr-dialog-heading">
         <div class="lr-queue-heading-copy">
@@ -266,7 +293,7 @@
           <button type="button" class="lr-choice" data-recovery-skip data-action="queue-skip" aria-describedby="lrQueueRecoveryStatus" hidden>跳过这首</button>
         </div>
       </div>
-      <input class="lr-search-input" data-queue-search type="search" placeholder="搜索队列" aria-label="搜索当前队列">
+      <input class="lr-search-input" data-queue-search type="text" inputmode="search" role="searchbox" placeholder="搜索队列" aria-label="搜索当前队列">
       <ol class="lr-queue" data-queue-list></ol>
       <div class="lr-queue-pages" data-queue-pages hidden><button class="lr-choice" data-queue-page="-1">上一页</button><span data-queue-page-label></span><button class="lr-choice" data-queue-page="1">下一页</button></div>
       <div class="lr-choice-row"><button class="lr-choice" data-action="import">导入音乐</button><button class="lr-choice" data-action="folder">导入文件夹</button><button class="lr-choice" data-action="library">从曲库选歌</button><button class="lr-choice" data-action="repeat" data-repeat-label>列表循环</button></div>
@@ -364,7 +391,9 @@
   let recentTracks=[],recentShelfDirty=true;
   let lastQueueRefresh=0,workQueueKey=[],lastSpectrumKey='';
   const emptyLyrics=[], lyricRows=new Map(), lyricTimeline=$('[data-lyric-timeline]');
-  const effectStage=$('[data-effect-stage]'),effectDialog=$('[data-effect-dialog]'),effectButton=$('[data-action="lyric-effects"]');
+  const effectStage=$('[data-effect-stage]'),effectDialog=$('[data-effect-dialog]');
+  const tideAtmosphere=$('[data-tide-atmosphere]'),tideRipples=[...tideAtmosphere.querySelectorAll('.lr-tide-ripple')];
+  let tideBeat=null;
   let preparedLyric=null,lyricGeometry='',nextLyricPrepareAttempt=0,lyricSurfaceDirty=false;
   const effectSurface=$('[data-effect-surface]'),effectRenderer=window.SonicLyricRenderer?.create(effectSurface,()=>{
     invalidateLyricSurface();wake();
@@ -376,7 +405,6 @@
     clock:['phase','direction'],wide:['enter'],
   };
   let effectBeat=0, nextEffectFrame=0, nextSceneryFrame=0, sceneryAnimated=false;
-  let tideTrack=null,tideDepth=0;
   const lyricNotice=$('[data-lyric-notice]'),lyricNoticeText=$('[data-lyric-meta]'),lyricEditor=$('[data-listen] [data-action="lyrics"]');
   const seekSlider=$('[data-seek]'), volumeSlider=$('[data-volume]');
   function canSeek(state) {
@@ -432,14 +460,17 @@
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const backgroundNames = { geometry:'几何微光', mist:'流动光雾', plain:'纯净底色', universe:'星空' };
   const sceneDialog=$('[data-scene-dialog]'), sceneGrid=$('[data-scene-grid]');
-  const backgroundPicker=backgrounds?.createPicker($('[data-player-bg-dialog]'),changePlaybackBackground);
+  const backgroundPicker=backgrounds?.createPicker($('[data-player-bg-dialog]'),changePlaybackBackground,()=>{
+    const {line}=core.lyricAt(snapshot.lyrics,lyricPosition(),snapshot.lyricDuration);
+    const style=preferences.lyricStyle;
+    const artwork=coverPalette,brightness=preferences.brightness/100;
+    return {line,style:lyricStyleLabel(),effect:style==='effects'?effects.get(preferences.lyricEffect):null,
+      artwork,brightness,
+      drawDefault:(ctx,width,height)=>paintNowSky(artwork,brightness,0,0,null,false,ctx,width,height)};
+  });
   const atmosphere=$('[data-settings]');
-  if(backgroundPicker){
-    const button=document.createElement('button');button.type='button';button.className='lr-choice';
-    button.dataset.action='player-backgrounds';button.dataset.playerBgLauncher='';
-    button.textContent='播放背景库';
-    atmosphere.querySelector('.lr-dialog-heading').after(button);
-  }
+  const pictureDialog=$('[data-player-bg-dialog]');
+  const headerSettings=$('.lr-header [data-action="settings"]');
   const lyricScrollSelect=$('[data-lyric-scroll]');
   lyricScrollSelect.addEventListener('change',()=>{
     preferences.lyricScroll=lyricScrollSelect.value;
@@ -462,13 +493,26 @@
   const idleFields=['ready','busy','playing','demoOnly','importing','buffering','playbackInterrupted','external','externalPending','externalSignal','volume','duration','position','lyricPosition','lyricDuration','playbackMode'];
   const trackFields=['id','name','artist','kind','cover','favorite'];
   const toast = $('[data-toast]');
-  function notify(message, error = false) {
+  function notify(message, error = false, playNew = false) {
     clearTimeout(toastTimer);
     (document.querySelector('dialog[open]') || root).append(toast);
     toast.setAttribute('role',error?'alert':'status');
     toast.textContent=message;
+    const offerPlayback=playNew&&!isLibraryMode(root.dataset.mode);
+    if(offerPlayback){
+      const button=document.createElement('button');
+      button.type='button';
+      button.className='lr-choice lr-import-toast-play';
+      button.textContent='播放新导入';
+      button.addEventListener('click',()=>{toast.hidden=true;void api.playImportedMusic();});
+      toast.append(button);
+    }
     toast.hidden=false;
-    toastTimer=setTimeout(()=>{toast.hidden=true;},4400);
+    function dismiss(){
+      if(offerPlayback&&toast.matches(':hover,:focus-within'))toastTimer=setTimeout(dismiss,1000);
+      else toast.hidden=true;
+    }
+    toastTimer=setTimeout(dismiss,offerPlayback?8000:4400);
   }
   function persist() { try { localStorage.setItem(storageKey,JSON.stringify(preferences)); $('[data-save-note]').textContent='已保存到这台设备。'; } catch { $('[data-save-note]').textContent='这次设置已应用，但设备存储不可用，关闭后可能丢失。'; } }
   function fill(input) { input.style.setProperty('--lr-fill',((Number(input.value)-Number(input.min||0))/(Number(input.max)-Number(input.min||0))*100)+'%'); }
@@ -545,7 +589,7 @@
     root.dataset.mode=mode;root.dataset.background=preferences.background;root.dataset.lyricStyle=expanded?style:'compact';
     root.dataset.listenImmersive=String(listenImmersive);
     $('[data-action="settings"].lr-immersion-atmosphere').hidden=!listenImmersive;
-    if(backgroundPicker)atmosphere.querySelector('[data-player-bg-launcher]').hidden=mode!=='listen';
+    syncPictureControls();
     lyricScrollSelect.value=preferences.lyricScroll;
     nowPlaying.setScrollMode(preferences.lyricScroll);
     listenView.setAttribute('aria-label',listenImmersive?'沉浸播放':'正在播放');
@@ -553,8 +597,7 @@
     exitImmersion.hidden=!listenImmersive;
     root.dataset.immersive=String(mode==='visual'||expanded&&(style==='fly'||effectActive));
     const preset=effects.get(preferences.lyricEffect);
-    effectStage.hidden=!effectActive;
-    effectStage.dataset.fx=preset.id;
+    syncEffectBackdrop(effectActive,preset);
     const theme=effectActive&&preset.palette;
     root.toggleAttribute('data-lyric-theme',Boolean(theme));
     if(theme){
@@ -571,9 +614,11 @@
       clearPreparedLyric();
       effectRenderer?.hide();
     }
-    effectButton.textContent=effectActive?`动效 · ${preset.label}`:'动效';
-    effectButton.setAttribute('aria-pressed',String(effectActive));
-    $$('[data-effect-choice]').forEach(button=>button.setAttribute('aria-pressed',String(effectActive&&button.dataset.effectChoice===preset.id)));
+    $$('[data-action="lyric-effects"]').forEach(button=>button.textContent='歌词样式 · '+lyricStyleLabel());
+    $('[data-stage-style]').hidden=!expanded||full;
+    $('[data-expanded-actions]').hidden=!expanded;
+    $('.lr-lyric-tools').hidden=listenImmersive;
+    $$('[data-effect-choice]').forEach(button=>button.setAttribute('aria-pressed',String(preferences.lyricStyle==='effects'&&button.dataset.effectChoice===preset.id)));
     revealStageChrome();
     root.dataset.lyricLayout=expanded?(full?'list':'stage'):'compact';
     root.dataset.lyricExpanded=String(expanded);
@@ -600,13 +645,14 @@
     root.dataset.caption=String(preferences.desktopLyrics);
     $$('[data-room-mode]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.roomMode===preferences.mode)));
     $('[data-action="search"]').setAttribute('aria-pressed',String(mode==='search'));
-    $$('button[data-lyric-style]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.lyricStyle===style)));
+    $$('button[data-lyric-style]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.lyricStyle===preferences.lyricStyle)));
     $$('[data-background]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.background===preferences.background)));
-    $$('[data-color]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.color===preferences.color)));
+    $$('[data-color]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.color===preferences.playbackColor)));
+    $$('[data-work-color]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.workColor===preferences.color)));
     for(const key of ['brightness','response']){ $('[data-'+key+']').value=preferences[key];$('[data-'+key+'-value]').textContent=preferences[key]+'%';fill($('[data-'+key+']')); }
     $('[data-desktop-lyrics]').checked=preferences.desktopLyrics;$('[data-energy]').checked=preferences.energySaver;
     $('[data-scene-backdrop]').checked=preferences.reactiveBackdrop;
-    $('[data-background-label]').textContent=backgroundNames[preferences.background];$('[data-eco-label]').textContent=preferences.energySaver?'省电优先':'细腻呈现';
+    $('[data-background-label]').textContent=backgroundNames[preferences.background];
     if(scenes)syncSceneLabels();
     if(save)persist();resize();schedule();updateUI(true);
     if(previousCover?.width)animateLyricView(view,previousCover);
@@ -614,9 +660,10 @@
   function setMode(mode) {
     if(!['work','listen','library','search','visual'].includes(mode)||(mode==='visual'&&!scenes))return;
     const previous=preferences.mode;
+    if(previous==='library'&&mode!==previous)musicLibrary.leaveBrowse();
     if(previous==='search'&&mode!==previous)searchScroll=window.scrollY;
     preferences.mode=mode;applyPreferences(true);
-    if(mode!==previous)window.scrollTo({top:mode==='search'?searchScroll:0,behavior:'instant'});
+    if(mode!==previous&&mode!=='library')window.scrollTo({top:mode==='search'?searchScroll:0,behavior:'instant'});
   }
   function setLyricExpanded(expanded, full=false) {
     const previousFullEntry=readingFullLyrics;
@@ -627,6 +674,17 @@
     const focus=expanded?(root.dataset.lyricLayout==='list'?'[data-full-lyrics]':'[data-action="collapse-lyrics"]'):
       previousFullEntry?'[data-now-lyrics]':'.lr-now-cover';
     $(focus).focus({preventScroll:true});
+  }
+  function chooseLyricStyle(style,presetId){
+    readingFullLyrics=false;
+    lyricExpanded=true;
+    lyricMods?.clear();
+    preferences.lyricStyle=style;
+    if(presetId)preferences.lyricEffect=effects.get(presetId).id;
+    effectDialog.close();
+    applyPreferences(true);
+    const target=root.dataset.nowView==='full'?'[data-lyric-full-tools] [data-action="lyric-effects"]':'[data-stage-style]';
+    $(target).focus({preventScroll:true});
   }
   function resetListeningImmersion() {
     listenImmersive=false;
@@ -697,6 +755,7 @@
     const scene=scenes.get(sceneId), title=scene?.name||'动态场景';
     const mode=pinned?'此曲专属场景':selection==='auto'?'自动随曲':'固定场景';
     if($('[data-visual-title]').textContent!==title)$('[data-visual-title]').textContent=title;
+    $('[data-visual-title]').parentElement.setAttribute('aria-label','场景 · '+title);
     if($('[data-visual-mode]').textContent!==mode)$('[data-visual-mode]').textContent=mode;
     if(preferences.reactiveBackdrop||root.dataset.mode==='visual')$('[data-background-label]').textContent=title;
     if(!sceneDialog.open)return;
@@ -754,24 +813,62 @@
   function openSceneGallery() {
     mountSceneCards();filterScenes(sceneFilter);show(sceneDialog);syncSceneLabels();backgroundDirty=true;wake();
   }
+  function lyricStyleLabel(){
+    return preferences.lyricStyle==='effects'?effects.get(preferences.lyricEffect).label:lyricStyleNames[preferences.lyricStyle];
+  }
+  function syncEffectBackdrop(active=showsLyricEffects(),preset=effects.get(preferences.lyricEffect)){
+    const entry=root.dataset.mode==='listen'?playbackBackdrop?.entry:null;
+    const photo=Boolean(entry?.photo);
+    const treatment=backgrounds?.lyricBackdrop(entry,active?preset:null)||'theme';
+    const changed=root.dataset.lyricBackdrop!==treatment||root.hasAttribute('data-photo-lyrics')!==photo;
+    root.toggleAttribute('data-photo-lyrics',photo);
+    root.toggleAttribute('data-explicit-playback-background',Boolean(entry));
+    root.toggleAttribute('data-light-reading-surface',backgrounds?.lightReadingSurface(entry));
+    root.dataset.lyricBackdrop=treatment;
+    const soft=treatment==='soft';
+    effects.applyBackdrop(effectStage,preset,soft);
+    const tide=active&&preset.id==='tide';
+    tideAtmosphere.hidden=!tide;
+    effectStage.hidden=!active||tide&&!soft;
+    return changed&&active;
+  }
+  function refreshEffectBackdrop(){
+    if(!syncEffectBackdrop())return;
+    invalidateLyricSurface();
+    renderListeningPosition(lyricPosition(),true);
+  }
+  function syncPictureControls(){
+    const mode=preferences.mode;
+    const entry=playbackBackdrop?.entry||backgrounds?.get('default');
+    const label=mode==='listen'?'背景 · '+(entry?.name||'自动画面'):mode==='work'?'工作陪伴画面':'通用设置';
+    headerSettings.setAttribute('aria-label',label);
+    headerSettings.title=label;
+    $('[data-settings-label]').textContent=label;
+    const effect=showsLyricEffects()&&effects.get(preferences.lyricEffect);
+    const responds=entry?.motion==='music'||effect&&(effect.beat||effect.id==='tide');
+    $('[data-response-field]').hidden=!responds;
+  }
   function changePlaybackBackground(value,save=true) {
     if(!backgrounds)return;
     const id=backgrounds.normalize(value),entry=backgrounds.get(id),request=++playbackBackdropRequest;
-    const ready=(playbackBackdrop?.entry.id||'default')===id;
-    preferences.playbackBackground=id;
+    const current=playbackBackdrop?.entry.id||'default';
     clearTimeout(playbackBackdropTimer);
-    if(save||Object.hasOwn(backgrounds.aliases,value))persist();
-    backgroundPicker?.update(id,ready?'':'正在准备 '+entry.name);
-    if(ready){
-      backgroundDirty=true;wake();
+    if(current===id){
+      if(preferences.playbackBackground!==id){preferences.playbackBackground=id;if(save)persist();}
+      backgroundPicker?.update(id);
       return;
     }
+    backgroundPicker?.update(current,'正在准备 '+entry.name,id);
     void backgrounds.load(entry).then(render=>{
       if(request!==playbackBackdropRequest)return;
       // A burst of clicks only commits the final ready selection.
       playbackBackdropTimer=setTimeout(()=>{
         if(request!==playbackBackdropRequest)return;
         playbackBackdrop=id==='default'?null:{entry,render};
+        preferences.playbackBackground=id;
+        if(save||id!==value)persist();
+        refreshEffectBackdrop();
+        syncPictureControls();
         backgroundPicker?.update(id);
         backgroundDirty=true;wake();
       },save?70:0);
@@ -781,8 +878,10 @@
   }
   function fallbackPlaybackBackground(entry,keepCurrent=false) {
     if(!keepCurrent)playbackBackdrop=null;
+    refreshEffectBackdrop();
     const current=playbackBackdrop?.entry||backgrounds.get('default');
     preferences.playbackBackground=current.id;
+    syncPictureControls();
     persist();
     backgroundPicker?.update(current.id,entry.name+' 暂不可用，已保留 '+current.name);
     backgroundDirty=true;wake();
@@ -893,11 +992,12 @@
     const animate=onScreen()&&playbackCoverVisible()&&!reducedMotion.matches&&
       Object.keys(nextPalette).some(role=>from[role].some((channel,index)=>channel!==nextPalette[role][index]));
     coverTransition=animate?{from,started:now}:null;
+    backgroundPicker?.refreshBackdrop();
     backgroundDirty=true;
     wake();
   }
-  function paintNowSky(artwork,brightness,response,seconds,sound,moving) {
-    const w=canvasWidth, h=canvasHeight, narrow=w<=700;
+  function paintNowSky(artwork,brightness,response,seconds,sound,moving,target=context,w=canvasWidth,h=canvasHeight) {
+    const narrow=w<=700;
     const full=root.dataset.nowView==='full';
     const coverX=w*(narrow?.50:full?.19:.25), coverY=h*(narrow?(full?.19:.24):.43);
     if(moving){
@@ -910,23 +1010,23 @@
     const light=rgb(artwork.primary), distant=rgb(artwork.secondary);
     const shade=rgb(artwork.base.map(channel=>channel*.36+3));
     const deep=rgb(artwork.base.map(channel=>channel*.64+2));
-    const field=context.createLinearGradient(0,0,w*.83,h);
+    const field=target.createLinearGradient(0,0,w*.83,h);
     field.addColorStop(0,'rgb('+deep+')');
     field.addColorStop(.53,'rgb('+rgb(artwork.base)+')');
     field.addColorStop(1,'rgb('+shade+')');
-    context.fillStyle=field;
-    context.fillRect(0,0,w,h);
+    target.fillStyle=field;
+    target.fillRect(0,0,w,h);
 
     function cloud(x,y,rx,ry,angle,color,strength) {
-      context.save();
-      context.translate(x,y);context.rotate(angle);context.scale(rx,ry);
-      const gradient=context.createRadialGradient(0,0,0,0,0,1);
+      target.save();
+      target.translate(x,y);target.rotate(angle);target.scale(rx,ry);
+      const gradient=target.createRadialGradient(0,0,0,0,0,1);
       gradient.addColorStop(0,'rgba('+color+','+strength+')');
       gradient.addColorStop(.48,'rgba('+color+','+strength*.48+')');
       gradient.addColorStop(1,'rgba('+color+',0)');
-      context.fillStyle=gradient;
-      context.fillRect(-1,-1,2,2);
-      context.restore();
+      target.fillStyle=gradient;
+      target.fillRect(-1,-1,2,2);
+      target.restore();
     }
     const tint=.30+brightness*.68;
     // The remote bank and the darker gap provide depth before the near light is painted.
@@ -938,26 +1038,31 @@
     cloud(w*(narrow?.54:.72),h*(narrow?.64:.53),w*.56,h*.43,-.14,shade,.66);
 
     const orbit=Math.max(w,h)*(narrow?.36:.37);
-    context.lineWidth=1;
-    context.strokeStyle='rgba('+distant+','+tint*.15+')';
-    context.beginPath();
-    context.ellipse(coverX,coverY+h*.16,orbit,orbit*.29,-.36,Math.PI*.12,Math.PI*1.14);
-    context.stroke();
+    target.lineWidth=1;
+    target.strokeStyle='rgba('+distant+','+tint*.15+')';
+    target.beginPath();
+    target.ellipse(coverX,coverY+h*.16,orbit,orbit*.29,-.36,Math.PI*.12,Math.PI*1.14);
+    target.stroke();
     for(const [index,star] of nowStars.entries()){
       const besideLyrics=narrow?star.y>.43:star.x>.47&&star.y>.19;
       const opacity=(besideLyrics?.28:1)*(.065+tint*(index%13===0?.25:.14));
-      context.fillStyle='rgba('+(index%4===0?distant:light)+','+opacity+')';
-      context.beginPath();context.arc(star.x*w,star.y*h,star.radius,0,Math.PI*2);context.fill();
+      target.fillStyle='rgba('+(index%4===0?distant:light)+','+opacity+')';
+      target.beginPath();target.arc(star.x*w,star.y*h,star.radius,0,Math.PI*2);target.fill();
     }
   }
   function paintBackground(now, seconds, sound, animated) {
     const artwork=coverFrame(now);
     const tone=artwork.primary;
-    const target=root.dataset.mode==='listen'||preferences.color==='cover'?tone:colors[preferences.color]||colors.lilac;
+    const color=root.dataset.mode==='listen'?preferences.playbackColor:preferences.color;
+    const target=color==='cover'?tone:colors[color];
     for(let i=0;i<3;i++)palette[i]=animated?core.approach(palette[i],target[i],seconds,.9):target[i];
     const rgb=palette.map(Math.round).join(',');if(rgb!==lastRgb){lastRgb=rgb;root.style.setProperty('--room-accent','rgb('+rgb+')');root.style.setProperty('--room-accent-rgb',rgb);document.documentElement.style.setProperty('--accent','rgb('+rgb+')');document.documentElement.style.setProperty('--accent-rgb',rgb);}
     const coverRgb=tone.map(Math.round).join(',');
     if(coverRgb!==artworkRgb){artworkRgb=coverRgb;root.style.setProperty('--lr-cover-rgb',coverRgb);}
+    if(!tideAtmosphere.hidden&&!playbackBackdrop){
+      root.removeAttribute('data-active-scene');
+      return;
+    }
     const response=preferences.response/100,brightness=preferences.brightness/100;
     if(root.dataset.mode==='listen'&&playbackBackdrop){
       const {entry}=playbackBackdrop;
@@ -1276,7 +1381,7 @@
     element.dataset.lyricIndex=index;
     const fly=preferences.lyricStyle==='fly',effect=preferences.lyricStyle==='effects';
     const tide=effect&&preferences.lyricEffect==='tide';
-    const translatedText=fly||effect&&!tide?'':line.translation;
+    const translatedText=fly?'':line.translation;
     element.setAttribute('aria-label',translatedText?`${line.text}\n${translatedText}`:line.text);
     const size=karaoke.split(line.text).reduce((total,char)=>total+(/[\u0000-\u00ff]/.test(char)?.55:1),0);
     element.dataset.density=size>40?'dense':size>21?'long':'normal';
@@ -1319,7 +1424,7 @@
           element.append(node);
         }
         const word={...span,node,token,order,fill:-1,state:'',lift:0,flight:-1};
-        if(effect)word.motion=effects.wordMotion(word,line.time);
+        if(effect&&preferences.lyricEffect!=='tide')word.motion=effects.wordMotion(word,line.time);
         row.words.push(word);
       }
     }
@@ -1390,6 +1495,7 @@
   }
   function drawEffectFrame(position,line,end,row,animated) {
     const id=preferences.lyricEffect, moving=animated&&Boolean(line);
+    let renderer='text';
     const pose=effects.lineFrame(position,line?.time??position,end,moving);
     const stageMotion=effectStageMotion[id], now=performance.now();
     if(stageMotion&&(now>=nextSceneryFrame||moving!==sceneryAnimated)){
@@ -1397,10 +1503,9 @@
       for(const name of stageMotion)setEffectValue(effectStage,effectStageStyle,name,pose[name]);
     }
     sceneryAnimated=moving;
-    let renderer='text';
-    if (row&&!reducedMotion.matches&&effectRenderer) {
+    if (id!=='tide'&&root.dataset.lyricBackdrop!=='soft'&&row&&!reducedMotion.matches&&effectRenderer) {
       renderer=effectRenderer.paint(row,id,position,pose.enter,moving);
-    } else if(!effectSurface.hidden||reducedMotion.matches) {
+    } else if(!effectSurface.hidden) {
       effectRenderer?.hide();
     }
     if(root.dataset.lyricRenderer!==renderer)root.dataset.lyricRenderer=renderer;
@@ -1411,18 +1516,6 @@
     if(cache[name]===rounded)return;
     cache[name]=rounded;
     node.style.setProperty('--fx-'+name,rounded);
-  }
-  function updateTide(track,sound,seconds) {
-    if(track!==tideTrack){
-      tideTrack=track;
-      tideDepth=0;
-    }
-    if(sound&&track!==null){
-      const target=core.clamp((Math.sqrt(sound.rms)-.1)*2.7+sound.presence*.16,0,1);
-      tideDepth=core.approach(tideDepth,target,seconds,target>tideDepth?1.35:2.8);
-    }
-    const depth=Math.round(tideDepth*Math.sqrt(preferences.response/100)*48)/48;
-    setEffectValue(effectStage,effectStageStyle,'water',depth);
   }
   function drawSungWord(word,position) {
     const fill=Math.round(karaoke.progress(word,position)*1000)/10;
@@ -1535,6 +1628,7 @@
       return;
     }
     const track=snapshot.track?.id,style=preferences.lyricStyle,fly=style==='fly',effect=style==='effects';
+    const tide=effect&&preferences.lyricEffect==='tide';
     const layout=effect?preferences.lyricEffect:style;
     const sourceChanged=lines!==renderedLyrics||lyricTrack!==track||renderedLyricStyle!==layout;
     const advance = position - lastLyricPosition;
@@ -1560,6 +1654,9 @@
       showLyricRows(lines,index,style==='stage'&&flowing,prepared);
       lyricIndex=index;
       if (fly&&flowing) startFlightLine(lyricRows.get(index),end);
+      if(tide&&flowing&&!preferences.energySaver){
+        lyricRows.get(index)?.element.animate([{opacity:.82},{opacity:1}],{duration:180,easing:'ease-out'});
+      }
     }
     if (fly) drawFlightLine(position);
     lastLyricPosition=position;
@@ -1719,6 +1816,7 @@
       Boolean(snapshot.queueTarget)!==Boolean(previous.queueTarget)||
       Boolean(snapshot.playbackRecovery)!==Boolean(previous.playbackRecovery);
     const hasLyrics=String(snapshot.lyrics.length>0);
+    if(trackChanged&&tideBeat!==null)resetTideRipples();
     if(root.dataset.listenLyrics!==hasLyrics){
       root.dataset.listenLyrics=hasLyrics;
       if(listenImmersive){resize();backgroundDirty=true;}
@@ -1741,6 +1839,7 @@
     const offsetOutput=$('[data-lyric-offset]');if(offsetOutput.textContent!==offsetLabel)offsetOutput.textContent=offsetLabel;
     $('[data-lyric-adjust="-0.1"]').disabled=offset<=-30;
     $('[data-lyric-adjust="0.1"]').disabled=offset>=30;
+    $('[data-lyric-adjust="0"]').disabled=offset===0;
     const info=snapshot.lyricsInfo;
     const lyricSourceText=info?.state==='ready'?`${info.source} · ${info.timing==='word'?'逐字同步':'逐行同步'}`:
       {loading:'正在查找当前录音的歌词…',unavailable:'歌词服务暂时不可用',cleared:'此曲歌词已手动清除',disabled:'此曲歌词已关闭'}[info?.state]||'';
@@ -1810,6 +1909,14 @@
     if(!seekPreview)seekSlider.value=snapshot.position;
     fill(seekSlider);
     if(!volumeChanging)volumeSlider.value=Math.round(snapshot.volume*100);
+    const mute=$('[data-action="mute"]'), muted=snapshot.volume===0;
+    const muteLabel=muted?'恢复音量':'静音';
+    if(mute.getAttribute('aria-label')!==muteLabel){
+      mute.setAttribute('aria-label',muteLabel);mute.title=muteLabel;
+      mute.setAttribute('aria-pressed',String(muted));
+      mute.innerHTML=icon(muted?'muted':'volume');
+    }
+    mute.disabled=snapshot.external;
     volumeSlider.disabled=snapshot.external;
     fill(volumeSlider);
     const repeatLabel=playbackNames[snapshot.playbackMode]||'列表循环';
@@ -1896,6 +2003,7 @@
     const layoutChanged=lyricSurfaceDirty;
     lyricSurfaceDirty=false;
     nowPlaying.showSeek(snapshot,seekPreview?.position);
+    backgroundPicker?.refreshText();
     const expanded=lyricExpanded&&!listenImmersive;
     if(root.dataset.mode==='listen'&&(!expanded||root.dataset.lyricLayout==='list')) {
       nowPlaying.sync(snapshot,position,{full:expanded,force:snap||layoutChanged});
@@ -1907,7 +2015,8 @@
     lyricFrameId=0;
     if(!needsLyricFrame()){nextEffectFrame=0;return;}
     if(showsLyricEffects()){
-      const interval=1000/(preferences.energySaver?60:120);
+      const baseRate=tideAtmosphere.hidden?120:60;
+      const interval=1000/(preferences.energySaver?baseRate/2:baseRate);
       if(now+.6>=nextEffectFrame){
         nextEffectFrame=Math.max(nextEffectFrame+interval,now+interval*.5);
         renderListeningPosition(lyricPosition());
@@ -1921,7 +2030,8 @@
   }
   function renderBeatClock(beat,active,reduced) {
     const ready=preferences.beatClock&&beat?.locked;
-    const label=!preferences.beatClock?'节拍 · 关':ready?Math.round(beat.bpm)+' BPM':active?'分析节拍':'等待音乐';
+    const label=!(snapshot.track||snapshot.external)?'未播放歌曲':!active?'已暂停':
+      preferences.beatClock&&!ready?'正在分析节拍':ready?'正在响应音乐 · '+Math.round(beat.bpm)+' BPM':'正在响应音乐';
     if(beatStatus.textContent!==label)beatStatus.textContent=label;
     const index=ready?beat.beatInBar:-1;
     if(index!==beatClockIndex){
@@ -1931,6 +2041,27 @@
     const pulse=ready&&!reduced?Math.round(beat.pulse*20)/20:0;
     if(pulse!==beatClockPulse){beatClockPulse=pulse;beatClock.style.setProperty('--lr-beat-pulse',String(pulse));}
   }
+  function resetTideRipples(){
+    tideBeat=null;
+    for(const ripple of tideRipples)for(const animation of ripple.getAnimations())animation.cancel();
+  }
+  function updateTideRipples(beat){
+    if(!beat?.locked){
+      if(tideBeat!==null)resetTideRipples();
+      return;
+    }
+    const number=beat.bar*4+beat.beatInBar;
+    if(number===tideBeat)return;
+    tideBeat=number;
+    if(beat.phase>.3)return;
+    const economy=preferences.energySaver;
+    const ripple=tideRipples[economy?0:number%tideRipples.length];
+    for(const animation of ripple.getAnimations())animation.cancel();
+    ripple.animate([
+      {transform:'scale(.70,.58)',opacity:core.clamp(beat.confidence*preferences.response/100,0,1)*(playbackBackdrop?.entry.photo?.key ? .35 : playbackBackdrop ? .55 : 1)},
+      {transform:'scale(1.17,1.16)',opacity:0},
+    ],{duration:Math.min(1250,60000/beat.bpm*(economy?.86:1.65)),easing:'cubic-bezier(.16,.62,.38,1)'});
+  }
   function tick() {
     timer=0;
     if(!onScreen())return;
@@ -1938,26 +2069,27 @@
     if(refresh){lastUI=now;updateUI();}
     const mode=root.dataset.mode,reduced=reducedMotion.matches;
     const active=snapshot.playing||snapshot.external;
+    const tideActive=!tideAtmosphere.hidden;
     const picked=mode==='listen'?playbackBackdrop?.entry:null;
-    const prism=!picked&&usesImmersivePrism(),reactive=!picked&&(prism||usesReactiveScene());
+    const prism=!picked&&!tideActive&&usesImmersivePrism(),reactive=!tideActive&&!picked&&(prism||usesReactiveScene());
     const lyricEffects=showsLyricEffects();
     const animate=active&&!reduced&&!isLibraryMode(mode)&&(picked?picked.motion!=='static':reactive||!lyricEffects&&preferences.background!=='plain');
     const showSpectrum=mode==='work';
     const coverBeat=active&&!reduced&&!listenImmersive&&(mode==='listen'&&!lyricExpanded||mode==='work');
     const lyricBeat=lyricEffects&&!reduced&&preferences.response>0&&lyricsPlaying()&&effects.get(preferences.lyricEffect).beat;
-    const tideActive=root.dataset.lyricEffect==='tide'&&!reduced&&preferences.response>0;
-    const tideMoving=tideActive&&lyricsPlaying()&&!seekPreview;
+    const tideMotion=tideActive&&!reduced&&lyricsPlaying()&&preferences.response>0;
     const stageBeat=active&&mode==='visual'&&preferences.beatClock;
     const followLyrics=mode==='listen'&&lyricsPlaying()&&snapshot.lyrics.length>0;
     const artworkMoving=Boolean(coverTransition||playbackBackdropFade);
-    const fps=core.frameRate({active:artworkMoving||active&&(animate||showSpectrum||snapshot.external||followLyrics||coverBeat||stageBeat||tideMoving),reduced,mode,energySaver:preferences.energySaver});
+    const fps=core.frameRate({active:artworkMoving||active&&(animate||showSpectrum||snapshot.external||followLyrics||coverBeat||stageBeat||tideMotion),reduced,mode,energySaver:preferences.energySaver});
     const wasActive=lastFrame>0;
     const seconds=wasActive?Math.min(.1,(now-lastFrame)/1000):1/(fps||20);
     lastFrame=fps?now:0;
-    const sound=active&&(animate||showSpectrum||snapshot.external||coverBeat||stageBeat||lyricBeat||tideMoving)?api.sample(seconds):null;
-    if(tideActive||tideTrack!==null)updateTide(tideActive?snapshot.track?.id??null:null,tideMoving?sound:null,seconds);
+    const sound=active&&(animate||showSpectrum||snapshot.external||coverBeat||stageBeat||lyricBeat||tideMotion)?api.sample(seconds):null;
     if(sound)sound.beat=SonicMusicMotion.correctBeat(sound.beat,preferences.beatRatio);
     const beat=sound?.beat, age=beat?.age??Infinity;
+    if(tideMotion)updateTideRipples(beat);
+    else if(tideBeat!==null)resetTideRipples();
     const effectPulse=beat?.locked?beat.pulse:preferences.lyricEffect==='orbit'?0:(sound?.pulse||0)*.65;
     const lyricPulse=lyricBeat?Math.round(effectPulse*preferences.response*.5)/50:0;
     if(lyricPulse!==effectBeat){effectBeat=lyricPulse;effectStage.style.setProperty('--fx-beat',String(lyricPulse));}
@@ -1982,6 +2114,7 @@
     cancelAnimationFrame(lyricFrameId);lyricFrameId=0;
     nextEffectFrame=0;
     nextSceneryFrame=0;
+    if(tideBeat!==null)resetTideRipples();
     if(!onScreen()||reducedMotion.matches){
       clearPreparedLyric();
       endBackdropFade();
@@ -2255,10 +2388,10 @@
     home:()=>{closeDialogs();if(preferences.mode==='work')window.scrollTo(0,0);else setMode('work');},
     library:()=>{closeDialogs();setMode('library');},
     search:()=>{closeDialogs();setMode('search');musicLibrary.focusSearch();},
-    online:()=>{
+    online:opener=>{
       closeDialogs();
       const mode=root.dataset.mode;
-      api.openOnline(isLibraryMode(mode)?musicLibrary.searchQuery():undefined,{searchOnly:mode==='search'});
+      api.openOnline(isLibraryMode(mode)?musicLibrary.searchQuery():undefined,{searchOnly:mode==='search',opener});
     },
     discovery:()=>{closeDialogs();api.openDiscovery(root);},equalizer:()=>{closeDialogs();window.SonicEqualizer.open();},
     'desktop-lyrics-window':async()=>{
@@ -2266,9 +2399,14 @@
       publishPlayerState();const result=await desktop.desktopLyrics();
       if(!result?.ok&&result?.message)notify(result.message,true);
     },
-    settings:()=>show(atmosphere),
-    'player-backgrounds':()=>backgroundPicker?.open(preferences.playbackBackground),
-    lyrics:()=>{closeDialogs();api.editLyrics();},listen:()=>setLyricExpanded(true),
+    settings:()=>{
+      if(preferences.mode==='listen')backgroundPicker?.open(playbackBackdrop?.entry.id||'default');
+      else if(preferences.mode==='work')show(atmosphere);
+      else return actions['playback-settings']();
+    },
+    lyrics:()=>{closeDialogs();api.editLyrics();},
+    'import-current-lyrics':()=>{closeDialogs();api.importCurrentLyrics();},
+    listen:()=>setLyricExpanded(true),
     'now-playing':()=>setMode('listen'),
     'full-lyrics':()=>setLyricExpanded(true,true),
     'enter-immersion':entry=>setListeningImmersion(true,entry),
@@ -2293,6 +2431,7 @@
         select.disabled=snapshot.external||!devices;
       }catch(error){$('[data-playback-status]').textContent=error.message||'暂时无法读取输出设备。';}
     },
+    mute:()=>{api.toggleMute();updateUI(true);},
     queue:button=>{
       if(queueDialog.open)return;
       queueOpener=button;
@@ -2343,16 +2482,11 @@
     if(button.dataset.roomMode){setMode(button.dataset.roomMode);return;}
     if(button.dataset.sceneFilter){filterScenes(button.dataset.sceneFilter);return;}
     if(button.dataset.sceneSelect){selectScene(button.dataset.sceneSelect);return;}
-    if(button.dataset.effectChoice){
-      readingFullLyrics=false;
-      lyricMods?.clear();
-      preferences.lyricStyle='effects';preferences.lyricEffect=effects.get(button.dataset.effectChoice).id;
-      effectDialog.close();applyPreferences(true);
-      return;
-    }
-    if(button.dataset.lyricStyle){readingFullLyrics=false;lyricMods?.clear();preferences.lyricStyle=button.dataset.lyricStyle;applyPreferences(true);return;}
+    if(button.dataset.effectChoice){chooseLyricStyle('effects',button.dataset.effectChoice);return;}
+    if(button.dataset.lyricStyle){chooseLyricStyle(button.dataset.lyricStyle);return;}
     if(button.dataset.background){preferences.background=button.dataset.background;preferences.reactiveBackdrop=false;applyPreferences(true);return;}
-    if(button.dataset.color){preferences.color=button.dataset.color;applyPreferences(true);return;}
+    if(button.dataset.color){preferences.playbackColor=button.dataset.color;applyPreferences(true);return;}
+    if(button.dataset.workColor){preferences.color=button.dataset.workColor;applyPreferences(true);return;}
     const action=actions[button.dataset.action];if(action)Promise.resolve(action(button)).catch(error=>notify(error.message||'操作没有完成，请重试。'));
   });
   root.addEventListener('pointermove',revealStageChrome,{passive:true});
@@ -2370,7 +2504,7 @@
   root.addEventListener('close',revealListeningControls,true);
   playerDock.addEventListener('pointerleave',revealListeningControls);
   exitImmersion.addEventListener('pointerleave',revealListeningControls);
-  for(const key of ['brightness','response'])$('[data-'+key+']').addEventListener('input',event=>{preferences[key]=Number(event.target.value);$('[data-'+key+'-value]').textContent=preferences[key]+'%';fill(event.target);persist();backgroundDirty=true;wake();});
+  for(const key of ['brightness','response'])$('[data-'+key+']').addEventListener('input',event=>{preferences[key]=Number(event.target.value);$('[data-'+key+'-value]').textContent=preferences[key]+'%';fill(event.target);persist();backgroundPicker?.refreshBackdrop();backgroundDirty=true;wake();});
   $('[data-desktop-lyrics]').addEventListener('change',event=>{preferences.desktopLyrics=event.target.checked;applyPreferences(true);});
   $('[data-beat-ratio]').addEventListener('change',event=>{preferences.beatRatio=Number(event.target.value);applyPreferences(true);});
   $('[data-output-device]').addEventListener('change',async event=>{
@@ -2482,7 +2616,11 @@
     if(file)applyExternalLyrics(()=>api.importExternalLyrics(file),'正在读取歌词文件…');
   });
   back.addEventListener('click',()=>setLegacy(false));
-  window.addEventListener('sonic:toast',event=>notify(event.detail.message,event.detail.error));
+  window.addEventListener('sonic:toast',event=>{
+    const {message,error,playNew,importResult}=event.detail;
+    if(importResult&&isLibraryMode(root.dataset.mode))return;
+    notify(message,error,playNew);
+  });
   window.addEventListener('sonic:library-search',event=>{
     closeDialogs();setMode(event.detail.searchOnly?'search':'library');musicLibrary.searchLocal(event.detail.query);
   });

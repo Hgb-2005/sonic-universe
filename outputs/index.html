@@ -9,14 +9,14 @@
 <link rel="icon" type="image/svg+xml" href="./assets/sonic-mark.svg">
 <meta name="sonic-project-pack-revision" content="bed720a09029">
 <meta name="sonic-file-tags-revision" content="9ac4d4eafaf4">
-<link rel="stylesheet" href="./listening-room.css?v=66fe9b76e001">
-<link rel="stylesheet" href="./music-library.css?v=1fb863e449d6">
+<link rel="stylesheet" href="./listening-room.css?v=392d997a4b02">
+<link rel="stylesheet" href="./music-library.css?v=ac11bc86d4af">
 <link rel="stylesheet" href="./music-discovery.css?v=4af8c2d7230d">
 <link rel="stylesheet" href="./equalizer.css?v=7f372d94c3af">
-<link rel="stylesheet" href="./reactive-scenes.css?v=44cdb779b73a">
-<link rel="stylesheet" href="./now-playing.css?v=f7602c653359">
-<link rel="stylesheet" href="./lyric-effects.css?v=f567e61c34e9">
-<link rel="stylesheet" href="./lyric-rhythm.css?v=869092e01a9f">
+<link rel="stylesheet" href="./reactive-scenes.css?v=4cc3d4c2050d">
+<link rel="stylesheet" href="./now-playing.css?v=c3d10365bee5">
+<link rel="stylesheet" href="./lyric-effects.css?v=10c628c968a7">
+<link rel="stylesheet" href="./lyric-rhythm.css?v=ed55eaacb3c7">
 <script>if(!new URLSearchParams(location.search).has('sharedViewer')&&new URLSearchParams(location.search).get('interface')!=='legacy'){document.documentElement.classList.add('listening-enabled');setTimeout(()=>{if(!window.SonicListeningRoom){document.documentElement.classList.remove('listening-enabled');window.SonicPlayback?.presentation(false);}},6000);}</script>
 <style>.help-btn{text-decoration:none}.footer-links{flex-wrap:wrap}</style>
 <meta name="description" content="工作时轻量陪伴，听歌时沉浸歌词。用简洁几何、柔和光雾和喜欢的音乐，留一点舒服的空间给自己。">
@@ -69,6 +69,8 @@
 .soda-panel{margin-top:13px;padding:15px;background:linear-gradient(135deg,rgba(64,210,177,.055),rgba(180,126,236,.07));border:1px solid rgba(111,215,188,.2);border-radius:10px}.soda-panel[hidden]{display:none}.soda-panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:12px}.soda-panel-head strong{display:block;color:#d8eee8;font-size:12px;font-weight:500;letter-spacing:.3px}.soda-panel-head p{margin:6px 0 0;color:#91a9a3;font-size:9px;line-height:1.8}.soda-panel-head span{font:9px ui-monospace,monospace;color:#76cdb8;letter-spacing:1.4px;white-space:nowrap}.soda-form{display:grid;grid-template-columns:1fr 1fr;gap:8px}.soda-form .soda-url{grid-column:1/-1}.soda-form input{width:100%;min-width:0}.soda-form-actions{grid-column:1/-1;display:flex;align-items:center;gap:8px;flex-wrap:wrap}.soda-form-actions button{font-size:10px;padding:9px 11px}.soda-status{min-height:16px;margin:10px 0 0!important;font-size:9px!important;color:#9fb8b1!important}.soda-status.error{color:#efbc9b!important}.soda-batch{margin-top:12px;border-top:1px solid rgba(255,255,255,.075);padding-top:12px}.soda-batch summary{cursor:pointer;color:#b7d6ce;font-size:10px;line-height:1.8}.soda-batch-body{margin-top:10px}.soda-batch textarea{width:100%;min-height:94px;font-size:10px}.soda-batch-actions{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}.soda-batch-preview{margin-top:9px!important;padding:9px 11px;border-radius:7px;background:#09120f8c;color:#aec9c2!important;font-size:9px!important;white-space:pre-wrap}.soda-batch-preview:empty{display:none}.queue-row.soda-row .queue-art{color:#8fe0cb;background:radial-gradient(circle at 45% 42%,#eafff8 0,#67cbae 12%,#24493f 35%,#101916 78%)}.queue-row.soda-row .queue-select{cursor:pointer}.queue-tools .edit-song{font-size:15px}
 @media(max-width:760px){.soda-panel{padding:12px}.soda-panel-head{gap:8px}.soda-panel-head span{display:none}.soda-form{grid-template-columns:1fr}.soda-form .soda-url{grid-column:auto}.soda-form-actions{grid-column:auto}.soda-form-actions button{flex:1}.queue-row .queue-tools{grid-template-columns:repeat(6,24px)}}
 @media(max-width:380px){.queue-row .queue-tools{grid-template-columns:repeat(6,22px)}}
+.queue-pagination:not([hidden]){display:flex;align-items:center;justify-content:center;gap:12px;margin-top:10px;color:#b1a0c2;font-size:11px}
+.queue-pagination .secondary-btn{padding:6px 10px;font-size:inherit}
 
 /* Edition 06: a score for the stars. */
 .journey-route{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:-5px 0 13px;font-size:9px;color:#9989ab}.journey-route>span{font-size:8px;letter-spacing:1px;color:#80718f}.journey-route .story-toggle{font-size:9px;padding:4px 0}.chapter-rail{display:flex;align-items:center;gap:5px;width:126px;margin:12px auto 0;opacity:.7}.chapter-rail i{height:2px;flex:1;background:#7b628b35;border-radius:2px;transition:background .7s}.chapter-rail i.active{background:var(--accent);box-shadow:0 0 8px rgba(var(--accent-rgb),.35)}.camera-toggle{display:block;margin-top:8px;padding:0;background:transparent;color:#9a88b2;font-size:8px;letter-spacing:.3px;pointer-events:auto;line-height:1.6}.camera-toggle[aria-pressed=true]{color:#ccb5ed}.camera-toggle:disabled{opacity:.65;cursor:default}.roam-chapter{min-width:90px}.roam-chapter strong{white-space:nowrap}.roam-chapter small{font-variant-numeric:tabular-nums}.roam-instructions{max-width:100%}
@@ -390,7 +392,8 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
         <p class="import-status" id="onlineProviderHint">汽水音乐：可搜索公开歌曲；登录后可读取收藏与歌单。</p>
         <div class="online-actions"><button class="secondary-btn" id="onlineExternalLinkBtn" type="button" hidden>连接官方播放器的声音 ↗</button><a class="text-btn" href="https://bodian.kuwo.cn/" target="_blank" rel="noopener noreferrer">波点音乐官网 ↗</a></div>
         <form class="online-search" id="onlineSearchForm" role="search">
-          <input class="text-input" id="onlineSearchInput" type="search" maxlength="100" placeholder="连接本机入口后搜索歌曲、歌手或专辑…" aria-label="搜索汽水音乐" autocomplete="off" disabled>
+          <input class="text-input" id="onlineSearchInput" type="text" inputmode="search" role="searchbox" maxlength="100" placeholder="连接本机入口后搜索歌曲、歌手或专辑…" aria-label="搜索汽水音乐" autocomplete="off" disabled>
+          <button class="secondary-btn" type="button" id="onlineSearchClearBtn">清空关键词</button>
           <button class="primary-btn" id="onlineSearchBtn" type="submit" disabled>搜索汽水音乐</button>
         </form>
         <div class="online-actions" id="onlineAccountActions"><button class="text-btn" id="onlineLikedBtn" type="button" disabled>读取我的收藏</button><button class="text-btn" id="onlinePlaylistsBtn" type="button" disabled>读取我的歌单</button></div>
@@ -418,9 +421,15 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
   <div class="library-context"><p><strong id="libraryViewName">全部音乐</strong> · <span id="libraryResultCount">0 首音乐</span></p><button class="secondary-btn" id="playCollectionBtn">播放此列表 ↗</button></div>
   <p class="library-scope" id="playbackScope">正在使用的播放范围：全部音乐 · 搜索只筛选显示</p>
   <p class="import-status" id="importStatus" role="status" aria-live="polite">支持多选、拖入或文件夹导入 · ☆ 收藏 · ＋ 加入歌单 · ↑ ↓ 调整顺序。</p>
+  <button type="button" class="secondary-btn" id="playImportedBtn" hidden>播放新导入</button>
   <progress id="importProgress" max="1" value="0" hidden aria-label="音乐导入进度"></progress>
   <details id="importFailures" hidden><summary>查看未能导入的文件及原因</summary><ul id="importFailureList"></ul></details>
   <ol class="queue-list" id="queueList" aria-label="播放列表"></ol>
+  <nav class="queue-pagination" id="legacyQueuePagination" aria-label="播放列表分页" hidden>
+    <button class="secondary-btn" id="legacyQueuePrevious" type="button" aria-controls="queueList" disabled>上一页</button>
+    <span id="legacyQueuePageStatus" role="status"></span>
+    <button class="secondary-btn" id="legacyQueueNext" type="button" aria-controls="queueList" disabled>下一页</button>
+  </nav>
   <div class="queue-bottom"><button class="text-btn" id="queueDemoBtn">＋ 加入内置音景</button><span id="libraryRemoveHint">× 从本机音乐库移除 · 不会删除原始文件</span></div>
   <div class="local-note"><span class="save-dot" aria-hidden="true"></span><span class="storage-status" role="status">正在读取本机收藏…</span></div>
 </dialog>
@@ -585,27 +594,27 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
   <script defer src="./visual-system.js?v=cd3086ca4807"></script>
   <script defer src="./soda-library.js?v=51f77f62c8a0"></script>
   <script defer src="./online-music.js?v=047dc3ed6c91"></script>
-<script defer src="./listening-core.js?v=9cb5eb73651a"></script>
-<script defer src="./now-playing.js?v=224a9f54b6c9"></script>
+<script defer src="./listening-core.js?v=794735de4126"></script>
+<script defer src="./now-playing.js?v=f25a29336863"></script>
 <script defer src="./track-details.js?v=445b8b761242"></script>
 <script defer src="./track-enrichment.js?v=f0137ad7fa25"></script>
 <script defer src="./folder-library.js?v=96c6da75fa5f"></script>
 <script defer src="./lyric-style-mods.js?v=8aadd0292e03"></script>
-<script defer src="./lyric-effects.js?v=271e73ba9594"></script>
+<script defer src="./lyric-effects.js?v=4dbb700946b0"></script>
 <script defer src="./lyric-gpu.js?v=1d3464bc9498"></script>
-<script defer src="./lyric-renderer.js?v=7af61f4784fb"></script>
+<script defer src="./lyric-renderer.js?v=8ec8a015cbb2"></script>
 <script defer src="./equalizer.js?v=b70a9b6984ae"></script>
 <script defer src="./music-discovery.js?v=2a23711cbf24"></script>
 <script defer src="./external-now-playing.js?v=4707f602ab4d"></script>
-<script defer src="./universe-main.js?v=228f8edb2ae6"></script>
-<script defer src="./music-library.js?v=0100cf541ded"></script>
+<script defer src="./universe-main.js?v=e79ccae1479f"></script>
+<script defer src="./music-library.js?v=1c0102790773"></script>
 <script defer src="./reactive-scene-landscapes.js?v=264da93dedd1"></script>
 <script defer src="./reactive-scene-neon.js?v=42a4617fe172"></script>
 <script defer src="./reactive-scene-bloom.js?v=d9accfa8d886"></script>
 <script defer src="./reactive-scenes.js?v=f516d8659581"></script>
 <script id="playbackBackgroundPhotos" type="application/json" data-white-coast="./assets/playback-white-coast.webp?v=661c1fff8c0d" data-blue-rain="./assets/playback-blue-rain.webp?v=96fa64091d1f"></script>
 <script id="playbackBackgroundPainters" type="application/json" data-href="./playback-background-painters.js?v=cb94431e157f"></script>
-<script defer src="./playback-backgrounds.js?v=3756e8e49a3e"></script>
-<script defer src="./listening-room.js?v=e52e70837e92"></script>
+<script defer src="./playback-backgrounds.js?v=ac1e34913ed4"></script>
+<script defer src="./listening-room.js?v=f37b61b07ee1"></script>
 </body>
 </html>

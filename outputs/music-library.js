@@ -44,6 +44,7 @@
             <p data-sl-import-status role="status"></p>
             <button type="button" class="lr-icon" data-sl-command="dismiss-import" aria-label="关闭导入结果">${icon('close')}</button>
           </div>
+          <button class="sl-button sl-play-all" type="button" data-sl-command="play-imported" hidden>播放新导入</button>
           <progress data-sl-import-progress aria-label="导入进度" hidden></progress>
           <details data-sl-import-details hidden>
             <summary></summary>
@@ -97,7 +98,12 @@
         <div id="sl-local-results" data-sl-local-results>
           <div class="sl-table-head" aria-hidden="true"><span>歌曲</span><span>专辑</span><span>来源</span><span>时长</span><span></span></div>
           <ol class="sl-tracks" data-sl-tracks></ol>
-          <div class="sl-empty" data-sl-empty hidden>${icon('music')}<p data-sl-empty-text></p></div>
+          <div class="sl-empty" data-sl-empty hidden>${icon('music')}<p data-sl-empty-text></p>
+            <div class="sl-empty-actions" data-sl-empty-actions hidden>
+              <button type="button" class="sl-button" data-sl-command="clear-keyword">清空关键词</button>
+              <button type="button" class="sl-button" data-sl-command="search-online">搜在线</button>
+            </div>
+          </div>
           <button class="sl-button sl-more" data-sl-command="more" hidden>加载更多</button>
         </div>
         <section class="sl-qishui-results" id="sl-qishui-results" data-sl-qishui-results aria-label="汽水音乐搜索结果" hidden>
@@ -156,6 +162,7 @@
     const enrich=$('[data-sl-enrich]'), enrichStatus=$('[data-sl-enrich-status]'), enrichResults=$('[data-sl-enrich-results]');
     const scanButton=$('[data-sl-command="scan-enrich"]'), applyButton=$('[data-sl-command="apply-enrich"]');
     const details=window.SonicTrackDetails.mount(root,api);
+    const header=root.closest('#listeningRoom').querySelector('.lr-header');
     const demoCover=new URL('./assets/interstellar-drift-cover.webp',document.baseURI).href;
     const collate=new Intl.Collator('zh-CN',{numeric:true,sensitivity:'base'});
     let database, view='all', shown=pageSize, searchPage=false, searchShown=pageSize, filtered=[];
@@ -163,6 +170,8 @@
     let enrichJob, enrichIds=[], matches=[];
     let selectionMode=false, playlistSaving=false, playlistSaveFailed=false;
     const selected=new Set();
+    const browsePositions=new Map();
+    let browseKey=null,browseLimit=pageSize,browseRestoreFrame=0,filterEditKey=null;
     const activeSearch=()=>searchPage?localSearch:search;
     const sharedQuery=()=>localSearch.value.trim();
     let searchSource='local', composing=false;
@@ -258,8 +267,35 @@
       return row;
     }
 
-    function renderTracks() {
+    function rememberBrowse(){
+      if(browseKey===null||root.hidden||browseRestoreFrame)return;
+      const y=window.scrollY;
+      const rows=[...tracksList.children];
+      const edge=header.getBoundingClientRect().height;
+      const index=y>0?rows.findIndex(row=>row.getBoundingClientRect().bottom>edge):-1;
+      const nearby=index<0?[]:rows.slice(Math.max(0,index-2),index+4).map(row=>({
+        id:row.dataset.slId,offset:row.getBoundingClientRect().top-edge,
+      })).sort((a,b)=>Math.abs(a.offset)-Math.abs(b.offset));
+      browsePositions.delete(browseKey);
+      browsePositions.set(browseKey,{y,nearby,limit:browseLimit});
+      if(browsePositions.size>80)browsePositions.delete(browsePositions.keys().next().value);
+    }
+
+    function restoreBrowse(position){
+      const anchor=position.nearby.find(({id})=>tracksList.querySelector('[data-sl-id="'+CSS.escape(id)+'"]'));
+      const row=anchor&&tracksList.querySelector('[data-sl-id="'+CSS.escape(anchor.id)+'"]');
+      const top=row?window.scrollY+row.getBoundingClientRect().top-header.getBoundingClientRect().height-anchor.offset:position.y;
+      window.scrollTo({top,behavior:'instant'});
+    }
+
+    function renderTracks({afterInput=false,savedBeforeInput=false}={}) {
       const input=activeSearch(),list=viewTracks(),query=input.value.trim().toLocaleLowerCase();
+      const key=searchPage?null:JSON.stringify([view,query,sort.value]);
+      if(key!==null&&!savedBeforeInput)rememberBrowse();
+      const deferRestore=afterInput||Boolean(browseRestoreFrame);
+      if(browseRestoreFrame){cancelAnimationFrame(browseRestoreFrame);browseRestoreFrame=0;}
+      const position=browsePositions.get(key);
+      if(key!==null&&key!==browseKey&&position)shown=position.limit;
       const rowLimit=searchPage?searchShown:shown;
       if(!searchPage){
         const visibleIds=new Set(list.map(track=>track.id));
@@ -279,11 +315,25 @@
       }
       $('[data-sl-total]').textContent=query?`找到 ${filtered.length} / ${list.length} 首`:`${list.length} 首歌曲`;
       $('[data-sl-empty]').hidden=filtered.length>0;
-      $('[data-sl-empty-text]').textContent=!database.ready?'正在读取音乐库':query?(searchPage?'本机没有匹配的歌曲。可切换到「汽水音乐」继续搜索。':'没有找到匹配的歌曲'):searchPage?emptyMessages.local:emptyMessages[view]||'通过歌曲旁的「＋」把它加入这个歌单。';
+      $('[data-sl-empty-actions]').hidden=!database.ready||!query;
+      $('[data-sl-empty-text]').textContent=!database.ready?'正在读取音乐库':query?'没有找到匹配的歌曲':searchPage?emptyMessages.local:emptyMessages[view]||'通过歌曲旁的「＋」把它加入这个歌单。';
       $('[data-sl-command="more"]').hidden=rowLimit>=filtered.length;
       const playAll=$('[data-sl-command="play-all"]');
       playAll.querySelector('span').textContent=usesVisibleOrder()?'播放当前结果':'播放列表';
       updatePlayback(playback,true);
+      if(key!==null){
+        if(position){
+          if(deferRestore){
+            // Restore the saved row after Chromium finishes scrolling the edited input into view.
+            browseRestoreFrame=requestAnimationFrame(()=>{
+              browseRestoreFrame=0;
+              if(browseKey===key&&!root.hidden)restoreBrowse(position);
+            });
+          }else restoreBrowse(position);
+        }else if(key!==browseKey)window.scrollTo({top:0,behavior:'instant'});
+      }
+      browseKey=key;
+      browseLimit=rowLimit;
     }
 
     function sortTracks(list) {
@@ -522,6 +572,7 @@
       importReport.dataset.error=String(report.error);
       $('[data-sl-import-status]').textContent=report.message;
       $('[data-sl-command="dismiss-import"]').hidden=report.busy;
+      $('[data-sl-command="play-imported"]').hidden=!report.added;
       const progress=$('[data-sl-import-progress]');
       progress.hidden=!report.busy;
       if(report.total){progress.max=report.total;progress.value=report.completed;}
@@ -594,7 +645,7 @@
         const accepted=await api.queueTrack(queueTrackId,where);
         if (accepted===false) return;
         queueOptions.close();
-        api.toast(where==='next'?'已设为下一首。':'已加入队列末尾。');
+        api.toast(accepted==='current'?'这首歌是当前曲目。':where==='next'?'已设为下一首。':'已加入队列末尾。');
       } catch (error) {
         api.toast(error.message || '无法加入播放队列，请重试。',true);
       }
@@ -796,6 +847,19 @@
         renderTracks();tracksList.children[nextIndex]?.querySelector('button').focus({preventScroll:true});
       }
       if(command==='play')playResult(id);
+      if(command==='play-imported')void api.playImportedMusic();
+      if(command==='clear-keyword'){
+        const input=searchPage?localSearch:search;
+        input.value='';
+        input.dispatchEvent(new Event('input',{bubbles:true}));
+        input.focus({preventScroll:true});
+      }
+      if(command==='search-online'){
+        if(searchPage){
+          chooseSearchSource('qishui');
+          $('[data-sl-search-source="qishui"]').focus();
+        }else api.openOnline(search.value,{opener:button});
+      }
       if(command==='play-all') {
         const first=filtered.find(track=>track.kind!=='soda');
         if(first)playResult(first.id,true);
@@ -857,12 +921,23 @@
     });
     function keepResultAbovePlayer(event){
       if(!player||!event.target.matches(':focus-visible'))return;
-      const overlap=event.target.getBoundingClientRect().bottom-player.getBoundingClientRect().top+8;
-      if(overlap>0)window.scrollBy({top:overlap,behavior:'instant'});
+      const bounds=event.target.getBoundingClientRect();
+      const overlap=bounds.bottom-player.getBoundingClientRect().top+8;
+      const above=bounds.top-header.getBoundingClientRect().bottom-8;
+      if(overlap>0||above<0)window.scrollBy({top:overlap>0?overlap:above,behavior:'instant'});
     }
     tracksList.addEventListener('focusin',keepResultAbovePlayer);
     qishuiList.addEventListener('focusin',keepResultAbovePlayer);
-    search.addEventListener('input',()=>{shown=pageSize;renderTracks();});
+    search.addEventListener('beforeinput',()=>{
+      rememberBrowse();
+      filterEditKey=browseKey;
+    });
+    search.addEventListener('input',event=>{
+      const savedBeforeInput=event.isTrusted&&filterEditKey!==null&&filterEditKey===browseKey;
+      filterEditKey=null;
+      shown=pageSize;
+      renderTracks({afterInput:true,savedBeforeInput});
+    });
     localSearch.addEventListener('input',sharedQueryChanged);
     localSearch.addEventListener('compositionstart',()=>{composing=true;});
     localSearch.addEventListener('compositionend',()=>{composing=false;});
@@ -935,12 +1010,14 @@
         else for(const dialog of root.querySelectorAll('dialog[open]'))dialog.close();
       },
       updatePlayback,
+      leaveBrowse(){rememberBrowse();browseKey=null;},
       focusSearch(){
         const dockTop=player?.getBoundingClientRect().top??window.innerHeight;
+        const headerBottom=header.getBoundingClientRect().bottom;
         const results=searchPage&&searchSource==='qishui'?qishuiList:tracksList;
         const result=window.scrollY>0&&[...results.querySelectorAll(':is(.sl-song,.sl-qishui-play):not(:disabled)')].find(button=>{
           const bounds=button.getBoundingClientRect();
-          return bounds.top>=0&&bounds.bottom+8<=dockTop;
+          return bounds.top>=headerBottom&&bounds.bottom+8<=dockTop;
         });
         (result||activeSearch()).focus({preventScroll:true});
       },

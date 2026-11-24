@@ -6,7 +6,7 @@
 })(typeof globalThis === 'object' ? globalThis : this, function () {
   'use strict';
   const clamp = (value, min, max) => Math.min(max, Math.max(min, Number.isFinite(value) ? value : min));
-  const defaults = Object.freeze({ mode: 'work', lyricStyle:'effects', lyricEffect:'tide', lyricScroll:'smooth', playbackBackground:'default', background: 'geometry', visualScene:'auto', reactiveBackdrop:false, beatClock:true, beatRatio:1, color: 'lilac', brightness: 55, response: 35, desktopLyrics: true, energySaver: true });
+  const defaults = Object.freeze({ mode: 'work', lyricStyle:'effects', lyricEffect:'tide', lyricScroll:'smooth', playbackBackground:'default', background: 'geometry', visualScene:'auto', reactiveBackdrop:false, beatClock:true, beatRatio:1, color: 'lilac', playbackColor:'cover', brightness: 55, response: 35, desktopLyrics: true, energySaver: true });
   function normalize(value) {
     const source = value && typeof value === 'object' ? value : {};
     return {
@@ -21,6 +21,7 @@
       beatClock: typeof source.beatClock === 'boolean' ? source.beatClock : defaults.beatClock,
       beatRatio: [.5,2].includes(source.beatRatio)?source.beatRatio:1,
       color: ['amber', 'ocean', 'lilac', 'cover'].includes(source.color) ? source.color : defaults.color,
+      playbackColor: ['amber','ocean','lilac','cover'].includes(source.playbackColor)?source.playbackColor:defaults.playbackColor,
       brightness: typeof source.brightness === 'number' ? clamp(source.brightness, 10, 100) : defaults.brightness,
       response: typeof source.response === 'number' ? clamp(source.response, 0, 100) : defaults.response,
       desktopLyrics: typeof source.desktopLyrics === 'boolean' ? source.desktopLyrics : defaults.desktopLyrics,

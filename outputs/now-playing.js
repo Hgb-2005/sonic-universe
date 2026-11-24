@@ -9,6 +9,8 @@
     const rows=Array.from(preview.querySelectorAll('[data-preview-line]'));
     const previewButtons=Array.from(preview.querySelectorAll('[data-preview-row]'));
     const previewTranslation=preview.querySelector('[data-preview-translation]');
+    const fullEntry=preview.querySelector('[data-now-lyrics]');
+    const importEntry=preview.querySelector('[data-import-current-lyrics]');
     const seekPreview=root.querySelector('[data-seek-lyrics]');
     const seekTime=seekPreview.querySelector('[data-seek-time]');
     const seekText=seekPreview.querySelector('[data-seek-line]');
@@ -40,10 +42,10 @@
     function animateImmersionLine(secondsLeft) {
       if(reducedMotion.matches||!rows[1].animate)return;
       const duration=Math.max(65,Math.min(160,secondsLeft*152));
-      immersionMotion=[rows[1],previewTranslation].filter(node=>!node.hidden).map(node=>node.animate(
-        [{opacity:.74,transform:'translateY(4px)'},{opacity:1,transform:'none'}],
+      immersionMotion=[previewButtons[1].animate(
+        [{transform:'translateY(3px)'},{transform:'none'}],
         {duration,easing:'cubic-bezier(.22,.61,.36,1)'}
-      ));
+      )];
     }
     reducedMotion.addEventListener('change',()=>{
       stopImmersionMotion();
@@ -233,6 +235,10 @@
         lines=nextLines;active=fullIndex=-2;groups=[];currentNode=null;
         if(full)fillFull(lines);
       }
+      const canImport=!nextLines.length&&state.track?.kind==='file'&&!state.external;
+      importEntry.hidden=!canImport;
+      fullEntry.hidden=!nextLines.length;
+      if(canImport)importEntry.setAttribute('aria-label','为《'+state.track.name+'》导入歌词');
       if(full) {
         const previousIndex=fullIndex;
         const currentChanged=index!==previousIndex;

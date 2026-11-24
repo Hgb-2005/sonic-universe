@@ -255,7 +255,7 @@ async function verify(page,{electron=false}={}) {
   const oldPlayback=await state();
   const ticketCount=network.tickets.length;
   await sharedSearch.fill(inlineQuery);
-  assert.match(await room.locator('[data-sl-empty-text]').innerText(),/本机没有匹配/);
+  assert.match(await room.locator('[data-sl-empty-text]').innerText(),/没有找到匹配的歌曲/);
   await room.locator('[data-sl-search-source="qishui"]').click();
   await room.locator('[data-sl-qishui-status]').filter({hasText:'超时'}).waitFor();
   await room.locator('[data-sl-qishui-retry]').click();
@@ -448,7 +448,7 @@ async function verifyPlaylistEditing(page) {
   await room.locator('[data-sl-view="local"]').click();
   await search.fill('Playlist Fixture');
   await room.locator('[data-sl-sort]').selectOption('name');
-  await command('more').click();
+  assert.equal(await command('more').count(),0);
   assert.deepEqual(await displayedNames(room),editNames);
   console.log('PASS batch editing spans loaded pages, deduplicates, preserves other memberships and leaves the temporary queue intact');
 }
@@ -667,7 +667,7 @@ async function verifyFirstRun(page,{electron=false}={}) {
       `${await control.innerText()} must be visible without scrolling`);
   }
   await homeLyrics.click();
-  await room.locator('[data-effect-stage][data-fx="tide"]').waitFor();
+  await room.locator('[data-tide-atmosphere]').waitFor();
   await room.locator('[data-stage-full-lyrics]').click();
   await room.locator('[data-full-lyrics]').waitFor();
   assert.ok(await room.locator('[data-full-line]').count()>=3);
@@ -694,7 +694,7 @@ async function verifyFirstRun(page,{electron=false}={}) {
   const before=await state();
   await home.click();
   await homeLyrics.click();
-  await room.locator('[data-effect-stage][data-fx="tide"]').waitFor();
+  await room.locator('[data-tide-atmosphere]').waitFor();
   await room.locator('[data-stage-full-lyrics]').click();
   await room.locator('[data-full-lyrics]').waitFor();
   await home.click();
@@ -704,7 +704,7 @@ async function verifyFirstRun(page,{electron=false}={}) {
   await search.fill(before.name);
   assert.deepEqual(await displayedNames(room),[before.name]);
   await search.fill('First Run Fixture');
-  assert.match(await room.locator('[data-sl-empty-text]').innerText(),/本机没有匹配/);
+  assert.match(await room.locator('[data-sl-empty-text]').innerText(),/没有找到匹配的歌曲/);
 
   await room.locator('[data-sl-search-source="qishui"]').click();
   await room.locator('[data-sl-qishui-results]').waitFor();
@@ -723,6 +723,9 @@ async function verifyFirstRun(page,{electron=false}={}) {
   const chooserPromise=page.waitForEvent('filechooser');
   await importMusic.click();
   await (await chooserPromise).setFiles({name:'First Run Fixture.wav',mimeType:'audio/wav',buffer:silentWav()});
+  await page.waitForFunction(()=>!SonicPlayback.library().importing&&SonicPlayback.importReport()?.added===1);
+  assert.equal((await state()).id,sample.id);
+  await room.locator('[data-toast]').getByRole('button',{name:'播放新导入',exact:true}).click();
   await page.waitForFunction(()=>{
     const playback=SonicPlayback.snapshot();
     return playback.track?.name==='First Run Fixture'&&playback.playing&&playback.position>.05;

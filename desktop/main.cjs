@@ -1,15 +1,20 @@
 'use strict';
-const { app, BrowserWindow, Menu, Tray, nativeImage, ipcMain, shell, screen, powerMonitor, dialog, net } = require('electron');
+const { app, BrowserWindow, Menu, Tray, nativeImage, ipcMain, shell, screen, powerMonitor, dialog, net, protocol } = require('electron');
 const path = require('node:path');
 const { createAppServer } = require('../companion/server.cjs');
 const { trustedFrame, externalUrl, playerState } = require('./policy.cjs');
 const { createDesktopLyrics } = require('./desktop-lyrics.cjs');
 const { createExternalNowPlaying } = require('./external-now-playing.cjs');
+const { scheme: musicFolderScheme, createMusicFolderPicker } = require('./music-folder.cjs');
+protocol.registerSchemesAsPrivileged([{scheme:musicFolderScheme,privileges:{
+  standard:true,secure:true,supportFetchAPI:true,corsEnabled:true,
+}}]);
 const { createReleaseCheck, downloadUpdate, latestReleaseUrl } = require('./release-update.cjs');
 const checkRelease=createReleaseCheck((...args)=>net.fetch(...args),app.getVersion());
 let releaseDownloading=false;
 
 const port=Number(process.env.SONIC_DESKTOP_PORT||17865),origin='http://127.0.0.1:'+port;
+const musicFolder=createMusicFolderPicker(dialog,origin);
 let window=null,mini=null,tray=null,server=null,quitting=false,captureUntil=0,lastState=playerState(null);
 let screenLocked=false,systemSuspended=false,captureMetadataApproved=false,captureMetadataEpoch=0;
 let mainReady=false,mainNeedsReload=false,mainCommand=null,mainReloadTimer=null;
@@ -147,12 +152,13 @@ function createMain() {
     if(!quitting){clearNativePlayback();setTimeout(createMain,300);}
   });
   candidate.webContents.on('did-start-navigation',({isMainFrame,isSameDocument})=>{
-    if(isMainFrame&&!isSameDocument)mainReady=false;
+    if(isMainFrame&&!isSameDocument){mainReady=false;musicFolder.clear();}
   });
   candidate.webContents.on('render-process-gone',(_event,details)=>{
     if(quitting||window!==candidate)return;
     mainReady=false;
     mainNeedsReload=true;
+    musicFolder.clear();
     clearNativePlayback();
     console.warn('[Desktop] Renderer stopped:',details.reason);
     const now=Date.now();
@@ -202,11 +208,16 @@ async function start() {
     onError:error=>console.warn('[Companion]',error.message)});
   await server.ready;await server.listen();
   console.log('[Desktop] '+origin);
+  protocol.handle(musicFolderScheme,musicFolder.handle);
   createMain();
   const image=nativeImage.createFromPath(path.join(__dirname,'../outputs/assets/sonic-icon.png')).resize({width:32,height:32});
   tray=new Tray(image);tray.setToolTip('声波宇宙 · 音乐陪你一会儿');
   for(const event of ['double-click','balloon-click'])tray.on(event,()=>showMain());
   rebuildTray();
+  ipcMain.handle('sonic:select-music-folder',event=>valid(event)?musicFolder.select(window):null);
+  ipcMain.handle('sonic:release-music-folder',(event,token)=>{
+    if(valid(event)&&typeof token==='string'&&token)musicFolder.clear(token);
+  });
   ipcMain.handle('sonic:mini',event=>{if(!valid(event))return false;createMini();return true;});
   ipcMain.handle('sonic:desktop-lyrics',event=>valid(event)?desktopLyrics.toggle():{ok:false,message:'无效的窗口。'});
   ipcMain.handle('sonic:settings',event=>valid(event)?settings():{});

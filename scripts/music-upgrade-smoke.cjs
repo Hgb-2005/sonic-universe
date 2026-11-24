@@ -603,7 +603,7 @@ async function verifyUpgrade(page) {
   await page.locator('[data-sleep-timer]').selectOption('0');
   assert.equal(await page.evaluate(()=>SonicPlayback.playbackSettings().sleepDeadline),0);
   await page.locator('[data-playback-rate]').selectOption('1');
-  await page.getByRole('button',{name:'关闭播放设置'}).click();
+  await page.getByRole('button',{name:'关闭通用设置'}).click();
   await page.evaluate(()=>{
     const real=window.setTimeout;
     window.setTimeout=(handler,delay,...args)=>real(handler,delay===900000?25:delay,...args);

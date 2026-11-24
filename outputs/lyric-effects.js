@@ -26,7 +26,7 @@
     ] },
     { name: '氛围', entries: [
       ['orbit', '星屑', '细小光点跟随字词向两侧散开'],
-      ['tide', '潮线', '暮色海面借封面取色，反光随音乐缓缓展开'],
+      ['tide', '潮线', '封面为舞台染色，水纹随节拍荡开，原词与译文居中'],
       ['ink', '洇墨', '深墨山影上的暖色书法，换句时墨影轻轻晕开'],
       ['mist', '晨雾', '整句穿过薄雾慢慢显现'],
       ['sunrise', '晨曦', '暖色光沿着歌词底部铺开'],
@@ -81,5 +81,10 @@
     return {rest:1-smooth(amount),note:Math.sin(Math.PI * voiced),
       wave:Math.sin(Math.PI * amount) * (word.order%2===0 ? 1 : -1)};
   }
-  return Object.freeze({groups:Object.freeze(groups),get,units,lineFrame,wordMotion,wordFrame});
+  function applyBackdrop(stage,preset,photo) {
+    stage.hidden=!preset;
+    stage.dataset.fx=preset?.id||'';
+    stage.toggleAttribute('data-soft-effect',Boolean(photo));
+  }
+  return Object.freeze({groups:Object.freeze(groups),get,units,lineFrame,wordMotion,wordFrame,applyBackdrop});
 });

@@ -131,7 +131,7 @@ async function verifyNowPlaying(page, folder, app) {
   const closeLyrics = () => room.locator('[data-action="collapse-lyrics"]').click();
   const lyricOptions = room.locator('.lr-more-lyrics');
   const openLyricOptions = async () => {
-    if(await lyricOptions.getAttribute('open')===null)await lyricOptions.locator('summary').click();
+    if(await lyricOptions.getAttribute('open')===null)await lyricOptions.locator(':scope > summary').click();
   };
   const details = room.getByRole('dialog',{ name:'歌曲资料', exact:true });
   const openTrackDetails = async id => {
@@ -164,10 +164,11 @@ async function verifyNowPlaying(page, folder, app) {
   };
 
   await folderInput.setInputFiles(folder);
+  await page.waitForFunction(()=>!SonicPlayback.library().importing&&SonicPlayback.importReport()?.added);
+  await page.evaluate(()=>SonicPlayback.playImportedMusic());
   const id = await page.waitForFunction(() => {
-    const library = SonicPlayback.library();
     const state = SonicPlayback.snapshot();
-    return !library.importing && state.track?.kind === 'file' && state.lyrics.length === 8 && state.track.id;
+    return state.track?.kind === 'file' && state.lyrics.length === 8 && state.track.id;
   }).then(handle => handle.jsonValue());
   if (await page.evaluate(() => SonicPlayback.snapshot().playing)) await play.click();
   await setMode('listen');
@@ -314,7 +315,7 @@ async function verifyNowPlaying(page, folder, app) {
   await line(4).and(full.locator('[aria-current="true"]')).waitFor();
   assert.equal(await line(4).locator('.lr-timed-group').count(),0);
   assert.ok(Math.abs(await page.evaluate(() => SonicPlayback.snapshot().position) - 9) < .2);
-  await openLyricOptions();
+  await room.locator('[data-action="lyric-effects"]:visible').click();
   await room.locator('button[data-lyric-style="fly"]').click();
   assert.equal(await room.getAttribute('data-lyric-style'),'fly');
   const flightRows = room.locator('[data-lyric-timeline] .lr-lyric-row:visible');
@@ -348,8 +349,8 @@ async function verifyNowPlaying(page, folder, app) {
   console.log('PASS compact preview, full lyrics, explicit word timing, line-only LRC, fly and collapse');
 
   await openLyrics();
-  const effectButton=room.locator('[data-action="lyric-effects"]');
-  const effectPicker=room.getByRole('dialog',{name:'歌词动效'});
+  const effectButton=room.locator('[data-action="lyric-effects"]:visible');
+  const effectPicker=room.getByRole('dialog',{name:'歌词样式',exact:true});
   const effectChoices=effectPicker.locator('[data-effect-choice]');
   const stage=room.locator('[data-effect-stage]');
   const effectCanvas=room.locator('[data-effect-surface] canvas:visible');
@@ -367,7 +368,7 @@ async function verifyNowPlaying(page, folder, app) {
     assert.equal(await stage.getAttribute('data-fx'),id);
     const theme=await room.evaluate(node=>({
       active:node.hasAttribute('data-lyric-theme'),
-      background:getComputedStyle(node).backgroundImage,
+      background:getComputedStyle(node.querySelector('[data-tide-atmosphere]:not([hidden])')||node).backgroundImage,
       fallbackInk:getComputedStyle(node).getPropertyValue('--fx-lyric-sung'),
       ambientVisible:getComputedStyle(node.querySelector('.lr-background')).visibility==='visible',
     }));
@@ -420,8 +421,8 @@ async function verifyNowPlaying(page, folder, app) {
   assert.deepEqual(await flightRows.allTextContents(),['逐字推进']);
 
   await seekEffect(5.2);
-  await currentEffectLyric.filter({hasText:/^夜色$/}).waitFor();
-  assert.deepEqual(await flightRows.allTextContents(),['夜色']);
+  await currentEffectLyric.filter({hasText:/^夜色测试翻译$/}).waitFor();
+  assert.equal(await currentEffectLyric.locator('.lr-lyric-translation').textContent(),'测试翻译');
   if(await room.getAttribute('data-lyric-renderer')==='webgl') {
     const simulatedLoss=await effectCanvas.evaluate(canvas=>{
       const extension=canvas.getContext('webgl')?.getExtension('WEBGL_lose_context');
@@ -440,7 +441,7 @@ async function verifyNowPlaying(page, folder, app) {
   await effectCanvas.waitFor({state:'hidden'});
   await page.waitForFunction(()=>document.querySelector('#listeningRoom')?.dataset.lyricRenderer==='text');
   assert.equal(await currentEffectLyric.getAttribute('aria-current'),'true');
-  await currentEffectLyric.filter({hasText:/^夜色$/}).waitFor();
+  await currentEffectLyric.filter({hasText:/^夜色测试翻译$/}).waitFor();
   await page.evaluate(()=>SonicPlayback.seek(9));
   await currentEffectLyric.filter({hasText:/^普通整行$/}).waitFor();
   await page.emulateMedia({reducedMotion:'no-preference'});
@@ -450,6 +451,7 @@ async function verifyNowPlaying(page, folder, app) {
   await closeLyrics();
   await openLyrics();
   assert.equal(await room.getAttribute('data-lyric-effect'),'impact');
+  await effectButton.click();
   await room.locator('button[data-lyric-style="list"]').click();
   await closeLyrics();
   console.log('PASS all 18 lyric looks, rendered canvas pixels, timed seeks and reduced motion');
@@ -537,7 +539,7 @@ async function verifyNowPlaying(page, folder, app) {
   await row.getByText(edited.name,{ exact:true }).waitFor();
   await folderInput.setInputFiles(folder);
   await page.waitForFunction(() => !SonicPlayback.library().importing &&
-    document.getElementById('importStatus').textContent.includes('1 首音频未变'));
+    document.getElementById('importStatus').textContent.includes('含 1 首重复'));
 
   const expected = { ids:[id], ...edited, cover:chosenCover };
   assert.deepEqual(await savedDetails(page,id),expected);
@@ -697,7 +699,7 @@ async function verifyNowPlaying(page, folder, app) {
       assert.equal(library.tracks.find(track=>track.id===id).sourcePath,path.basename(moved)+'/smoke.wav');
 
       await page.locator('#fileInput').setInputFiles(movedAudio);
-      await report.filter({hasText:/1 首音频未变/}).waitFor();
+      await report.filter({hasText:/含 1 首重复/}).waitFor();
       assert.deepEqual(await savedDetails(page,id),{...expected,ids:finalIds});
       // The matching scan uses the stored copy even while the original directory is gone.
       await playLocal(longId);

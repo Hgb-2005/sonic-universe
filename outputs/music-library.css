@@ -1,6 +1,12 @@
 /* The page scrolls. The room must not shift horizontally when a dialog restores focus. */
 #listeningRoom:is([data-mode=library], [data-mode=search]) { overflow: clip; }
 #listeningRoom:is([data-mode=library], [data-mode=search]) .lr-stage { width: min(1260px, calc(100% - 90px)); padding: 27px 0 18px; }
+#listeningRoom:is([data-mode=library], [data-mode=search]) .lr-header {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  background: var(--room-bg);
+}
 #listeningRoom:is([data-mode=library], [data-mode=search]) .lr-footer { display: none; }
 #listeningRoom:is([data-mode=library], [data-mode=search]) .lr-live { z-index: 2; top: 5px; }
 
@@ -332,3 +338,8 @@
 @media (max-width: 440px) and (pointer: coarse) {
   #listeningRoom .sl-library { --sl-table: minmax(0, 1fr) 39px 112px; }
 }
+
+#listeningRoom .sl-empty-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+#listeningRoom .sl-import-report [data-sl-command=play-imported] { margin: 5px 0; }
+
+#listeningRoom:is([data-mode=library], [data-mode=search]) .lr-stage { padding-bottom: 24px; }

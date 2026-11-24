@@ -177,9 +177,13 @@ async function verifyResumeRestart(launch,profile){
       const playlist=SonicPlayback.savePlaylist('续听测试歌单');
       await SonicPlayback.editPlaylistMembership(playlist,ids,true);
       await SonicPlayback.playFromLibrary(ids[0],playlist,true);
-      SonicPlayback.queueTrack(ids[0],'next');
+      SonicPlayback.queueTrack(ids[0],'end');
       const queue=SonicPlayback.snapshot({queue:true}).queue;
-      await SonicPlayback.selectQueueEntry(queue[1].entryId);
+      const duplicate=queue.at(-1);
+      if(duplicate?.id!==ids[0]||!SonicPlayback.moveQueueEntry(duplicate.entryId,queue[1].entryId)){
+        throw new Error('Could not place the explicitly appended duplicate after the current song');
+      }
+      await SonicPlayback.selectQueueEntry(duplicate.entryId);
       SonicPlayback.seek(12.4);
       return ids;
     },titles);

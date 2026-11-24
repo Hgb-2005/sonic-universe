@@ -1,5 +1,5 @@
 /* 切片 */
-#listeningRoom[data-lyric-effect=cut], #listeningRoom .lr-effect-sample[data-fx=cut] {
+#listeningRoom[data-lyric-effect=cut]:not([data-explicit-playback-background]), #listeningRoom .lr-effect-sample[data-fx=cut] {
   background:
     radial-gradient(ellipse at 92% 8%, #395b69 0%, transparent 57%),
     linear-gradient(151deg, #202e39, #0f161d 57%, #161d24);
@@ -37,7 +37,7 @@
 }
 
 /* 电台 */
-#listeningRoom[data-lyric-effect=neon], #listeningRoom .lr-effect-sample[data-fx=neon] {
+#listeningRoom[data-lyric-effect=neon]:not([data-explicit-playback-background]), #listeningRoom .lr-effect-sample[data-fx=neon] {
   background:
     radial-gradient(ellipse at 70% 75%, #174a45, transparent 62%),
     linear-gradient(130deg, #132e2d, #101c20 76%, #0e1619);
@@ -78,7 +78,7 @@
 #listeningRoom[data-lyric-effect=neon] .lr-lyric-row { top: 49%; letter-spacing: .04em; }
 
 /* 叠声 */
-#listeningRoom[data-lyric-effect=echo], #listeningRoom .lr-effect-sample[data-fx=echo] {
+#listeningRoom[data-lyric-effect=echo]:not([data-explicit-playback-background]), #listeningRoom .lr-effect-sample[data-fx=echo] {
   background:
     radial-gradient(ellipse at 8% 84%, #5a304d, transparent 56%),
     radial-gradient(ellipse at 90% 16%, #453455, transparent 59%),
@@ -116,7 +116,7 @@
 #listeningRoom[data-lyric-effect=echo] .lr-lyric-row { font-weight: 720; letter-spacing: .04em; }
 
 /* 负片 */
-#listeningRoom[data-lyric-effect=film], #listeningRoom .lr-effect-sample[data-fx=film] {
+#listeningRoom[data-lyric-effect=film]:not([data-explicit-playback-background]), #listeningRoom .lr-effect-sample[data-fx=film] {
   background:
     radial-gradient(ellipse at 69% 15%, #474646, transparent 60%),
     linear-gradient(156deg, #333233, #1c1c1d 56%, #252425);
@@ -160,7 +160,7 @@
 }
 
 /* 耀斑 */
-#listeningRoom[data-lyric-effect=flare], #listeningRoom .lr-effect-sample[data-fx=flare] {
+#listeningRoom[data-lyric-effect=flare]:not([data-explicit-playback-background]), #listeningRoom .lr-effect-sample[data-fx=flare] {
   background:
     radial-gradient(ellipse at 95% -17%, #f49b59a3, transparent 48%),
     radial-gradient(ellipse at 4% 108%, #713b2b, transparent 60%),

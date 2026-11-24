@@ -18,6 +18,8 @@ const subscribe = channel => callback => {
 };
 contextBridge.exposeInMainWorld('sonicDesktop', Object.freeze({
   folderImportKey,
+  selectMusicFolder: () => ipcRenderer.invoke('sonic:select-music-folder'),
+  releaseMusicFolder: token => ipcRenderer.invoke('sonic:release-music-folder', token),
   mini: () => ipcRenderer.invoke('sonic:mini'),
   desktopLyrics: () => ipcRenderer.invoke('sonic:desktop-lyrics'),
   wallpaper: enabled => ipcRenderer.invoke('sonic:wallpaper', enabled===true),

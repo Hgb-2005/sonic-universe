@@ -30,7 +30,7 @@
       case 'film': pose.y=.032*fade; pose.sy=1-.07*fade; pose.opacity=1-.18*fade; break;
       case 'flare': pose.y=-.061*lift; pose.sx=pose.sy=1+.047*lift; pose.opacity=1-.11*fade; break;
       case 'orbit': pose.x=side*fade*.20; pose.y=-swing*.29; pose.angle=side*fade*13; break;
-      case 'tide': pose.y=-.027*lift; pose.opacity=1-.06*fade; break;
+      case 'ink': pose.sx=1-.29*fade; break;
       case 'ink': pose.opacity=1-.12*fade; break;
       case 'mist': pose.opacity=1-.68*fade; break;
       case 'sunrise': pose.y=.21*fade; break;

@@ -3,6 +3,25 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const core = require('../outputs/listening-core.js');
 const karaoke = require('../outputs/lyric-karaoke.js');
+const backgrounds = require('../outputs/playback-backgrounds.js');
+
+test('playback defaults to cover color without changing an established work color', () => {
+  const saved = core.normalize({ color: 'amber' });
+  assert.equal(saved.color, 'amber');
+  assert.equal(saved.playbackColor, 'cover');
+  assert.equal(core.normalize({ ...saved, playbackColor: 'ocean' }).playbackColor, 'ocean');
+});
+
+test('only the automatic background lets the effect supply its full backdrop', () => {
+  const treatment = (background, id) => backgrounds.lyricBackdrop(backgrounds.get(background), {id});
+  assert.equal(treatment('default','tide'), 'theme');
+  assert.equal(treatment('warm-white','tide'), 'soft');
+  assert.equal(treatment('warm-white','still'), 'overlay');
+  assert.equal(treatment('white-coast','paper'), 'soft');
+  assert.equal(treatment('blue-rain','impact'), 'soft');
+  assert.equal(treatment('clean','impact'), 'overlay');
+  for (const id of ['geometry','mist','clean']) assert.equal(backgrounds.normalize(id), id);
+});
 
 test('individual glyphs take flight around their own onset, including a late syllable', () => {
   const [line] = karaoke.parseKrc('[1000,5200]<0,800,0>风<4200,600,0>来');

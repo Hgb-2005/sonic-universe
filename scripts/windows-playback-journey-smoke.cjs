@@ -237,9 +237,9 @@ async function verifyJourney(profile,fixtures,config) {
       const hit=document.elementFromPoint(bounds.left+bounds.width/2,bounds.top+bounds.height/2);
       return bounds.right>innerWidth||!button.contains(hit);
     }).map(button=>button.getAttribute('aria-label'))),[]);
-    await settings.click();
+    await room.locator('footer [data-action="playback-settings"]').click();
     await room.locator('[data-energy]').setChecked(config.energy===true);
-    await room.locator('[data-settings] [data-close]').click();
+    await room.locator('[data-playback-dialog] [data-close]').click();
     await page.locator('#folderInput').setInputFiles(fixtures);
     await page.waitForFunction(count=>!SonicPlayback.library().importing&&
       SonicPlayback.library().tracks.filter(track=>track.kind==='file').length===count,titles.length);
