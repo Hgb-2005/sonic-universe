@@ -20,6 +20,35 @@
     let lines, trackId, queueEntryId, active=-2, fullIndex=-2, lastPosition=0, groups=[], currentNode;
     let view, following=true, readingTop=0, previewMessage='';
     let targetLine, targetEnd, targetMessage, targetGroups=[];
+    let scrollFrame=0;
+    let scrollMode='smooth', lineTracks=[];
+    let immersionMotion=[];
+    const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)');
+    const immersionLines=preview.querySelector('.lr-now-lines');
+    const immersionSizes=typeof ResizeObserver==='function'?new ResizeObserver(entries=>{
+      for(const {target,contentRect} of entries){
+        const property=target===rows[1]?'--lr-immersion-body-height':'--lr-immersion-caption-height';
+        immersionLines.style.setProperty(property,contentRect.height+'px');
+      }
+    }):null;
+
+    function stopImmersionMotion() {
+      for(const animation of immersionMotion)animation.cancel();
+      immersionMotion=[];
+    }
+
+    function animateImmersionLine(secondsLeft) {
+      if(reducedMotion.matches||!rows[1].animate)return;
+      const duration=Math.max(65,Math.min(160,secondsLeft*152));
+      immersionMotion=[rows[1],previewTranslation].filter(node=>!node.hidden).map(node=>node.animate(
+        [{opacity:.74,transform:'translateY(4px)'},{opacity:1,transform:'none'}],
+        {duration,easing:'cubic-bezier(.22,.61,.36,1)'}
+      ));
+    }
+    reducedMotion.addEventListener('change',()=>{
+      stopImmersionMotion();
+      if(reducedMotion.matches&&view==='full'&&following)centerLine(true);
+    });
 
     function emptyMessage(state,nextLines) {
       if(nextLines.length)return '歌词即将开始';
@@ -56,7 +85,7 @@
       const visible=view!=='hidden'&&Number.isFinite(position);
       if(seekPreview.hidden===visible){
         seekPreview.hidden=!visible;
-        if(visible)root.dataset.lyricSeeking='true';
+        if(visible){root.dataset.lyricSeeking='true';stopImmersionMotion();}
         else delete root.dataset.lyricSeeking;
       }
       if(!visible)return;
@@ -99,14 +128,77 @@
       scroll.scrollTo({top:following?0:readingTop,behavior:'instant'});
     }
 
-    function centerLine(immediate) {
+    function stopScroll() {
+      cancelAnimationFrame(scrollFrame);
+      scrollFrame=0;
+      for(const animation of lineTracks)animation.cancel();
+      lineTracks=[];
+    }
+
+    function centerLine(immediate, secondsLeft=.65, previousIndex=-1) {
+      stopScroll();
       const row=fullIndex>=0?scroll.children[fullIndex]:null;
       let nextTop=0;
       if(row){
         const bounds=row.getBoundingClientRect();
         nextTop=scroll.scrollTop+bounds.top-scroll.getBoundingClientRect().top-scroll.clientTop+(bounds.height-scroll.clientHeight)/2;
       }
-      scroll.scrollTo({top:Math.max(0,nextTop),behavior:immediate||matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});
+      const from=scroll.scrollTop;
+      const target=Math.max(0,Math.min(nextTop,scroll.scrollHeight-scroll.clientHeight));
+      const distance=target-from;
+      if(immediate||reducedMotion.matches||root.dataset.modMotion==='still'||Math.abs(distance)<1){
+        scroll.scrollTo({top:target,behavior:'instant'});
+        return;
+      }
+      if(scrollMode!=='smooth'){
+        moveLyricRows(target,secondsLeft,previousIndex);
+        return;
+      }
+      // Leave part of each phrase at rest, including lines sung in quick succession.
+      const duration=Math.max(72,Math.min(410,secondsLeft*660));
+      const started=performance.now();
+      function step(now) {
+        const progress=reducedMotion.matches?1:Math.min(1,(now-started)/duration);
+        scroll.scrollTop=from+distance*(1-(1-progress)**3);
+        scrollFrame=progress<1?requestAnimationFrame(step):0;
+      }
+      scrollFrame=requestAnimationFrame(step);
+    }
+
+    function moveLyricRows(target,secondsLeft,previousIndex) {
+      const first=Math.max(0,Math.min(previousIndex,fullIndex)-3);
+      const last=Math.min(scroll.children.length,Math.max(previousIndex,fullIndex)+4);
+      const rows=Array.from(scroll.children).slice(first,last);
+      const before=rows.map(row=>row.getBoundingClientRect().top);
+      scroll.scrollTo({top:target,behavior:'instant'});
+      const duration=scrollMode==='track'?Math.max(100,Math.min(385,secondsLeft*610)):
+        Math.max(75,Math.min(255,secondsLeft*430));
+      for(const [index,row] of rows.entries()){
+        if(!row.animate)continue;
+        const move=before[index]-row.getBoundingClientRect().top;
+        const current=first+index===fullIndex, outgoing=first+index===previousIndex;
+        if(Math.abs(move)<1||scrollMode==='track'&&current)continue;
+        let frames;
+        if(scrollMode==='track'){
+          const bounce=Math.max(-8,Math.min(8,-move*.10));
+          frames=[{transform:`translateY(${move}px)`},{transform:`translateY(${bounce}px)`,offset:.72},{transform:'none'}];
+        }else{
+          const distance=Math.max(-30,Math.min(30,move*(outgoing?.54:.4)));
+          frames=current?[{transform:`translateY(${distance}px)`,opacity:.42},{transform:'none',opacity:1}]:
+            outgoing?[{transform:`translateY(${distance}px)`,opacity:1},{transform:'translateY(-8px)',opacity:.48,offset:.72},{transform:'none',opacity:1}]:
+            [{transform:`translateY(${distance}px)`},{transform:'none'}];
+        }
+        lineTracks.push(row.animate(frames,{duration,easing:'cubic-bezier(.22,.63,.32,1)'}));
+      }
+    }
+
+    function markNeighbors(index, enabled) {
+      for(const offset of [-2,-1,1,2]){
+        const row=scroll.children[index+offset];
+        if(!row?.hasAttribute('data-full-line'))continue;
+        if(enabled)row.dataset.lyricDistance=Math.abs(offset)===1?'near':'context';
+        else delete row.dataset.lyricDistance;
+      }
     }
 
     function showFollowButton(visible) {
@@ -118,6 +210,7 @@
     function resumeFollowing() {
       following=true;
       readingTop=0;
+      scroll.removeAttribute('data-reading');
       showFollowButton(false);
     }
 
@@ -126,6 +219,7 @@
     }
 
     function sync(state,position,{full=false,force=false}={}) {
+      if(force&&view==='immersive')stopImmersionMotion();
       const trackChanged=trackId!==state.track?.id||queueEntryId!==state.queueEntryId;
       trackId=state.track?.id;
       queueEntryId=state.queueEntryId;
@@ -140,14 +234,17 @@
         if(full)fillFull(lines);
       }
       if(full) {
-        const currentChanged=index!==fullIndex;
+        const previousIndex=fullIndex;
+        const currentChanged=index!==previousIndex;
         if(currentChanged) {
-          const previous=scroll.children[fullIndex];
-          if(previous){previous.removeAttribute('aria-current');previous.querySelector('.lr-full-text').textContent=lines[fullIndex]?.text||'';}
+          const previous=scroll.children[previousIndex];
+          if(previous){previous.removeAttribute('aria-current');previous.querySelector('.lr-full-text').textContent=lines[previousIndex]?.text||'';}
+          if(previousIndex>=0)markNeighbors(previousIndex,false);
           fullIndex=index;
           const row=scroll.children[index];
           if(row){
             row.setAttribute('aria-current','true');
+            markNeighbors(index,true);
             currentNode=row.querySelector('.lr-full-text');
             groups=makeHighlight(currentNode,line,end);
           }
@@ -158,8 +255,14 @@
           if(fullNotice.textContent!==message)fullNotice.textContent=message;
         }
         showFollowButton(!following&&Boolean(lines.length));
-        if(following&&(currentChanged||force))centerLine(force||changed||Math.abs(lastPosition-position)>1.3);
+        if(following&&(currentChanged||force)){
+          const jumped=Math.abs(index-previousIndex)>1||Math.abs(lastPosition-position)>1.3;
+          centerLine(force||changed||jumped,end-position,previousIndex);
+        }
       }else if(active!==index||currentNode!==rows[1]||(!line&&previewMessage!==emptyMessage(state,nextLines))) {
+        const natural=view==='immersive'&&!force&&!changed&&active>=0&&index===active+1&&
+          position>=lastPosition&&position-lastPosition<.35&&seekPreview.hidden;
+        if(view==='immersive')stopImmersionMotion();
         active=index;
         previewMessage=line?'':emptyMessage(state,nextLines);
         for(const [slot,button] of previewButtons.entries()) {
@@ -175,6 +278,7 @@
         previewTranslation.hidden=!line?.translation;
         currentNode=rows[1];
         groups=line?makeHighlight(currentNode,line,end):[];
+        if(natural)animateImmersionLine(end-position);
       }
       lastPosition=position;updateGroups(groups,position);
     }
@@ -188,12 +292,13 @@
     scroll.addEventListener('click',event=>{
       const row=event.target.closest('[data-full-line]');
       const line=lines?.[Number(row?.dataset.fullLine)];
-      if(line){resumeFollowing();seek(line.time);}
+      if(line)seek(line.time);
     });
     function pauseFollow() {
       if(!following||!lines?.length||scroll.scrollHeight<=scroll.clientHeight)return;
       following=false;
-      scroll.scrollTo({top:scroll.scrollTop,behavior:'instant'});
+      stopScroll();
+      scroll.setAttribute('data-reading','');
       showFollowButton(true);
     }
     scroll.addEventListener('wheel',event=>{if(event.deltaY&&!event.ctrlKey)pauseFollow();},{passive:true});
@@ -214,13 +319,24 @@
 
     return {
       sync,showSeek,
-      followAfterSeek(){if(view==='full')resumeFollowing();},
+      setScrollMode(mode) {
+        if(mode===scrollMode)return;
+        scrollMode=mode;scroll.dataset.scrollEffect=mode;
+        stopScroll();
+        if(view==='full'&&following)centerLine(true);
+      },
       setView(nextView) {
         if(view===nextView)return;
+        stopImmersionMotion();
+        immersionSizes?.disconnect();
+        stopScroll();
         rememberReading();
-        if(nextView==='preview')resumeFollowing();
         view=nextView;
         preview.hidden=view!=='preview'&&view!=='immersive';scroll.hidden=view!=='full';fullTools.hidden=scroll.hidden;
+        if(view==='immersive'){
+          immersionSizes?.observe(rows[1]);
+          immersionSizes?.observe(previewTranslation);
+        }
         showFollowButton(false);lines=null;
       },
     };

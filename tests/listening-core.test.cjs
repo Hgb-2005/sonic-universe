@@ -103,3 +103,30 @@ test('timed words retain original text and durations with no extra glyph onsets'
   assert.deepEqual(karaoke.timedSpans(closingOnly,8),[]);
   assert.equal(core.normalize({lyricStyle:'fly'}).lyricStyle, 'fly');
 });
+
+test('playback detail follows CSS size at 1x and caps high DPI by pixel budget', () => {
+  assert.equal(core.playbackRenderScale(1265,800,1,{energySaver:false}),1);
+  assert.equal(core.playbackRenderScale(375,844,1,{energySaver:false,photo:true}),1);
+  assert.equal(core.playbackRenderScale(1265,800,1,{energySaver:true}),.8);
+  assert.equal(core.playbackRenderScale(1265,800,1,{energySaver:true,photo:true}),1);
+  assert.equal(core.playbackRenderScale(375,844,3,{energySaver:false,photo:true}),1.6);
+  const large=core.playbackRenderScale(3840,2160,2,{energySaver:false});
+  assert.ok(Math.abs(large*large*3840*2160-4000000)<1);
+});
+
+test('photo crops keep one scale and preserve both existing background IDs', () => {
+  const backgrounds=require('../outputs/playback-backgrounds.js');
+  const image={naturalWidth:1536,naturalHeight:1024};
+  for(const id of ['white-coast','blue-rain']){
+    const entry=backgrounds.get(id);
+    assert.equal(backgrounds.normalize(id),id);
+    assert.ok(entry.photo);
+    for(const [width,height] of [[1265,800],[375,844]]){
+      const rect=backgrounds.photoRect(entry,image,width,height);
+      assert.equal(rect.width/rect.height,1.5);
+      assert.ok(rect.x<=0&&rect.y<=0&&rect.width+rect.x>=width&&rect.height+rect.y>=height);
+    }
+  }
+  assert.equal(backgrounds.catalogue.length,66);
+  assert.equal(backgrounds.catalogue.filter(entry=>entry.group==='space').length,5);
+});

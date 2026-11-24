@@ -6,13 +6,15 @@
 })(typeof globalThis === 'object' ? globalThis : this, function () {
   'use strict';
   const clamp = (value, min, max) => Math.min(max, Math.max(min, Number.isFinite(value) ? value : min));
-  const defaults = Object.freeze({ mode: 'work', lyricStyle:'effects', lyricEffect:'tide', background: 'geometry', visualScene:'auto', reactiveBackdrop:false, beatClock:true, beatRatio:1, color: 'lilac', brightness: 55, response: 35, desktopLyrics: true, energySaver: true });
+  const defaults = Object.freeze({ mode: 'work', lyricStyle:'effects', lyricEffect:'tide', lyricScroll:'smooth', playbackBackground:'default', background: 'geometry', visualScene:'auto', reactiveBackdrop:false, beatClock:true, beatRatio:1, color: 'lilac', brightness: 55, response: 35, desktopLyrics: true, energySaver: true });
   function normalize(value) {
     const source = value && typeof value === 'object' ? value : {};
     return {
       mode: ['work', 'listen', 'library', 'search', 'visual'].includes(source.mode) ? source.mode : defaults.mode,
       lyricStyle: ['stage','list','fly','effects'].includes(source.lyricStyle)?source.lyricStyle:defaults.lyricStyle,
       lyricEffect: typeof source.lyricEffect==='string'&&/^[a-z]{1,16}$/.test(source.lyricEffect)?source.lyricEffect:defaults.lyricEffect,
+      lyricScroll: ['smooth','track','rise'].includes(source.lyricScroll)?source.lyricScroll:defaults.lyricScroll,
+      playbackBackground: typeof source.playbackBackground==='string'&&/^[a-z][a-z0-9-]{0,47}$/.test(source.playbackBackground)?source.playbackBackground:defaults.playbackBackground,
       background: ['geometry', 'mist', 'plain', 'universe'].includes(source.background) ? source.background : defaults.background,
       visualScene: typeof source.visualScene==='string'&&/^[a-z-]{1,24}$/.test(source.visualScene)?source.visualScene:defaults.visualScene,
       reactiveBackdrop: source.reactiveBackdrop===true,
@@ -42,6 +44,11 @@
     if (reduced) return 8;
     return mode === 'work' ? (energySaver ? 20 : 30) : (energySaver ? 30 : 45);
   }
+  function playbackRenderScale(width,height,dpr,{energySaver,photo=false}={}) {
+    const limit=energySaver?(photo?1.15:.8):(photo?1.6:2);
+    const budget=energySaver?(photo?1350000:1000000):(photo?2600000:4000000);
+    return Math.min(Math.max(dpr,1),limit,Math.sqrt(budget/Math.max(1,width*height)));
+  }
   function formatTime(value) {
     const seconds = Math.floor(Math.max(0, Number.isFinite(value) ? value : 0));
     return String(Math.floor(seconds / 60)).padStart(2, '0') + ':' + String(seconds % 60).padStart(2, '0');
@@ -49,5 +56,5 @@
   function approach(value, target, seconds, timeConstant = .6) {
     return value + (target - value) * (1 - Math.exp(-clamp(seconds, 0, 1) / Math.max(.01, timeConstant)));
   }
-  return { defaults, normalize, lyricAt, frameRate, formatTime, approach, clamp };
+  return { defaults, normalize, lyricAt, frameRate, playbackRenderScale, formatTime, approach, clamp };
 });

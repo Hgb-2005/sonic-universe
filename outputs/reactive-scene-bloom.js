@@ -73,10 +73,10 @@
     }
   }
 
-  function colorAt(from, to, part, accent) {
+  function colorAt(from, to, part, accent, weight = .17) {
     return from.map((source, index) => {
       const target = mix(source, to[index], part);
-      return Number.isFinite(accent?.[index]) ? Math.round(mix(target, clamp(accent[index], 0, 255), .17)) : Math.round(target);
+      return Number.isFinite(accent?.[index]) ? Math.round(mix(target, clamp(accent[index], 0, 255), weight)) : Math.round(target);
     }).join(',');
   }
 
@@ -110,18 +110,24 @@
 
   function paintBloom(context, frame) {
     const { width, height, time, bass, mid, high, pulse, energy, spectrum, quality, seed } = frame;
-    const focused = Number.isFinite(frame.focus);
-    const opening = focused ? smooth(clamp((frame.focus - .16) / .38, 0, 1)) : 0;
+    const {artwork,brightness} = frame.immersion || {};
+    const focused = Boolean(artwork);
+    const narrow = width <= 700;
     const requestedMorph = Number.isFinite(frame.morph) ? frame.morph : time / 9;
     const phase = ((requestedMorph % 3) + 3) % 3;
     const from = Math.floor(phase), to = (from + 1) % 3;
     const bend = smooth(clamp((fract(phase) - .53) / .47, 0, 1));
     const a = forms[from], b = forms[to];
-    const colors = channels[from].map((color, index) => colorAt(color, channels[to][index], bend, frame.palette));
+    const colors = channels[from].map((color, index) => {
+      const accent=focused?(index===1||index===2?artwork.secondary:artwork.primary):frame.palette;
+      return colorAt(color,channels[to][index],bend,accent,focused?.84:.17);
+    });
     const aspect = Math.min(width, height);
     const centerX = width * (.5 + .018 * Math.sin(time * .22));
     const centerY = height * ((focused ? .5 : .452) + .016 * Math.sin(time * .19 + .5));
-    const radius = focused ? Math.min(width * .51, height * .48) : Math.min(width * .43, height * .365);
+    const radius = focused ? Math.min(width * .53, height * .53) : Math.min(width * .43, height * .365);
+    const verticalScale = focused && narrow ? 1.58 : 1;
+    const inLyricField = (x,y) => focused && Math.abs(x / width - .5) < .40 && Math.abs(y / height - .5) < .18;
     const level = (quality || 1) * (width * height > 4_600_000 ? .76 : 1);
     const strainCount = clamp(Math.round(18 + level * 18), 18, STRANDS);
     const stride = level < .8 ? 2 : 1;
@@ -133,19 +139,33 @@
     const cosX = Math.cos(tilt), sinX = Math.sin(tilt);
     const cosY = Math.cos(yaw), sinY = Math.sin(yaw);
     const cosZ = Math.cos(roll), sinZ = Math.sin(roll);
-    const swell = 1 + bass * .11 + pulse * .12 + opening * .16;
+    const swell = 1 + bass * .11 + (focused ? 0 : pulse * .12);
     const pixel = clamp(radius / 390, .67, 2.35);
     const timeSeed = ((time * 1000) | 0) / 1000;
 
     context.save();
     const background = context.createLinearGradient(0, 0, width * .5, height);
-    background.addColorStop(0, '#090a1a');
-    background.addColorStop(.54, '#111127');
-    background.addColorStop(1, '#060910');
+    if(focused){
+      background.addColorStop(0, `rgb(${artwork.base.map(value=>Math.round(value*.66+4))})`);
+      background.addColorStop(.54, `rgb(${artwork.base})`);
+      background.addColorStop(1, `rgb(${artwork.base.map(value=>Math.round(value*.46+3))})`);
+    }else{
+      background.addColorStop(0, '#090a1a');
+      background.addColorStop(.54, '#111127');
+      background.addColorStop(1, '#060910');
+    }
     context.fillStyle = background;
     context.fillRect(0, 0, width, height);
-    radial(context, centerX - radius * .64, centerY - radius * .46, aspect * .92, colors[0], .17 + energy * .12);
-    radial(context, centerX + radius * .69, centerY + radius * .26, aspect * .73, colors[2], .11 + pulse * .09);
+    if(focused){
+      const drift = Math.sin(time * .16) * .035;
+      const glow = .62 + brightness * .56;
+      radial(context,width*(.18+drift),height*.19,aspect*(narrow?.98:.86),artwork.primary,.43*glow+pulse*.11);
+      radial(context,width*(.86-drift),height*.80,aspect*(narrow?.94:.77),artwork.secondary,.38*glow);
+      radial(context,width*.88,height*.09,aspect*.63,artwork.secondary,.16*glow);
+    }else{
+      radial(context, centerX - radius * .64, centerY - radius * .46, aspect * .92, colors[0], .17 + energy * .12);
+      radial(context, centerX + radius * .69, centerY + radius * .26, aspect * .73, colors[2], .11 + pulse * .09);
+    }
     stars(context, width, height, seed, high);
 
     let left = centerX, right = centerX, upper = centerY, lower = centerY;
@@ -169,7 +189,7 @@
         const apparentZ = y * sinX + depth * cosX;
         const perspective = 3.65 / (3.65 - apparentZ);
         projectedX[point] = centerX + (horizontal * cosZ - vertical * sinZ) * radius * perspective;
-        projectedY[point] = centerY + (vertical * cosZ + horizontal * sinZ) * radius * perspective;
+        projectedY[point] = centerY + (vertical * cosZ + horizontal * sinZ) * radius * perspective * verticalScale;
         projectedDepth[point] = clamp(.5 + apparentZ * .55, 0, 1);
         left = Math.min(left, projectedX[point]);
         right = Math.max(right, projectedX[point]);
@@ -230,6 +250,7 @@
             if (flicker < .16) continue;
             const size = pixel * (.68 + flicker * brightness * 2.02) * (1 + high * .32 + pulse * .22);
             const x = projectedX[point], y = projectedY[point];
+            if(inLyricField(x,y))continue;
             context.moveTo(x + size, y);
             context.arc(x, y, size, 0, TAU);
           }
@@ -249,6 +270,7 @@
       const fade = Math.min(1, travel * 11, (1 - travel) * 11);
       const size = pixel * (1.6 + depth * 2.4 + pulse * 2.8);
       const x = projectedX[point], y = projectedY[point];
+      if(inLyricField(x,y))continue;
       radial(context, x, y, size * 4.5, colors[strand % 3], fade * (.43 + pulse * .27));
       context.fillStyle = `rgba(${colors[3]},${fade * (.67 + depth * .24)})`;
       context.beginPath();
@@ -256,6 +278,20 @@
       context.fill();
     }
 
+    if(focused){
+      const shade=artwork.base.map(value=>Math.round(value*.33+3));
+      context.save();
+      context.translate(width*.5,height*.5);
+      context.scale(width*(narrow?.73:.58),height*(narrow?.33:.37));
+      const veil=context.createRadialGradient(0,0,0,0,0,1);
+      veil.addColorStop(0,`rgba(${shade},.97)`);
+      veil.addColorStop(.48,`rgba(${shade},.92)`);
+      veil.addColorStop(.72,`rgba(${shade},.58)`);
+      veil.addColorStop(1,`rgba(${shade},0)`);
+      context.fillStyle=veil;
+      context.fillRect(-1,-1,2,2);
+      context.restore();
+    }
     context.restore();
   }
 

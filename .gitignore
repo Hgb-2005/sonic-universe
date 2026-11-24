@@ -54,6 +54,8 @@ Thumbs.db
 !/outputs/reactive-scene-landscapes.js
 !/outputs/reactive-scene-neon.js
 !/outputs/reactive-scene-bloom.js
+!/outputs/playback-backgrounds.js
+!/outputs/playback-background-painters.js
 !/outputs/now-playing.js
 !/outputs/now-playing.css
 !/outputs/track-details.js
