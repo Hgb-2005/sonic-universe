@@ -161,7 +161,8 @@
     origin:'bundled',offset:0,size:'medium',only:true,enabled:true
   });
   const demoBuffers=new Map(),demoBuilds=new Map();
-  let audioContext=null,analyser=null,masterGain=null,mediaNode=null,freqData=null,timeData=null,demoSource=null;
+  let audioContext=null,analyser=null,masterGain=null,normGain=null,mediaNode=null,freqData=null,timeData=null,demoSource=null;
+  const loudnessCache=new Map(),loudnessMeasuring=new Set(),LOUDNESS_KEY='sonic-loudness-v1';
   let mode='demo',playing=false,busy=false,duration=0,offset=0,startedAt=0,repeat=true,volume=.65,lastVolume=.65,objectUrl=null;
   let generation=0,loadGeneration=0,currentFile=null,pendingFile=null,seeking=false,toastTimer=0,dragDepth=0,lastUIUpdate=0;
   let onlinePending=null,onlineClipStart=0,onlineRetrying=false,onlineRetryCount=0,onlineSwitching=false,onlineClient=null,onlineReady=false,onlineLoggedIn=false,onlineLoginPoll=0,onlineLoginGeneration=0,onlinePlaylistCache=[],onlineCurrentPlaylistId='';
@@ -3448,15 +3449,69 @@
   }
   // 音量滑块走感知曲线；没有音频调音模块时退回线性，保证旧环境仍能出声。
   function masterGainFor(value){return window.SonicAudioTuning?.perceptualGain?window.SonicAudioTuning.perceptualGain(value):value}
+  // 响度补偿：导入/首次播放时测一次，按 ±9dB 拉平不同音源的响度差。
+  function loudnessStore(){
+    if(!loudnessCache.size){
+      try{
+        const saved=JSON.parse(localStorage.getItem(LOUDNESS_KEY)||'{}');
+        for(const [id,db] of Object.entries(saved))if(Number.isFinite(db))loudnessCache.set(id,db);
+      }catch{}
+    }
+    return loudnessCache;
+  }
+  function persistLoudness(){
+    try{localStorage.setItem(LOUDNESS_KEY,JSON.stringify(Object.fromEntries(loudnessCache)))}catch{}
+  }
+  function applyLoudnessGain(db){
+    if(!normGain||!audioContext)return;
+    const value=window.SonicAudioTuning?.gainOfDb?window.SonicAudioTuning.gainOfDb(db):Math.pow(10,(Number.isFinite(db)?db:0)/20);
+    const now=audioContext.currentTime;
+    normGain.gain.cancelScheduledValues(now);
+    normGain.gain.setTargetAtTime(value,now,.25);
+  }
+  function syncLoudness(track){
+    const db=loudnessStore().get(track?.id);
+    applyLoudnessGain(Number.isFinite(db)?db:0);
+  }
+  async function measureLoudness(track,url){
+    if(!track||!url||!window.SonicAudioLoudness||loudnessStore().has(track.id)||loudnessMeasuring.has(track.id))return;
+    loudnessMeasuring.add(track.id);
+    try{
+      const response=await fetch(url);
+      const buffer=await response.arrayBuffer();
+      if(buffer.byteLength>120*1024*1024)return;
+      const decoded=await audioContext.decodeAudioData(buffer.slice(0));
+      const channels=[];
+      for(let c=0;c<Math.min(2,decoded.numberOfChannels);c++)channels.push(decoded.getChannelData(c));
+      const loudness=window.SonicAudioLoudness.estimateLoudnessDb(channels,decoded.sampleRate);
+      const peak=window.SonicAudioLoudness.peakOf(channels);
+      // 目标 -16 dBFS（近似响度），提升幅度同时受峰值余量限制，避免削波。
+      const wanted=window.SonicAudioLoudness.gainForLoudness(loudness,-16,6,9);
+      const headroom=peak>1e-6?20*Math.log10(.95/peak):wanted;
+      const gain=Math.min(wanted,headroom);
+      loudnessCache.set(track.id,gain);persistLoudness();
+      if(track.id===activeId)applyLoudnessGain(gain);
+    }catch{}
+    finally{loudnessMeasuring.delete(track.id)}
+  }
+  function scheduleLoudness(track,url){
+    const gain=loudnessStore().get(track?.id);
+    if(Number.isFinite(gain)){applyLoudnessGain(gain);return}
+    applyLoudnessGain(0);
+    if(mode==='online')return;
+    setTimeout(()=>measureLoudness(track,url),1500);
+  }
   function initAudio(){
     if(audioContext)return;
     const AC=window.AudioContext||window.webkitAudioContext;
     if(!AC)throw new Error('这个浏览器暂不支持音频分析，请使用新版 Chrome、Edge 或 Safari。');
     audioContext=new AC();analyser=audioContext.createAnalyser();analyser.fftSize=2048;analyser.smoothingTimeConstant=.62;analyser.minDecibels=-90;analyser.maxDecibels=-15;
     trackGain=audioContext.createGain();
+    normGain=audioContext.createGain();normGain.gain.value=1;
     const tone=window.SonicEqualizer?.create(audioContext);
-    if(tone){trackGain.connect(tone.input);tone.output.connect(analyser)}
-    else trackGain.connect(analyser);
+    if(tone){trackGain.connect(tone.input);tone.output.connect(normGain)}
+    else trackGain.connect(normGain);
+    normGain.connect(analyser);
     masterGain=audioContext.createGain();masterGain.gain.value=masterGainFor(volume);analyser.connect(masterGain);masterGain.connect(audioContext.destination);
     beatAnalyser=createBeatAnalysisTap(analyser);
     freqData=new Uint8Array(analyser.frequencyBinCount);timeData=new Uint8Array(analyser.fftSize);
@@ -3856,6 +3911,8 @@
         }
         playing=true;updatePlaying();
       }
+      syncLoudness(currentTrack());
+      scheduleLoudness(currentTrack(),audio.currentSrc);
       saveSession();
       return true;
     }catch(error){
@@ -6084,6 +6141,14 @@
   }
   // One playback engine serves the listening room, legacy creator and desktop mini player.
   // Only public track metadata crosses this boundary; blobs, cookies and signed URLs stay private.
+  // 只读诊断：音量曲线与响度补偿的实际增益，供自测与问题排查。
+  window.SonicAudioDiagnostics = () => ({
+    volumeGain: masterGain ? Number(masterGain.gain.value.toFixed(4)) : null,
+    loudnessGain: normGain ? Number(normGain.gain.value.toFixed(4)) : null,
+    loudnessDb: normGain && normGain.gain.value > 0 ? Number((20 * Math.log10(normGain.gain.value)).toFixed(2)) : null,
+    measuredTracks: [...loudnessCache.keys()],
+    measuring: [...loudnessMeasuring],
+  });
   window.SonicPlayback = Object.freeze({
     library() {
       return {
