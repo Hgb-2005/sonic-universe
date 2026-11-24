@@ -732,12 +732,15 @@
   }
   function chooseLyricStyle(style,presetId){
     readingFullLyrics=false;
-    lyricExpanded=true;
+    // 纯音乐没有歌词可展示：只保存样式，不切到空白歌词舞台。
+    const hasLines=(snapshot.lyrics?.length||0)>0;
+    lyricExpanded=hasLines;
     lyricMods?.clear();
     preferences.lyricStyle=style;
     if(presetId)preferences.lyricEffect=effects.get(presetId).id;
     effectDialog.close();
     applyPreferences(true);
+    if(!hasLines)notify('这首是纯音乐，样式已保存；切到有歌词的歌就能看到效果。');
     const target=root.dataset.nowView==='full'?'[data-lyric-full-tools] [data-action="lyric-effects"]':'[data-stage-style]';
     $(target).focus({preventScroll:true});
   }
