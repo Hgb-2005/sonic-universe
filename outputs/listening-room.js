@@ -395,7 +395,7 @@
   }):null;
   const nowPlaying=window.SonicNowPlaying.mount(root,seekLyrics);
   let snapshot = api.snapshot(), legacy = false, occluded = false;
-  let timer = 0, rafTick=0, frameDue=0, lyricFrameId=0, lastFrame = 0, lastPaint=0, lastUI = 0, renderedFrames = 0;
+  let timer = 0, rafTick=0, frameDue=0, lyricFrameId=0, lastFrame = 0, lastPaint=0, lastUI = 0, renderedFrames = 0, uiRefreshes = 0, lyricPaints = 0;
   let coverMotion, lyricViewMotion;
   let backgroundDirty=true, lastPublishedState=[];
   const colors = { amber:[229,196,131], ocean:[149,188,209], lilac:[196,176,249] };
@@ -1923,6 +1923,7 @@
     if(focused)list.querySelector('[data-recent-track="'+CSS.escape(focused)+'"]')?.focus({preventScroll:true});
   }
   function updateUI(force=false,snapLyrics=false,current=api.snapshot()) {
+    uiRefreshes++;
     const previous=snapshot;
     snapshot=current;
     const trackChanged=!samePlayback(previous,snapshot);
@@ -2150,14 +2151,13 @@
   function drawLyricFrame(now) {
     lyricFrameId=0;
     if(!needsLyricFrame()){nextEffectFrame=0;return;}
-    if(showsLyricEffects()){
-      const baseRate=tideAtmosphere.hidden?120:60;
-      const interval=1000/(preferences.energySaver?baseRate/2:baseRate);
-      if(now+.6>=nextEffectFrame){
-        nextEffectFrame=Math.max(nextEffectFrame+interval,now+interval*.5);
-        renderListeningPosition(lyricPosition());
-      }
-    } else renderListeningPosition(lyricPosition());
+    // 所有歌词样式都走同一个节流窗口：动效 60/120，普通排版 60，省电减半。
+    const baseRate=showsLyricEffects()?(tideAtmosphere.hidden?120:60):60;
+    const interval=1000/(preferences.energySaver?baseRate/2:baseRate);
+    if(now+.6>=nextEffectFrame){
+      nextEffectFrame=Math.max(nextEffectFrame+interval,now+interval*.5);
+      renderListeningPosition(lyricPosition());lyricPaints++;
+    }
     lyricFrameId=requestAnimationFrame(drawLyricFrame);
   }
   function wake() {
@@ -2863,7 +2863,7 @@
     nativeTimer=setInterval(publishPlayerState,400);
   }
   changePlaybackBackground(preferences.playbackBackground,false);
-  window.SonicListeningRoom=Object.freeze({setMode,show:()=>setLegacy(false),settings:()=>({...preferences}),stats:()=>({frameCost:Number(root.dataset.frameCost||0),frames:renderedFrames,fpsLimit:Number(root.dataset.fpsLimit||0),legacyRendering:document.getElementById('app').dataset.rafRunning==='true',wallpaper:false,lyricRenderer:effectRenderer?.stats()})});
+  window.SonicListeningRoom=Object.freeze({setMode,show:()=>setLegacy(false),settings:()=>({...preferences}),stats:()=>({frameCost:Number(root.dataset.frameCost||0),frames:renderedFrames,uiRefreshes,lyricPaints,fpsLimit:Number(root.dataset.fpsLimit||0),legacyRendering:document.getElementById('app').dataset.rafRunning==='true',wallpaper:false,lyricRenderer:effectRenderer?.stats()})});
   api.presentation(true);document.documentElement.classList.add('listening-enabled');applyPreferences();
   if(new URLSearchParams(location.search).get('interface')==='legacy')setLegacy(true);
   window.addEventListener('pagehide',()=>{clearTimeout(timer);cancelAnimationFrame(lyricFrameId);clearTimeout(toastTimer);clearTimeout(stageChromeTimer);clearTimeout(immersionTimer);clearInterval(nativeTimer);});
