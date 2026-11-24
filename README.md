@@ -361,3 +361,17 @@ GitHub Actions 将 `outputs/` 发布到 GitHub Pages；推送到 `main` 的作�
 ## 权利说明
 
 本仓库公开展示作品与源码，暂未授予开源许可证。复用或再分发前请联系作者取得许可。用户自行导入的音乐与图片，其权利属于相应权利人。
+
+## 本机歌词接口（0.47 起）
+
+桌面端在现有本机服务上提供一个只读接口，供 OBS、直播字幕或其它程序读取当前歌词：
+
+```http
+GET http://127.0.0.1:17865/api/lyric
+```
+
+返回 JSON：`track`、`duration`、`position`、`playing`、`index`、`line`、`lines`。每行含 `time`、`end`、`text`、`translation`、`isChorus`，带逐字时间时还有 `words: [{text,start,end}]`。
+
+- 只监听本机回环地址，不对外网开放，也不需要鉴权
+- 当前歌曲没有歌词时仍返回 200，`lines` 为空、`line` 为 `null`
+- 换歌时才整份推送，逐行位置实时计算，不会把播放状态频繁写盘

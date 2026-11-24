@@ -334,6 +334,12 @@ function createAppServer(options = {}) {
       if (!providers) providers = await ready;
       const qishui = providers.get('qishui');
       if (url.pathname === '/health') return sendJson(response, 200, { ok: true, companion: true, musicApiVersion: 2, providers: [...providers.keys()] }, cors);
+      if (url.pathname === '/api/lyric' && request.method === 'GET') {
+        const read = options.lyricState;
+        const document = typeof read === 'function' ? read() : null;
+        if (!document) return sendJson(response, 404, { error: 'No lyric loaded' }, cors);
+        return sendJson(response, 200, document, cors);
+      }
       if (url.pathname === '/api/providers') return sendJson(response, 200, { musicApiVersion: 2, items: [
         { id: 'qishui', name: '汽水音乐', available: Boolean(qishui), capabilities: ['search', 'login', 'library', 'audio', 'lyrics'], playback: 'inline' },
         { id: 'netease', name: '网易云音乐', available: providers.has('netease'), capabilities: ['search', 'external-link'], playback: 'external' },

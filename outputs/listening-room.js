@@ -2112,8 +2112,20 @@
     skip.hidden=!recovery.canSkip;
     panel.hidden=false;
   }
+  let lastPublishedLyricTrack=null;
   function publishPlayerState(){
     const state=api.snapshot(), {index,line}=core.lyricAt(state.lyrics,state.lyricPosition,state.lyricDuration);
+    // 歌词整份只在换歌时发一次；随后的逐行变化走轻量的 state 通道。
+    const lyricTrackId=state.track?.id||null;
+    if(lyricTrackId!==lastPublishedLyricTrack){
+      lastPublishedLyricTrack=lyricTrackId;
+      desktop?.publishLyrics?.(lyricTrackId?{
+        track:{name:state.track?.name,artist:state.track?.artist},
+        duration:state.duration,
+        offset:0,
+        lines:structureLines(state.lyrics).slice(0,400),
+      }:null);
+    }
     const track={name:state.track?.name,artist:state.track?.artist};
     const desktopLyric=line?.text||'',nextLyric=state.lyrics[index+1]?.text||'';
     const previousLyric=state.lyrics[index-1]?.text||'', translation=line?.translation||'';

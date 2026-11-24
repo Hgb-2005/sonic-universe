@@ -1,8 +1,8 @@
-﻿'use strict';
+'use strict';
 const { app, BrowserWindow, Menu, Tray, nativeImage, ipcMain, shell, screen, powerMonitor, dialog, net, protocol } = require('electron');
 const path = require('node:path');
 const { createAppServer } = require('../companion/server.cjs');
-const { trustedFrame, externalUrl, playerState } = require('./policy.cjs');
+const { trustedFrame, externalUrl, playerState, lyricDocument } = require('./policy.cjs');
 const { createDesktopLyrics } = require('./desktop-lyrics.cjs');
 const { createExternalNowPlaying } = require('./external-now-playing.cjs');
 const { scheme: musicFolderScheme, createMusicFolderPicker } = require('./music-folder.cjs');
@@ -19,6 +19,7 @@ let window=null,mini=null,tray=null,server=null,quitting=false,captureUntil=0,la
 let screenLocked=false,systemSuspended=false,captureMetadataApproved=false,captureMetadataEpoch=0;
 let mainReady=false,mainNeedsReload=false,mainCommand=null,mainReloadTimer=null;
 let quitCheckpointTimer=null,quitCheckpointComplete=false;
+let lastLyricState=null;
 const externalNowPlaying=createExternalNowPlaying({
   helper:path.join(__dirname,'native','NowPlayingHost.exe').replace('app.asar'+path.sep,'app.asar.unpacked'+path.sep),
   executablePath:process.execPath,
@@ -205,6 +206,16 @@ async function start() {
   const profile=process.env.SONIC_DESKTOP_PROFILE;
   server=createAppServer({port,root:path.join(__dirname,'..','outputs'),allowPublishedOrigin:false,
     dataDirectory:profile?path.join(app.getPath('userData'),'music-session'):undefined,
+    lyricState:()=>{
+      if(!lastLyricState)return null;
+      const position=lastState.position, offset=lastLyricState.offset||0;
+      let index=-1;
+      for(let i=0;i<lastLyricState.lines.length;i+=1){
+        if(lastLyricState.lines[i].time<=position+offset)index=i;
+        else break;
+      }
+      return {...lastLyricState,position,playing:lastState.playing,index,line:lastLyricState.lines[index]||null};
+    },
     onError:error=>console.warn('[Companion]',error.message)});
   await server.ready;await server.listen();
   console.log('[Desktop] '+origin);
@@ -262,6 +273,10 @@ async function start() {
   ipcMain.handle('sonic:wallpaper',(event,enabled)=>{
     if(!valid(event))return {ok:false,message:'无效的窗口。'};
     return enabled?{ok:false,active:false,message:'动态桌面已暂停。'}:{ok:true,active:false,message:'当前使用普通窗口。'};
+  });
+  ipcMain.on('sonic:lyrics',(event,value)=>{
+    if(!valid(event))return;
+    lastLyricState=lyricDocument(value);
   });
   ipcMain.on('sonic:state',(event,value)=>{
     if(!valid(event))return;
