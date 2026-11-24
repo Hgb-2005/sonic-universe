@@ -1725,7 +1725,7 @@
   }
   function renderLyrics(position=snapshot.lyricPosition,snap=false) {
     if(isLibraryMode(root.dataset.mode))return;
-    const lines=snapshot.lyrics?.length?snapshot.lyrics:emptyLyrics;
+    const lines=structureLines(snapshot.lyrics?.length?snapshot.lyrics:emptyLyrics);
     const {index,line,end}=core.lyricAt(lines,position,snapshot.lyricDuration);
     if(root.dataset.mode!=='listen') {
       const preview=$('[data-small-line]');
@@ -1924,6 +1924,7 @@
   }
   function updateUI(force=false,snapLyrics=false,current=api.snapshot()) {
     uiRefreshes++;
+    current=structureSnapshot(current);
     const previous=snapshot;
     snapshot=current;
     const trackChanged=!samePlayback(previous,snapshot);
@@ -2137,6 +2138,23 @@
     const cap=showsLyricEffects()&&preferences.lyricEffect==='still';
     return !seekPreview&&!cap&&onScreen()&&root.dataset.mode==='listen'&&lyricsPlaying()&&snapshot.lyrics.length>0&&!reducedMotion.matches;
   }
+  const decoratedLyricCache=new WeakMap();
+  // 结构标注只做一次：片头署名按前奏时长决定去留，重复句标成副歌。
+  function structureLines(lines){
+    if(!lines?.length)return lines||emptyLyrics;
+    const cached=decoratedLyricCache.get(lines);
+    if(cached)return cached;
+    const decorate=window.SonicLyricStructure?.decorate;
+    const next=decorate?decorate(lines,{minDwell:.9}):lines;
+    decoratedLyricCache.set(lines,next);
+    return next;
+  }
+  // 在 snapshot 入口统一装饰：歌词渲染器、桌面歌词、正在播放页拿到的都是同一份结构。
+  function structureSnapshot(current){
+    if(!current?.lyrics?.length)return current;
+    if(!window.SonicLyricStructure?.decorate)return current;
+    return {...current,lyrics:structureLines(current.lyrics)};
+  }
   function renderListeningPosition(position,snap=false) {
     const layoutChanged=lyricSurfaceDirty;
     lyricSurfaceDirty=false;
@@ -2228,7 +2246,9 @@
     if(tideMotion)updateTideRipples(beat);
     else if(tideBeat!==null)resetTideRipples();
     const effectPulse=beat?.locked?beat.pulse:preferences.lyricEffect==='orbit'?0:(sound?.pulse||0)*.65;
-    const lyricPulse=lyricBeat?Math.round(effectPulse*preferences.response*.5)/50:0;
+    // 副歌给动效多一点强度，主歌收着，整首听下来不疲劳。
+    const chorusNow=renderedLyrics?.[lyricIndex]?.isChorus===true;
+    const lyricPulse=lyricBeat?Math.round(effectPulse*preferences.response*(chorusNow?1.35:1)*.5)/50:0;
     if(lyricPulse!==effectBeat){effectBeat=lyricPulse;effectStage.style.setProperty('--fx-beat',String(lyricPulse));}
     if(mode==='visual')renderBeatClock(beat,active,reduced);
     const pulse=coverBeat&&age<.37?beat.strength*(1-Math.exp(-age*70))*Math.exp(-age*11):0;
@@ -2863,7 +2883,7 @@
     nativeTimer=setInterval(publishPlayerState,400);
   }
   changePlaybackBackground(preferences.playbackBackground,false);
-  window.SonicListeningRoom=Object.freeze({setMode,show:()=>setLegacy(false),settings:()=>({...preferences}),stats:()=>({frameCost:Number(root.dataset.frameCost||0),frames:renderedFrames,uiRefreshes,lyricPaints,fpsLimit:Number(root.dataset.fpsLimit||0),legacyRendering:document.getElementById('app').dataset.rafRunning==='true',wallpaper:false,lyricRenderer:effectRenderer?.stats()})});
+  window.SonicListeningRoom=Object.freeze({setMode,show:()=>setLegacy(false),settings:()=>({...preferences}),stats:()=>({frameCost:Number(root.dataset.frameCost||0),frames:renderedFrames,uiRefreshes,lyricPaints,fpsLimit:Number(root.dataset.fpsLimit||0),legacyRendering:document.getElementById('app').dataset.rafRunning==='true',wallpaper:false,lyricRenderer:effectRenderer?.stats(),lyricStructure:{total:snapshot.lyrics?.length||0,chorus:snapshot.lyrics?.filter(line=>line.isChorus).length||0,staffHidden:snapshot.lyricsInfo?.staffHidden||0}})});
   api.presentation(true);document.documentElement.classList.add('listening-enabled');applyPreferences();
   if(new URLSearchParams(location.search).get('interface')==='legacy')setLegacy(true);
   window.addEventListener('pagehide',()=>{clearTimeout(timer);cancelAnimationFrame(lyricFrameId);clearTimeout(toastTimer);clearTimeout(stageChromeTimer);clearTimeout(immersionTimer);clearInterval(nativeTimer);});
