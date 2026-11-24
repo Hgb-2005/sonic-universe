@@ -93,6 +93,7 @@ async function run(){
       }
     },{names:coverNames,lyrics:coverLyrics});
     const gallery=room.locator('[data-player-bg-dialog]');
+    const lyricDesign=room.locator('[data-effect-dialog]');
     const headerSettings=room.locator('.lr-header [data-action=settings]');
     const auto=gallery.locator('[data-player-bg-select=default]');
     const composition=gallery.locator('[data-player-bg-composition]');
@@ -114,25 +115,27 @@ async function run(){
       return [...canvas.getContext('2d').getImageData(Math.round(width*.26),Math.round(height*.38),1,1).data].slice(0,3);
     });
     const expectColor=async index=>page.waitForFunction(index=>{
-      const canvas=document.querySelector('[data-player-bg-composition] canvas');
+      const canvas=document.querySelector('[data-player-bg-dialog] canvas');
       const {width,height}=canvas;
       const rgb=canvas.getContext('2d').getImageData(Math.round(width*.26),Math.round(height*.38),1,1).data;
       return index?rgb[2]-rgb[0]>14:rgb[0]-rgb[2]>14;
     },index);
     await mode('listen');
+    await page.emulateMedia({reducedMotion:'reduce'});
     await room.locator('.lr-now-actions [data-action=lyric-effects]').click();
     await room.locator('button[data-lyric-style=list]').click();
+    await lyricDesign.locator('[data-effect-apply]').click();
     await room.locator('[data-action=collapse-lyrics]').click();
     for(const [first,second] of [[0,1],[1,0]]){
       await playOrder([coverNames[first],coverNames[second]]);
       await waitCover(first);
       await headerSettings.click();await auto.click();
       await expectColor(first);
-      await page.waitForFunction(line=>document.querySelector('[data-player-bg-composition] strong').textContent===line,coverLyrics[first]);
+      await page.waitForFunction(line=>document.querySelector('[data-player-bg-dialog] strong').textContent===line,coverLyrics[first]);
       const oldColor=await previewColor();
       if(first===0)await capture('after-red');
       await waitCover(second);
-      await page.waitForFunction(line=>document.querySelector('[data-player-bg-composition] strong').textContent===line,coverLyrics[second]);
+      await page.waitForFunction(line=>document.querySelector('[data-player-bg-dialog] strong').textContent===line,coverLyrics[second]);
       assert.equal(await gallery.evaluate(el=>el.open),true);
       await expectColor(second);
       const newColor=await previewColor();
@@ -158,23 +161,25 @@ async function run(){
         canvas.dataset.paints='0';
         context.fillRect=(...args)=>{canvas.dataset.paints=String(Number(canvas.dataset.paints)+1);return fill(...args);};
       });
-      await page.waitForFunction(()=>document.querySelector('[data-player-bg-composition] strong').textContent==='第二行');
+      await page.waitForFunction(()=>document.querySelector('[data-player-bg-dialog] strong').textContent==='第二行');
       assert.equal(await composition.locator('.lr-player-bg-sample span').textContent(),'Second line');
       assert.equal(await previewCanvas.getAttribute('data-paints'),'0');
       assert.deepEqual(await previewColor(),initial);
+      await gallery.locator('[data-picture-tuning] summary').click();
       await gallery.locator('[data-brightness]').press('ArrowRight');
-      await page.waitForFunction(()=>Number(document.querySelector('[data-player-bg-composition] canvas').dataset.paints)>0);
+      await page.waitForFunction(()=>Number(document.querySelector('[data-player-bg-dialog] canvas').dataset.paints)>0);
       await gallery.locator('[data-player-bg-select=white-coast]').click();
-      await page.waitForFunction(()=>document.querySelector('#listeningRoom').dataset.playbackBackgroundRendered==='white-coast');
+      await composition.and(page.locator('[data-background=white-coast]')).waitFor();
       const photo=await previewCanvas.evaluate(canvas=>canvas.toDataURL());
       await waitCover(1);
-      await page.waitForFunction(line=>document.querySelector('[data-player-bg-composition] strong').textContent===line,coverLyrics[1]);
-      assert.equal(await previewCanvas.evaluate(canvas=>canvas.toDataURL()),photo);
-      assert.equal(await room.getAttribute('data-playback-background-rendered'),'white-coast');
+      await page.waitForFunction(line=>document.querySelector('[data-player-bg-dialog] strong').textContent===line,coverLyrics[1]);
+      assert.ok(await previewCanvas.evaluate((canvas,photo)=>canvas.toDataURL()===photo,photo),'the paused photo should stay put when the artwork changes');
+      assert.equal(await room.getAttribute('data-playback-background-rendered'),'default');
       await page.keyboard.press('Escape');
-      await page.waitForFunction(()=>document.querySelector('[data-player-bg-composition] canvas').width===0);
+      await page.waitForFunction(()=>document.querySelector('[data-player-bg-dialog] canvas').width===0);
       console.log('PASS 双语自然换句不重绘，照片换歌不重绘，关闭弹窗释放画布');
     }
+    await page.emulateMedia({reducedMotion:'no-preference'});
 
     await mode('library');await resize(760,620);
     await importFiles('曲库定位',libraryNames);

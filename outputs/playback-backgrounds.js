@@ -172,7 +172,7 @@
     const {image,paint}=loaded;
     if(image){
       const rect=photoRect(entry,image,frame.width,frame.height);
-      if(frame.thumbnail)context.drawImage(image,rect.x,rect.y,rect.width,rect.height);
+      if(frame.thumbnail||frame.preview)context.drawImage(image,rect.x,rect.y,rect.width,rect.height);
       else context.clearRect(0,0,frame.width,frame.height);
       frame={...frame,photoRect:rect};
     }
@@ -182,78 +182,18 @@
 
   const thumbnailArtwork={base:[17,19,34],primary:[150,169,241],secondary:[208,132,195]};
   const motionLabels={static:'静态',slow:'慢动',music:'随音乐'};
-  function createPicker(dialog,select,previewState) {
+  function createPicker(dialog,select) {
     const options=dialog.querySelector('[data-player-bg-group]');
     const grid=dialog.querySelector('[data-player-bg-grid]');
     const status=dialog.querySelector('[data-player-bg-status]');
-    const composition=dialog.querySelector('[data-player-bg-composition]');
-    const surface=composition.querySelector('canvas');
-    const effectStage=composition.querySelector('[data-player-bg-effect]');
-    const tide=composition.querySelector('[data-player-bg-tide]');
-    const text=composition.querySelector('strong');
-    const translation=text.nextElementSibling;
-    const styleName=composition.querySelector('.lr-player-bg-style');
-    let previewRevision=0,previewKey='',candidate='default',lastCopy=[];
-
-    function refreshText(){
-      if(!dialog.open)return;
-      const entry=entries.get(candidate);
-      const {line,style,effect}=previewState();
-      const copy=[entry.id,line?.text,line?.translation,style,effect?.id];
-      if(copy.every((value,index)=>value===lastCopy[index]))return;
-      lastCopy=copy;
-      const treatment=lyricBackdrop(entry,effect);
-      composition.dataset.tone=entry.tone||'dark';
-      composition.dataset.lyricBackdrop=treatment;
-      composition.toggleAttribute('data-light-reading-surface',lightReadingSurface(entry));
-      composition.toggleAttribute('data-effect',Boolean(effect&&effect.id!=='still'));
-      styleName.textContent=style;
-      text.textContent=line?.text||'让每一句，浮现在星海';
-      translation.textContent=line?.translation||'';
-      translation.hidden=!line?.translation;
-      text.style.setProperty('--sample-ink',effect?.palette?.sung||'#fff7ed');
-      tide.hidden=effect?.id!=='tide';
-      root.SonicLyricEffects.applyBackdrop(effectStage,effect,treatment==='soft');
-    }
-
-    async function renderPreview(entry){
-      if(!dialog.open)return;
-      refreshText();
-      const {width,height}=composition.getBoundingClientRect();
-      if(!width||!height)return;
-      const {artwork,brightness,drawDefault}=previewState();
-      const colors=entry.id==='default'?[artwork.base,artwork.primary,artwork.secondary]:
-        !entry.photo&&entry.preset?.cover?artwork.primary:[];
-      const key=[entry.id,width,height,brightness,...colors].join('/');
-      if(key===previewKey)return;
-      previewKey=key;
-      const stamp=++previewRevision;
-      const scale=Math.min(2,root.devicePixelRatio||1);
-      surface.width=Math.round(width*scale);
-      surface.height=Math.round(height*scale);
-      try{
-        const loaded=await load(entry);
-        if(stamp!==previewRevision||!dialog.open)return;
-        const ctx=surface.getContext('2d');
-        if(!ctx)return;
-        ctx.scale(surface.width/width,surface.height/height);
-        if(entry.id==='default')drawDefault?.(ctx,width,height);
-        else draw(ctx,entry,{width,height,time:0,energy:0,quality:.63,brightness,artwork,thumbnail:true,
-          seed:root.SonicReactiveScenes?.seedFor(entry.id)||1},loaded);
-      }catch{
-        if(stamp===previewRevision)previewKey='';
-      }
-    }
     let selected='default', group='featured', observer, revision=0, gallerySize='';
     const thumbnails=new Map();
     options.add(new Option('推荐 · 七类样张','featured'));
     for(const {id,label} of groups)options.add(new Option(label,id));
 
-    const applySelection=(id,message,previewId=id)=>{
+    const applySelection=(id,message)=>{
       selected=id;
-      candidate=previewId;
-      status.textContent=message||('背景 · '+entries.get(id).name);
-      void renderPreview(entries.get(candidate));
+      status.textContent=message||entries.get(id).name;
       for(const button of dialog.querySelectorAll('[data-player-bg-select]')){
         button.setAttribute('aria-pressed',String(button.dataset.playerBgSelect===id));
       }
@@ -316,13 +256,12 @@
         },{root:grid,rootMargin:'120px'});
         for(const [button] of cards)observer.observe(button);
       }else for(const [button,entry] of cards)void thumbnail(button,entry,version);
-      applySelection(selected,status.textContent,candidate);
+      applySelection(selected,status.textContent);
     }
     const measureGallery=()=>{
       const size=grid.clientWidth+'/'+(root.devicePixelRatio||1);
       if(!dialog.open)return;
       if(size!==gallerySize){gallerySize=size;renderGroup();}
-      else void renderPreview(entries.get(candidate));
     };
     const resizeObserver=typeof ResizeObserver==='function'?new ResizeObserver(measureGallery):null;
     root.addEventListener('resize',measureGallery);
@@ -333,11 +272,9 @@
     });
     dialog.addEventListener('close',()=>{
       if(dialog.open)return;
-      ++revision;++previewRevision;previewKey='';lastCopy=[];
+      ++revision;
       observer?.disconnect();observer=null;resizeObserver?.disconnect();grid.replaceChildren();
       thumbnails.clear();
-      surface.width=surface.height=0;
-      text.textContent=translation.textContent=styleName.textContent='';
     });
     return {
       open(id){
@@ -348,11 +285,16 @@
         if(!dialog.open)dialog.showModal();
         gallerySize=grid.clientWidth+'/'+(root.devicePixelRatio||1);
         resizeObserver?.observe(grid);
-        candidate=selected;
-        status.textContent='背景 · '+entries.get(selected).name;
+        status.textContent=entries.get(selected).name;
         renderGroup();
       },
-      update:applySelection,refreshText,refreshBackdrop:()=>void renderPreview(entries.get(candidate)),
+      update(id,message){
+        const entry=entries.get(id);
+        if(entry.group&&group==='featured'&&!featured.includes(id)){
+          group=entry.group;options.value=group;grid.scrollTop=0;selected=id;renderGroup();
+        }
+        applySelection(id,message);
+      },
       close(){if(dialog.open)dialog.close();},
     };
   }

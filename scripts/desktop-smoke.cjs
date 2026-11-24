@@ -134,6 +134,11 @@ async function run() {
       await new Promise(resolve=>setTimeout(resolve,650));
       return SonicListeningRoom.stats().frames-start;
     });
+    await page.waitForFunction(()=>{
+      const {frames,fpsLimit}=SonicListeningRoom.stats(),now=performance.now();
+      if(!window.lastSmokeFrame||fpsLimit||window.lastSmokeFrame.frames!==frames)window.lastSmokeFrame={frames,now};
+      return !fpsLimit&&now-window.lastSmokeFrame.now>=500;
+    });
     assert.equal(await countRedraws(),0);
     await room.locator('[data-volume]').fill('0');
     await room.locator('[data-action="play"]').click();
@@ -164,11 +169,16 @@ async function run() {
     const after=await page.evaluate(()=>SonicPlayback.snapshot());
     assert.ok(after.playing&&after.position>=before);
     await room.locator('.lr-now-cover').click();
-    assert.equal(await room.getAttribute('data-lyric-style'),'list');
-    await room.locator('.lr-more-lyrics > summary').click();
-    await room.locator('button[data-lyric-style="stage"]').click();
+    assert.equal(await room.getAttribute('data-lyric-expanded'),'true');
+    const selectLyricStyle=async id=>{
+      await room.locator('[data-action=lyric-effects]:visible').click();
+      await room.locator('button[data-lyric-style="'+id+'"]').click();
+      await room.locator('[data-effect-apply]').click();
+    };
+    await selectLyricStyle('stage');
     assert.ok(await page.evaluate(()=>SonicPlayback.snapshot().playing));
     await room.locator('[data-action="play"]').click();
+    await room.locator('.lr-more-lyrics > summary').click();
     await room.getByText('导入或调整歌词', { exact:false }).click();
     await page.locator('#lyricSource').fill('[00:00.00]风经过山脊\n[00:03.00]夜色落在湖面\n[00:08.00]<00:08.00>让<00:09.00>音乐<00:11.00>慢慢流动\n[00:16.00]把这一刻留在身边\n[00:23.00]等远处一点光亮');
     await page.locator('#saveLyricBtn').click();
@@ -199,7 +209,7 @@ async function run() {
     await room.locator('[data-action="desktop-lyrics-window"][aria-pressed="false"]').waitFor();
     console.log('PASS desktop lyric overlay receives current and next lines from the player');
 
-    await room.locator('button[data-lyric-style="fly"]').click();
+    await selectLyricStyle('fly');
     await room.locator('[data-seek]').fill('7.6');
     assert.equal(await room.locator('[data-flight-state=flying]').count(),0);
     await room.locator('[data-action="play"]').click();
@@ -219,7 +229,7 @@ async function run() {
     await page.waitForFunction(()=>!SonicPlayback.snapshot().playing&&!document.querySelector('[data-flight-state=flying]'));
     assert.equal(await room.locator('[data-current-line]').textContent(),'让音乐慢慢流动');
     console.log('PASS timed word groups enter at native timestamps and settle on pause');
-    await room.locator('button[data-lyric-style="stage"]').click();
+    await selectLyricStyle('stage');
 
     const miniOpened = app.waitForEvent('window', { predicate:window=>window!==page, timeout:15000 });
     await room.getByRole('button',{name:'迷你播放器',exact:true}).click();
@@ -270,7 +280,7 @@ async function run() {
     await page.waitForFunction(()=>SonicPlayback.snapshot().playing&&SonicPlayback.snapshot().track?.name==='测试歌曲');
     assert.equal(await page.locator('dialog[open]').count(),0);
     await room.locator('[data-room-mode="listen"]').click();
-    await page.waitForFunction(()=>document.querySelector('[data-current-line]')?.textContent==='入耳');
+    await selectLyricStyle('stage');
     await room.locator('[data-action="play"]').click();
     await room.locator('[data-seek]').fill('1.5');
     await page.waitForFunction(()=>{

@@ -317,6 +317,7 @@ async function verifyNowPlaying(page, folder, app) {
   assert.ok(Math.abs(await page.evaluate(() => SonicPlayback.snapshot().position) - 9) < .2);
   await room.locator('[data-action="lyric-effects"]:visible').click();
   await room.locator('button[data-lyric-style="fly"]').click();
+  await room.locator('[data-effect-apply]').click();
   assert.equal(await room.getAttribute('data-lyric-style'),'fly');
   const flightRows = room.locator('[data-lyric-timeline] .lr-lyric-row:visible');
   assert.deepEqual(await flightRows.allTextContents(),['普通整行']);
@@ -363,7 +364,9 @@ async function verifyNowPlaying(page, folder, app) {
   const stageBackgrounds=new Set();
   for(const [index,id] of ids.entries()){
     if(index>0)await effectButton.click();
+    if(!await effectChoices.nth(index).isVisible())await effectPicker.locator('[data-effect-more] summary').click();
     await effectChoices.nth(index).click();
+    await effectPicker.locator('[data-effect-apply]').click();
     assert.equal(await room.getAttribute('data-lyric-effect'),id);
     assert.equal(await stage.getAttribute('data-fx'),id);
     const theme=await room.evaluate(node=>({
@@ -394,7 +397,9 @@ async function verifyNowPlaying(page, folder, app) {
     },position);
   };
   await effectButton.click();
+  if(!await effectPicker.getByRole('button',{name:'重拍',exact:true}).isVisible())await effectPicker.locator('[data-effect-more] summary').click();
   await effectPicker.getByRole('button',{name:'重拍',exact:true}).click();
+  await effectPicker.locator('[data-effect-apply]').click();
   await page.evaluate(()=>SonicPlayback.seek(1.6));
   await play.click();
   await currentEffectLyric.filter({hasText:/^逐字推进$/}).waitFor();
@@ -453,6 +458,7 @@ async function verifyNowPlaying(page, folder, app) {
   assert.equal(await room.getAttribute('data-lyric-effect'),'impact');
   await effectButton.click();
   await room.locator('button[data-lyric-style="list"]').click();
+  await room.locator('[data-effect-apply]').click();
   await closeLyrics();
   console.log('PASS all 18 lyric looks, rendered canvas pixels, timed seeks and reduced motion');
 

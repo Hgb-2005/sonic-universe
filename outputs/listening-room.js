@@ -38,6 +38,21 @@
   const icon = name => '<svg viewBox="0 0 24 24" aria-hidden="true">' + icons[name] + '</svg>';
   const lyricStyleNames={list:'列表排版',stage:'逐行舞台',fly:'单句飞入'};
   const tideHorizon='<div class="lr-tide-horizon"><i></i><i></i><i></i></div>';
+  const previewMarkup=label=>`
+    <div class="lr-design-preview-head"><span>播放页预览</span><span class="lr-design-load" data-design-load role="status"></span><button type="button" class="lr-design-replay" data-design-replay>${icon('play')} <span>试看动效</span></button></div>
+    <div class="lr-player-bg-composition lr-design-preview" data-player-bg-composition role="group" aria-label="${label}">
+      <canvas aria-hidden="true"></canvas>
+      <div class="lr-tide-atmosphere" data-player-bg-tide hidden aria-hidden="true">${tideHorizon}</div>
+      <div class="lr-effect-stage" data-player-bg-effect hidden aria-hidden="true">${effectShapes}</div>
+      <div class="lr-design-cover"><span data-design-cover-fallback>${icon('music')}</span><img data-design-cover alt="" hidden></div>
+      <div class="lr-player-bg-sample"><p data-design-before></p><strong></strong><span hidden></span><p data-design-after></p></div>
+      <div class="lr-design-track"><span data-design-title></span><span data-design-artist></span></div>
+      <div class="lr-design-preview-footer"><span class="lr-player-bg-style"></span><span data-design-progress></span></div>
+    </div>`;
+  const dialogFooter=(kind,label)=>`<footer class="lr-design-footer"><button type="button" class="lr-design-reset" data-${kind}-reset>恢复默认</button><div><button type="button" class="lr-choice" data-close>取消</button><button type="button" class="lr-design-apply" data-${kind}-apply>${label}</button></div></footer>`;
+  const featuredEffects=['tide','cut','film','ink','orbit','still'];
+  const effectCard=preset=>`<button type="button" class="lr-effect-card" data-effect-choice="${preset.id}" aria-pressed="false" aria-label="${preset.label}" title="${preset.description}">
+    <span class="lr-design-effect-icon" data-look="${preset.id}" aria-hidden="true"><i></i><i></i><i></i></span><span>${preset.label}</span></button>`;
   const root = document.createElement('div'); root.id = 'listeningRoom';
   root.innerHTML = `
     <div class="lr-background-photo" aria-hidden="true"></div>
@@ -231,13 +246,22 @@
       <label class="lr-check"><input type="checkbox" data-energy>省电优先</label>
       <p class="lr-status" role="status" data-playback-status></p>
     </dialog>
-    <dialog class="lr-dialog lr-effect-dialog" data-effect-dialog aria-labelledby="lyricEffectsHeading">
-      <div class="lr-dialog-heading"><h2 id="lyricEffectsHeading">歌词样式</h2><button class="lr-icon" data-close aria-label="关闭歌词样式">${icon('close')}</button></div>
-      <div class="lr-choice-row" role="group" aria-label="基础歌词样式">${Object.entries(lyricStyleNames).map(([id,label])=>`<button type="button" class="lr-choice" data-lyric-style="${id}" aria-pressed="false">${label}</button>`).join('')}</div>
-      ${effects.groups.map(({name,entries},row)=>`<section><h3>${name}</h3><div class="lr-effect-grid">${entries.map((preset,column)=>`
-        <button type="button" class="lr-effect-card" data-effect-choice="${preset.id}" aria-pressed="false" aria-label="${preset.label}" title="${preset.description}">
-          <span class="lr-effect-sample" data-fx="${preset.id}" aria-hidden="true" style="--lr-preview-x:${column*20}%;--lr-preview-y:${row*50}%"></span><span>${preset.label}</span>
-        </button>`).join('')}</div></section>`).join('')}
+    <dialog class="lr-dialog lr-effect-dialog lr-design-dialog" data-effect-dialog aria-labelledby="lyricEffectsHeading">
+      <div class="lr-dialog-heading"><h2 id="lyricEffectsHeading">歌词样式</h2><button type="button" class="lr-icon" data-close aria-label="关闭歌词样式">${icon('close')}</button></div>
+      <div class="lr-design-body">
+        <div class="lr-design-monitor">${previewMarkup('歌词排版和动效预览')}</div>
+        <div class="lr-design-controls">
+          <h3>排版</h3>
+          <div class="lr-choice-row lr-design-segment" role="group" aria-label="歌词排版">${Object.entries(lyricStyleNames).map(([id,label])=>`<button type="button" class="lr-choice" data-lyric-style="${id}" aria-pressed="false">${label}</button>`).join('')}</div>
+          <h3>歌词动效</h3>
+          <div class="lr-effect-grid">${featuredEffects.map(id=>effectCard(effects.get(id))).join('')}</div>
+          <p class="lr-design-detail" data-effect-description></p>
+          <details class="lr-design-more" data-effect-more><summary>全部样式</summary>
+            ${effects.groups.map(({name,entries})=>`<section><h3>${name}</h3><div class="lr-effect-grid">${entries.filter(entry=>!featuredEffects.includes(entry.id)).map(effectCard).join('')}</div></section>`).join('')}
+          </details>
+        </div>
+      </div>
+      ${dialogFooter('effect','应用样式')}
     </dialog>
     <dialog class="lr-dialog lr-scene-dialog" data-scene-dialog aria-labelledby="sceneGalleryHeading">
       <div class="lr-dialog-heading"><div><h2 id="sceneGalleryHeading">动态场景</h2><p data-scene-selection></p></div><button class="lr-icon" data-close aria-label="关闭动态场景">${icon('close')}</button></div>
@@ -248,26 +272,29 @@
       <div class="lr-scene-grid" data-scene-grid></div>
       <div class="lr-scene-preferences"><label class="lr-check"><input type="checkbox" data-scene-backdrop>用于陪伴和歌词背景</label><button class="lr-choice" data-action="scene-pin" aria-pressed="false">记住这首歌的场景</button><label>节拍校正 <select class="lr-choice" data-beat-ratio><option value="1">自动</option><option value="0.5">半速</option><option value="2">倍速</option></select></label></div>
     </dialog>
-    <dialog class="lr-dialog lr-scene-dialog lr-player-bg-dialog" data-player-bg-dialog aria-labelledby="playerBackgroundHeading">
+    <dialog class="lr-dialog lr-player-bg-dialog lr-design-dialog" data-player-bg-dialog aria-labelledby="playerBackgroundHeading">
       <div class="lr-dialog-heading"><div><h2 id="playerBackgroundHeading">播放画面</h2><p data-player-bg-status role="status"></p></div><button class="lr-icon" data-close aria-label="关闭播放画面">${icon('close')}</button></div>
-      <div class="lr-player-bg-controls">
-        <button type="button" class="lr-choice" data-player-bg-select="default">自动画面</button>
-        <button type="button" class="lr-choice" data-player-bg-select="geometry">几何微光</button>
-        <button type="button" class="lr-choice" data-player-bg-select="mist">流动光雾</button>
-        <button type="button" class="lr-choice" data-player-bg-select="clean">纯净底色</button>
-        <label><span>分类</span><select class="lr-choice" data-player-bg-group aria-label="背景分类"></select></label>
+      <div class="lr-design-body">
+        <div class="lr-design-monitor">${previewMarkup('背景与当前歌词预览')}</div>
+        <div class="lr-design-controls">
+          <h3>背景</h3>
+          <div class="lr-player-bg-controls">
+            <button type="button" class="lr-choice" data-player-bg-select="default">自动画面</button>
+            <button type="button" class="lr-choice" data-player-bg-select="geometry">几何微光</button>
+            <button type="button" class="lr-choice" data-player-bg-select="mist">流动光雾</button>
+            <button type="button" class="lr-choice" data-player-bg-select="clean">纯净底色</button>
+          </div>
+          <label class="lr-design-category"><span>场景图库</span><select class="lr-choice" data-player-bg-group aria-label="背景分类"></select></label>
+          <div class="lr-scene-grid lr-player-bg-grid" data-player-bg-grid></div>
+          <details class="lr-design-more" data-picture-tuning><summary>配色与动效</summary><div class="lr-playback-picture-settings">
+            <div class="lr-field"><div class="lr-field-title">配色</div><div class="lr-choice-row"><button type="button" class="lr-choice" data-color="amber"><i class="lr-swatch" style="--swatch:#e5c483"></i>暖金</button><button type="button" class="lr-choice" data-color="ocean"><i class="lr-swatch" style="--swatch:#95bcd1"></i>雾蓝</button><button type="button" class="lr-choice" data-color="lilac"><i class="lr-swatch" style="--swatch:#b8a9db"></i>浅紫</button><button type="button" class="lr-choice" data-color="cover">跟随封面</button></div></div>
+            <label class="lr-field"><span class="lr-field-title">背景亮度 <output data-brightness-value></output></span><input class="lr-range" data-brightness type="range" min="10" max="100" step="5" aria-label="背景亮度"></label>
+            <label class="lr-field" data-response-field><span class="lr-field-title">声音响应 <output data-response-value></output></span><input class="lr-range" data-response type="range" min="0" max="100" step="5" aria-label="声音响应强度"></label>
+          </div></details>
+          <p class="lr-design-detail" data-picture-error role="status" hidden></p>
+        </div>
       </div>
-      <div class="lr-player-bg-composition" data-player-bg-composition aria-label="背景、歌词和动效合成预览">
-        <canvas aria-hidden="true"></canvas>
-        <div class="lr-tide-atmosphere" data-player-bg-tide hidden aria-hidden="true">${tideHorizon}</div>
-        <div class="lr-effect-stage" data-player-bg-effect hidden aria-hidden="true">${effectShapes}</div>
-        <div class="lr-player-bg-sample"><strong></strong><span hidden></span></div>
-        <span class="lr-player-bg-style"></span>
-      </div>
-      <div class="lr-playback-picture-settings">
-        <div class="lr-field"><div class="lr-field-title">配色</div><div class="lr-choice-row"><button class="lr-choice" data-color="amber"><i class="lr-swatch" style="--swatch:#e5c483"></i>暖金</button><button class="lr-choice" data-color="ocean"><i class="lr-swatch" style="--swatch:#95bcd1"></i>雾蓝</button><button class="lr-choice" data-color="lilac"><i class="lr-swatch" style="--swatch:#b8a9db"></i>浅紫</button><button class="lr-choice" data-color="cover">跟随封面</button></div></div><label class="lr-field"><span class="lr-field-title">背景亮度 <output data-brightness-value></output></span><input class="lr-range" data-brightness type="range" min="10" max="100" step="5" aria-label="背景亮度"></label><label class="lr-field" data-response-field><span class="lr-field-title">声音响应 <output data-response-value></output></span><input class="lr-range" data-response type="range" min="0" max="100" step="5" aria-label="声音响应强度"></label>
-      </div>
-      <div class="lr-scene-grid lr-player-bg-grid" data-player-bg-grid></div>
+      ${dialogFooter('picture','应用画面')}
     </dialog>
     <dialog class="lr-dialog" data-settings aria-labelledby="roomSettingsHeading">
       <div class="lr-dialog-heading"><h2 id="roomSettingsHeading">工作陪伴画面</h2><button class="lr-icon" data-close aria-label="关闭工作陪伴画面">${icon('close')}</button></div>
@@ -464,16 +491,28 @@
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const backgroundNames = { geometry:'几何微光', mist:'流动光雾', plain:'纯净底色', universe:'星空' };
   const sceneDialog=$('[data-scene-dialog]'), sceneGrid=$('[data-scene-grid]');
-  const backgroundPicker=backgrounds?.createPicker($('[data-player-bg-dialog]'),changePlaybackBackground,()=>{
-    const {line}=core.lyricAt(snapshot.lyrics,lyricPosition(),snapshot.lyricDuration);
-    const style=preferences.lyricStyle;
-    const artwork=coverPalette,brightness=preferences.brightness/100;
-    return {line,style:lyricStyleLabel(),effect:style==='effects'?effects.get(preferences.lyricEffect):null,
-      artwork,brightness,
-      drawDefault:(ctx,width,height)=>paintNowSky(artwork,brightness,0,0,null,false,ctx,width,height)};
-  });
   const atmosphere=$('[data-settings]');
   const pictureDialog=$('[data-player-bg-dialog]');
+  let lyricDraft=null,pictureDraft=null,previewSound=0;
+  const backgroundPicker=backgrounds.createPicker(pictureDialog,id=>{
+    if(pictureDraft&&!pictureDraft.saving){pictureDraft.playbackBackground=id;syncPictureDraft();}
+  });
+  function appearanceState(draft,picture=false) {
+    const settings={...preferences,...draft};
+    if(picture){
+      if(readingFullLyrics)settings.lyricStyle='list';
+      else if(!lyricExpanded||listenImmersive)settings.lyricStyle='compact';
+    }
+    const track=snapshot.track,accent=settings.playbackColor==='cover'?coverPalette.primary:colors[settings.playbackColor];
+    const artwork=coverPalette,brightness=settings.brightness/100;
+    return {settings,style:lyricStyleLabel(settings)||'正在播放',artwork,accent:`rgb(${accent.map(Math.round).join(',')})`,
+      trackId:track?.id,cover:artworkUrl(track),title:track?.name,artist:track?.artist||'',lines:snapshot.lyrics,
+      position:lyricPosition(),duration:snapshot.lyricDuration,offset:snapshot.lyricPosition-snapshot.position,
+      playing:lyricsPlaying(),energySaver:settings.energySaver,energy:()=>previewSound,
+      drawDefault:(ctx,width,height,time,signal)=>paintNowSky(artwork,brightness,settings.response/100,0,null,false,ctx,width,height,time,signal)};
+  }
+  const lyricPreview=window.SonicAppearancePreview.mount(effectDialog,()=>appearanceState(lyricDraft));
+  const picturePreview=window.SonicAppearancePreview.mount(pictureDialog,()=>appearanceState(pictureDraft,true));
   const headerSettings=$('.lr-header [data-action="settings"]');
   const lyricScrollSelect=$('[data-lyric-scroll]');
   lyricScrollSelect.addEventListener('change',()=>{
@@ -622,7 +661,6 @@
     $('[data-stage-style]').hidden=!expanded||full;
     $('[data-expanded-actions]').hidden=!expanded;
     $('.lr-lyric-tools').hidden=listenImmersive;
-    $$('[data-effect-choice]').forEach(button=>button.setAttribute('aria-pressed',String(preferences.lyricStyle==='effects'&&button.dataset.effectChoice===preset.id)));
     revealStageChrome();
     root.dataset.lyricLayout=expanded?(full?'list':'stage'):'compact';
     root.dataset.lyricExpanded=String(expanded);
@@ -649,11 +687,8 @@
     root.dataset.caption=String(preferences.desktopLyrics);
     $$('[data-room-mode]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.roomMode===preferences.mode)));
     $('[data-action="search"]').setAttribute('aria-pressed',String(mode==='search'));
-    $$('button[data-lyric-style]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.lyricStyle===preferences.lyricStyle)));
     $$('[data-background]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.background===preferences.background)));
-    $$('[data-color]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.color===preferences.playbackColor)));
     $$('[data-work-color]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.workColor===preferences.color)));
-    for(const key of ['brightness','response']){ $('[data-'+key+']').value=preferences[key];$('[data-'+key+'-value]').textContent=preferences[key]+'%';fill($('[data-'+key+']')); }
     $('[data-desktop-lyrics]').checked=preferences.desktopLyrics;$('[data-energy]').checked=preferences.energySaver;
     $('[data-scene-backdrop]').checked=preferences.reactiveBackdrop;
     $('[data-background-label]').textContent=backgroundNames[preferences.background];
@@ -696,6 +731,62 @@
     const target=root.dataset.nowView==='full'?'[data-lyric-full-tools] [data-action="lyric-effects"]':'[data-stage-style]';
     $(target).focus({preventScroll:true});
   }
+  function syncLyricDraft(){
+    const {lyricStyle,lyricEffect}=lyricDraft;
+    for(const button of effectDialog.querySelectorAll('[data-lyric-style]'))
+      button.setAttribute('aria-pressed',String(button.dataset.lyricStyle===(lyricStyle==='effects'?'stage':lyricStyle)));
+    for(const button of effectDialog.querySelectorAll('[data-effect-choice]'))
+      button.setAttribute('aria-pressed',String(lyricStyle==='effects'&&button.dataset.effectChoice===lyricEffect));
+    $('[data-effect-description]').textContent=lyricStyle==='effects'?effects.get(lyricEffect).description:'';
+    lyricPreview.update();
+  }
+  function openLyricDesign(){
+    lyricDraft={lyricStyle:readingFullLyrics?'list':preferences.lyricStyle,lyricEffect:preferences.lyricEffect};
+    $('[data-effect-more]').open=lyricDraft.lyricStyle==='effects'&&!featuredEffects.includes(lyricDraft.lyricEffect);
+    show(effectDialog);syncLyricDraft();lyricPreview.start();
+  }
+  function syncPictureDraft(){
+    const {playbackBackground,playbackColor}=pictureDraft;
+    backgroundPicker.update(playbackBackground);
+    $('[data-picture-error]').hidden=true;
+    for(const button of pictureDialog.querySelectorAll('[data-color]'))
+      button.setAttribute('aria-pressed',String(button.dataset.color===playbackColor));
+    for(const key of ['brightness','response']){
+      const input=$('[data-'+key+']');
+      input.value=pictureDraft[key];$('[data-'+key+'-value]').textContent=pictureDraft[key]+'%';fill(input);
+    }
+    const effect=showsLyricEffects()&&effects.get(preferences.lyricEffect);
+    $('[data-response-field]').hidden=backgrounds.get(playbackBackground).motion!=='music'&&!(effect&&(effect.beat||effect.id==='tide'));
+    picturePreview.update();
+  }
+  function openPictureDesign(){
+    const {playbackBackground,playbackColor,brightness,response}=preferences;
+    pictureDraft={playbackBackground,playbackColor,brightness,response};
+    $('[data-picture-tuning]').open=false;
+    $('[data-picture-apply]').disabled=false;
+    backgroundPicker.open(playbackBackground);syncPictureDraft();picturePreview.start();
+  }
+  async function applyPictureDesign(){
+    const draft=pictureDraft,entry=backgrounds.get(draft.playbackBackground);
+    if(draft.saving)return;
+    draft.saving=true;$('[data-picture-apply]').disabled=true;
+    try{
+      const render=await backgrounds.load(entry);
+      if(draft!==pictureDraft||!pictureDialog.open)return;
+      ++playbackBackdropRequest;clearTimeout(playbackBackdropTimer);
+      playbackBackdrop=entry.id==='default'?null:{entry,render};
+      for(const key of ['playbackBackground','playbackColor','brightness','response'])preferences[key]=draft[key];
+      pictureDialog.close();backgroundDirty=true;applyPreferences(true);wake();
+    }catch{
+      if(draft!==pictureDraft||!pictureDialog.open)return;
+      const error=$('[data-picture-error]');
+      error.textContent='这个背景未能加载，可以重试。';error.hidden=false;
+    }finally{
+      if(draft===pictureDraft){draft.saving=false;$('[data-picture-apply]').disabled=false;}
+    }
+  }
+  effectDialog.addEventListener('close',()=>{if(!effectDialog.open)lyricDraft=null;});
+  pictureDialog.addEventListener('close',()=>{if(!pictureDialog.open)pictureDraft=null;});
   function resetListeningImmersion() {
     listenImmersive=false;
     immersionEntry=null;
@@ -823,8 +914,8 @@
   function openSceneGallery() {
     mountSceneCards();filterScenes(sceneFilter);show(sceneDialog);syncSceneLabels();backgroundDirty=true;wake();
   }
-  function lyricStyleLabel(){
-    return preferences.lyricStyle==='effects'?effects.get(preferences.lyricEffect).label:lyricStyleNames[preferences.lyricStyle];
+  function lyricStyleLabel(settings=preferences){
+    return settings.lyricStyle==='effects'?effects.get(settings.lyricEffect).label:lyricStyleNames[settings.lyricStyle];
   }
   function syncEffectBackdrop(active=showsLyricEffects(),preset=effects.get(preferences.lyricEffect)){
     const entry=root.dataset.mode==='listen'?playbackBackdrop?.entry:null;
@@ -833,7 +924,7 @@
     const changed=root.dataset.lyricBackdrop!==treatment||root.hasAttribute('data-photo-lyrics')!==photo;
     root.toggleAttribute('data-photo-lyrics',photo);
     root.toggleAttribute('data-explicit-playback-background',Boolean(entry));
-    root.toggleAttribute('data-light-reading-surface',backgrounds?.lightReadingSurface(entry));
+    root.toggleAttribute('data-light-reading-surface',Boolean(entry?.photo)||backgrounds?.lightReadingSurface(entry));
     root.dataset.lyricBackdrop=treatment;
     const soft=treatment==='soft';
     effects.applyBackdrop(effectStage,preset,soft);
@@ -854,9 +945,6 @@
     headerSettings.setAttribute('aria-label',label);
     headerSettings.title=label;
     $('[data-settings-label]').textContent=label;
-    const effect=showsLyricEffects()&&effects.get(preferences.lyricEffect);
-    const responds=entry?.motion==='music'||effect&&(effect.beat||effect.id==='tide');
-    $('[data-response-field]').hidden=!responds;
   }
   function changePlaybackBackground(value,save=true) {
     if(!backgrounds)return;
@@ -865,10 +953,8 @@
     clearTimeout(playbackBackdropTimer);
     if(current===id){
       if(preferences.playbackBackground!==id){preferences.playbackBackground=id;if(save)persist();}
-      backgroundPicker?.update(id);
       return;
     }
-    backgroundPicker?.update(current,'正在准备 '+entry.name,id);
     void backgrounds.load(entry).then(render=>{
       if(request!==playbackBackdropRequest)return;
       // A burst of clicks only commits the final ready selection.
@@ -879,7 +965,6 @@
         if(save||id!==value)persist();
         refreshEffectBackdrop();
         syncPictureControls();
-        backgroundPicker?.update(id);
         backgroundDirty=true;wake();
       },save?70:0);
     }).catch(()=>{
@@ -893,7 +978,7 @@
     preferences.playbackBackground=current.id;
     syncPictureControls();
     persist();
-    backgroundPicker?.update(current.id,entry.name+' 暂不可用，已保留 '+current.name);
+    if(keepCurrent)notify(entry.name+' 暂不可用，已保留 '+current.name);
     backgroundDirty=true;wake();
   }
   function drawPlaybackBackground(artwork,seconds,sound,moving,response,brightness) {
@@ -1002,11 +1087,10 @@
     const animate=onScreen()&&playbackCoverVisible()&&!reducedMotion.matches&&
       Object.keys(nextPalette).some(role=>from[role].some((channel,index)=>channel!==nextPalette[role][index]));
     coverTransition=animate?{from,started:now}:null;
-    backgroundPicker?.refreshBackdrop();
     backgroundDirty=true;
     wake();
   }
-  function paintNowSky(artwork,brightness,response,seconds,sound,moving,target=context,w=canvasWidth,h=canvasHeight) {
+  function paintNowSky(artwork,brightness,response,seconds,sound,moving,target=context,w=canvasWidth,h=canvasHeight,previewTime=0,previewEnergy=0) {
     const narrow=w<=700;
     const full=root.dataset.nowView==='full';
     const coverX=w*(narrow?.50:full?.19:.25), coverY=h*(narrow?(full?.19:.24):.43);
@@ -1017,7 +1101,7 @@
       skyBreath=core.approach(skyBreath,core.clamp(sound?.bass,0,1)*response*.038,seconds,.55);
     }
     const isLive=target===context&&!reducedMotion.matches;
-    const motion=isLive?skyDrive:0, time=isLive?skyTime:0;
+    const motion=isLive?skyDrive:previewEnergy*response, time=isLive?skyTime:previewTime;
     const driftX=w*(.032+motion*.018)*Math.sin(time*.08);
     const driftY=h*(.025+motion*.012)*Math.sin(time*.06+.8);
     const rgb=channels=>channels.map(Math.round).join(',');
@@ -1095,7 +1179,8 @@
     if(usesImmersivePrism()&&paintImmersivePrism(artwork,seconds,sound,animated&&lyricsPlaying(),response,brightness))return;
     if(usesReactiveScene()&&paintReactive(seconds,sound,animated,response,brightness))return;
     if(root.hasAttribute('data-active-scene')){root.removeAttribute('data-active-scene');fadeTime=0;}
-    if(playbackCoverVisible()&&preferences.background!=='plain'){
+    const flyOnDefault=root.dataset.mode==='listen'&&root.dataset.lyricStyle==='fly';
+    if(flyOnDefault||playbackCoverVisible()&&preferences.background!=='plain'){
       paintNowSky(artwork,brightness,response,seconds,sound,animated&&lyricsPlaying());
       return;
     }
@@ -2031,7 +2116,6 @@
     const layoutChanged=lyricSurfaceDirty;
     lyricSurfaceDirty=false;
     nowPlaying.showSeek(snapshot,seekPreview?.position);
-    backgroundPicker?.refreshText();
     const expanded=lyricExpanded&&!listenImmersive;
     if(root.dataset.mode==='listen'&&(!expanded||root.dataset.lyricLayout==='list')) {
       nowPlaying.sync(snapshot,position,{full:expanded,force:snap||layoutChanged});
@@ -2113,7 +2197,8 @@
     const wasActive=lastFrame>0;
     const seconds=wasActive?Math.min(.1,(now-lastFrame)/1000):1/(fps||20);
     lastFrame=fps?now:0;
-    const sound=active&&(animate||showSpectrum||snapshot.external||coverBeat||stageBeat||lyricBeat||tideMotion)?api.sample(seconds):null;
+    const sound=active&&(animate||showSpectrum||snapshot.external||coverBeat||stageBeat||lyricBeat||tideMotion||pictureDialog.open||effectDialog.open)?api.sample(seconds):null;
+    previewSound=core.clamp(sound?.presence,0,1);
     if(sound)sound.beat=SonicMusicMotion.correctBeat(sound.beat,preferences.beatRatio);
     const beat=sound?.beat, age=beat?.age??Infinity;
     if(tideMotion)updateTideRipples(beat);
@@ -2428,7 +2513,7 @@
       if(!result?.ok&&result?.message)notify(result.message,true);
     },
     settings:()=>{
-      if(preferences.mode==='listen')backgroundPicker?.open(playbackBackdrop?.entry.id||'default');
+      if(preferences.mode==='listen')openPictureDesign();
       else if(preferences.mode==='work')show(atmosphere);
       else return actions['playback-settings']();
     },
@@ -2441,7 +2526,7 @@
     'exit-immersion':()=>setListeningImmersion(false),
     'visual-stage':()=>{if(scenes){setMode('visual');$('[data-action="scene-gallery"]').focus({preventScroll:true});}},
     'expand-lyrics':()=>setLyricExpanded(true),'collapse-lyrics':()=>setLyricExpanded(false),'lyric-mods':()=>lyricMods?.open(),
-    'lyric-effects':()=>show(effectDialog),
+    'lyric-effects':openLyricDesign,
     'retry-lyrics':()=>api.retryOnlineLyrics(),
     'scene-gallery':openSceneGallery,'scene-pin':toggleScenePin,
     'beat-clock':()=>{preferences.beatClock=!preferences.beatClock;applyPreferences(true);},
@@ -2510,10 +2595,19 @@
     if(button.dataset.roomMode){setMode(button.dataset.roomMode);return;}
     if(button.dataset.sceneFilter){filterScenes(button.dataset.sceneFilter);return;}
     if(button.dataset.sceneSelect){selectScene(button.dataset.sceneSelect);return;}
-    if(button.dataset.effectChoice){chooseLyricStyle('effects',button.dataset.effectChoice);return;}
-    if(button.dataset.lyricStyle){chooseLyricStyle(button.dataset.lyricStyle);return;}
+    if(button.dataset.effectChoice&&lyricDraft){lyricDraft.lyricStyle='effects';lyricDraft.lyricEffect=button.dataset.effectChoice;syncLyricDraft();return;}
+    if(button.dataset.lyricStyle&&lyricDraft){lyricDraft.lyricStyle=button.dataset.lyricStyle;syncLyricDraft();return;}
+    if(button.hasAttribute('data-effect-reset')&&lyricDraft){
+      lyricDraft={lyricStyle:core.defaults.lyricStyle,lyricEffect:core.defaults.lyricEffect};syncLyricDraft();return;
+    }
+    if(button.hasAttribute('data-effect-apply')&&lyricDraft){chooseLyricStyle(lyricDraft.lyricStyle,lyricDraft.lyricEffect);return;}
+    if(button.hasAttribute('data-picture-reset')&&pictureDraft&&!pictureDraft.saving){
+      const {playbackBackground,playbackColor,brightness,response}=core.defaults;
+      pictureDraft={playbackBackground,playbackColor,brightness,response};syncPictureDraft();return;
+    }
+    if(button.hasAttribute('data-picture-apply')&&pictureDraft){void applyPictureDesign();return;}
     if(button.dataset.background){preferences.background=button.dataset.background;preferences.reactiveBackdrop=false;applyPreferences(true);return;}
-    if(button.dataset.color){preferences.playbackColor=button.dataset.color;applyPreferences(true);return;}
+    if(button.dataset.color&&pictureDraft&&!pictureDraft.saving){pictureDraft.playbackColor=button.dataset.color;syncPictureDraft();return;}
     if(button.dataset.workColor){preferences.color=button.dataset.workColor;applyPreferences(true);return;}
     const action=actions[button.dataset.action];if(action)Promise.resolve(action(button)).catch(error=>notify(error.message||'操作没有完成，请重试。'));
   });
@@ -2532,7 +2626,9 @@
   root.addEventListener('close',revealListeningControls,true);
   playerDock.addEventListener('pointerleave',revealListeningControls);
   exitImmersion.addEventListener('pointerleave',revealListeningControls);
-  for(const key of ['brightness','response'])$('[data-'+key+']').addEventListener('input',event=>{preferences[key]=Number(event.target.value);$('[data-'+key+'-value]').textContent=preferences[key]+'%';fill(event.target);persist();backgroundPicker?.refreshBackdrop();backgroundDirty=true;wake();});
+  for(const key of ['brightness','response'])$('[data-'+key+']').addEventListener('input',event=>{
+    if(pictureDraft&&!pictureDraft.saving){pictureDraft[key]=Number(event.target.value);syncPictureDraft();}
+  });
   $('[data-desktop-lyrics]').addEventListener('change',event=>{preferences.desktopLyrics=event.target.checked;applyPreferences(true);});
   $('[data-beat-ratio]').addEventListener('change',event=>{preferences.beatRatio=Number(event.target.value);applyPreferences(true);});
   $('[data-output-device]').addEventListener('change',async event=>{

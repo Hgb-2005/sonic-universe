@@ -934,7 +934,7 @@ export function paint(context,preset,frame){
   const [base,sky,middle,foreground,highlight]=colors;
   const shine=colorWith(highlight,frame.artwork.primary,cover);
   if(frame.photoRect){
-    photoOverlay(context,preset,frame,shine);
+    photoOverlay(context,preset,frame,frame.preview?highlight:shine);
     return;
   }
   const t=frame.time,rand=index=>seedUnit(frame.seed,index);
