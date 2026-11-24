@@ -51,7 +51,7 @@
     </div>`;
   const dialogFooter=(kind,label)=>`<footer class="lr-design-footer"><button type="button" class="lr-design-reset" data-${kind}-reset>恢复默认</button><div><button type="button" class="lr-choice" data-close>取消</button><button type="button" class="lr-design-apply" data-${kind}-apply>${label}</button></div></footer>`;
   const featuredEffects=['tide','cut','film','ink','orbit','still'];
-  const effectCard=preset=>`<button type="button" class="lr-effect-card" data-effect-choice="${preset.id}" aria-pressed="false" aria-label="${preset.label}" title="${preset.description}">
+  const effectCard=preset=>`<button type="button" class="lr-effect-card" data-effect-choice="${preset.id}" data-intensity="${preset.intensity||'medium'}" aria-pressed="false" aria-label="${preset.label}" title="${preset.description}">
     <span class="lr-design-effect-icon" data-look="${preset.id}" aria-hidden="true"><i></i><i></i><i></i></span><span>${preset.label}</span></button>`;
   const root = document.createElement('div'); root.id = 'listeningRoom';
   root.innerHTML = `

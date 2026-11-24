@@ -2,7 +2,10 @@
 #listeningRoom .lr-effect-dialog .lr-dialog-heading { position: sticky; top: -24px; z-index: 2; padding-block: 10px; background: #151621; }
 #listeningRoom .lr-effect-dialog h3 { margin: 20px 0 10px; color: #d4d2df; font-size: 13px; font-weight: 650; }
 #listeningRoom .lr-effect-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
-#listeningRoom .lr-effect-card { display: grid; gap: 7px; padding: 4px 4px 7px; border: 1px solid #ded6ff20; border-radius: 9px; background: #1e2030; color: #d9dce8; font-size: 12px; }
+#listeningRoom .lr-effect-card { position: relative; display: grid; gap: 7px; padding: 4px 4px 7px; border: 1px solid #ded6ff20; border-radius: 9px; background: #1e2030; color: #d9dce8; font-size: 12px; }
+#listeningRoom .lr-effect-card::after { content: '中'; position: absolute; top: 3px; right: 5px; padding: 1px 3px; border-radius: 4px; background: #8d7bd41f; color: #cbbff2; font-size: 9px; line-height: 1.35; pointer-events: none; }
+#listeningRoom .lr-effect-card[data-intensity="light"]::after { content: '轻'; background: #48a78920; color: #9fd8c4; }
+#listeningRoom .lr-effect-card[data-intensity="strong"]::after { content: '强'; background: #c4563a26; color: #ffb9a8; }
 #listeningRoom .lr-effect-card:is(:hover,:focus-visible) { border-color: #cfc7e894; }
 #listeningRoom .lr-effect-card[aria-pressed=true] { border-color: var(--room-accent); color: var(--room-accent); }
 #listeningRoom .lr-effect-stage {
