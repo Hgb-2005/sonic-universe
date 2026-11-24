@@ -375,3 +375,14 @@ GET http://127.0.0.1:17865/api/lyric
 - 只监听本机回环地址，不对外网开放，也不需要鉴权
 - 当前歌曲没有歌词时仍返回 200，`lines` 为空、`line` 为 `null`
 - 换歌时才整份推送，逐行位置实时计算，不会把播放状态频繁写盘
+
+### 示例音频可外置
+
+示例音频默认随安装包发布；想改成 CDN 或 release 附件，在开发者工具控制台执行：
+
+```js
+localStorage.setItem('sonic-asset-base', 'https://cdn.example.com/sonic-assets/')
+```
+
+之后示例音频从该地址读取（`assets/auld-lang-syne.m4a`、`interstellar-drift.mp3`），清空该键即回到本地。
+视频预览与背景图仍按原路径加载。

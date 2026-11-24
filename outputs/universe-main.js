@@ -1,4 +1,4 @@
-
+﻿
 (() => {
   'use strict';
   try {
@@ -3528,7 +3528,7 @@
   }
   async function decodeDemo(track){
     const isSample=track.id===bundledSample.id;
-    const asset=isSample?'./assets/auld-lang-syne.m4a':'./interstellar-drift.mp3';
+    const asset=demoSrcFor(track);
     const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),8000);
     try{
       app.dataset.demoAudio='loading';
@@ -3837,7 +3837,12 @@
   }
   function updateTimeline(){if(externalStream){const info=externalPlayback?.snapshot(), timed=Number.isFinite(info?.position);$('currentTime').textContent=timed?formatTime(info.position):'LIVE';$('duration').textContent=timed?formatTime(info.duration):'外部播放';seek.disabled=true;seek.max=timed?info.duration:96;seek.value=timed?info.position:0;setFill(seek);seek.setAttribute('aria-valuetext',timed?formatTime(info.position)+' / '+formatTime(info.duration):'外部声音实时联动，进度由原播放器控制');updateJourneyTimeline();return}const pos=getPosition(),length=localDuration();$('currentTime').textContent=formatTime(pos);$('duration').textContent=formatTime(length);seek.max=length||96;if(!seeking){seek.value=pos;setFill(seek)}seek.setAttribute('aria-valuetext',formatTime(pos)+' / '+formatTime(length));updateJourneyTimeline();if(mode==='online')updateOnlineLyricDisplay()}
   // 内置示例也走 <audio>：播放速度天然保调，也不必把整首解码进内存。
-  function demoSrcFor(track){return track?.id===bundledSample.id?'./assets/auld-lang-syne.m4a':'./interstellar-drift.mp3'}
+  // 示例音频可以指向外部地址：在控制台 localStorage.setItem('sonic-asset-base','https://cdn.example.com/') 即可。
+  function assetBase(){
+    try{const value=localStorage.getItem('sonic-asset-base');return typeof value==='string'&&/^https?:\/\//i.test(value)?value.replace(/\/+$/,'')+'/':''}catch{return ''}
+  }
+  function demoAssetPath(track){return track?.id===bundledSample.id?'assets/auld-lang-syne.m4a':'interstellar-drift.mp3'}
+  function demoSrcFor(track){const base=assetBase();return base?base+demoAssetPath(track):'./'+demoAssetPath(track)}
   async function startDemoAt(position){
     const asset=demoSrcFor(currentTrack()),url=await resolveSharedAsset(asset);
     const absolute=new URL(url,location.href).href;
