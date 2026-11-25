@@ -1086,3 +1086,35 @@ html:has(#listeningRoom:is([data-playback-tone=light], [data-playback-tone=mid])
 #listeningRoom[data-playback-tone=light][data-lyric-effect=still] .lr-lyric-row[data-current-line] > .lr-lyric-translation {
   color: #354150;
 }
+
+/* 歌词墨色跟着底图走：亮底深墨 + 浅光晕，暗底浅墨 + 深光晕（学 Folia 把字形与光晕分开）。 */
+#listeningRoom[data-mode=listen][data-lyric-tone=light] {
+  --lr-lyric-text: var(--lyric-ink, #1b2724);
+  --lr-lyric-neighbor: var(--lyric-ink-waiting, rgba(27,39,36,.56));
+  --lr-lyric-translation: var(--lyric-ink-translation, rgba(30,44,40,.72));
+  --lr-lyric-word-waiting: var(--lyric-ink-waiting, rgba(27,39,36,.56));
+  --lr-lyric-word-sung: var(--lyric-ink, #1b2724);
+}
+#listeningRoom[data-mode=listen] .lr-timed-group {
+  text-shadow: var(--lyric-ink-shadow, none);
+  font-weight: var(--lyric-ink-weight, 700);
+}
+#listeningRoom[data-mode=listen][data-lyric-tone=light] .lr-now-title { color: var(--lyric-ink, #1b2724); text-shadow: var(--lyric-ink-shadow, none); }
+#listeningRoom[data-mode=listen][data-lyric-tone=light] :is(.lr-now-artist, .lr-now-recording) { color: var(--lyric-ink-translation, rgba(30,44,40,.72)); }
+
+/* 歌词背后局部柔化：不是加一块底色，而是把身后的画面轻轻虚掉，字才有"长在画面里"的感觉。 */
+#listeningRoom[data-mode=listen] .lr-now-lines { position: relative; isolation: isolate; }
+#listeningRoom[data-mode=listen] .lr-now-lines::before {
+  content: ''; position: absolute; z-index: -1; inset: -16px -34px -14px -22px; border-radius: 22px;
+  pointer-events: none;
+  backdrop-filter: blur(3px) saturate(.94);
+  -webkit-backdrop-filter: blur(3px) saturate(.94);
+  -webkit-mask-image: radial-gradient(130% 105% at 26% 50%, #000 52%, rgba(0,0,0,.45) 76%, transparent 92%);
+  mask-image: radial-gradient(130% 105% at 26% 50%, #000 52%, rgba(0,0,0,.45) 76%, transparent 92%);
+}
+#listeningRoom[data-mode=listen][data-lyric-tone=light] .lr-now-lines::before {
+  background: linear-gradient(90deg, rgba(255,255,255,.26), rgba(255,255,255,.05) 78%, transparent);
+}
+#listeningRoom[data-mode=listen][data-lyric-tone=dark] .lr-now-lines::before {
+  background: linear-gradient(90deg, rgba(8,14,13,.22), rgba(8,14,13,.06) 78%, transparent);
+}

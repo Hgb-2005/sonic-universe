@@ -707,6 +707,7 @@
     $('[data-scene-backdrop]').checked=preferences.reactiveBackdrop;
     $('[data-background-label]').textContent=backgroundNames[preferences.background];
     if(scenes){syncSceneLabels();syncSceneLyric();}
+    applyLyricInk();
     if(save)persist();resize();schedule();updateUI(true);
     if(previousCover?.width)animateLyricView(view,previousCover);
   }
@@ -870,6 +871,7 @@
   function selectedScene() { return scenePins.get(snapshot.track?.id)||preferences.visualScene; }
   // 视觉舞台里把当前歌词搬到画面中，跟着场景的留白走（烟雨江南放在亭子左侧）。
   let sceneLyricKey = '';
+  let sceneLyricTone = '';
   function syncSceneLyric() {
     const box = $('[data-scene-lyric]');
     if (!box) return;
@@ -888,6 +890,15 @@
       return;
     }
     box.hidden = false;
+    const ink=window.SonicLyricInk;
+    if(ink){
+      const tone=ink.sceneTone(sceneId);
+      if(tone!==sceneLyricTone){
+        sceneLyricTone=tone;
+        const vars=ink.cssVars(tone);
+        for(const key of Object.keys(vars))box.style.setProperty(key,vars[key]);
+      }
+    }
     if (key === sceneLyricKey) return;
     sceneLyricKey = key;
     $('[data-scene-line]').textContent = text;
@@ -990,6 +1001,17 @@
     headerSettings.title=label;
     $('[data-settings-label]').textContent=label;
   }
+  // 歌词墨色跟着底走：亮底用深墨，暗底用浅墨，光晕由 lyric-ink 给两层。
+  function applyLyricInk(){
+    const ink=window.SonicLyricInk;
+    if(!ink)return 'dark';
+    const entry=backgrounds?.get?.(preferences.playbackBackground);
+    const tone=ink.backgroundTone(entry);
+    const vars=ink.cssVars(tone);
+    for(const key of Object.keys(vars))root.style.setProperty(key,vars[key]);
+    root.dataset.lyricTone=tone;
+    return tone;
+  }
   function changePlaybackBackground(value,save=true) {
     if(!backgrounds)return;
     const id=backgrounds.normalize(value),entry=backgrounds.get(id),request=++playbackBackdropRequest;
@@ -1009,6 +1031,7 @@
         if(save||id!==value)persist();
         refreshEffectBackdrop();
         syncPictureControls();
+        applyLyricInk();
         backgroundDirty=true;wake();
       },save?70:0);
     }).catch(()=>{

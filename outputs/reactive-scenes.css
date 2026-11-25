@@ -157,3 +157,14 @@
   #listeningRoom .lr-scene-lyric { left: 6%; right: 6%; width: auto; top: 28%; }
   #listeningRoom .lr-scene-line { font-size: clamp(18px, 5vw, 26px); }
 }
+
+/* 场景歌词用同一套墨色/光晕变量，由 lyric-ink 按场景底色切换。 */
+#listeningRoom .lr-scene-line {
+  color: var(--lyric-ink, #f3f7f4);
+  text-shadow: var(--lyric-ink-shadow, 0 2px 20px rgba(5,16,18,.55));
+  font-weight: var(--lyric-ink-weight, 620);
+}
+#listeningRoom .lr-scene-translation {
+  color: var(--lyric-ink-translation, rgba(228,238,233,.74));
+  text-shadow: var(--lyric-ink-shadow, 0 1px 12px rgba(5,16,18,.5));
+}

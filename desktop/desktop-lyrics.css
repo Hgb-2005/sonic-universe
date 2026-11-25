@@ -60,9 +60,10 @@ button:focus-visible { outline: 2px solid #d3c4ff; outline-offset: -2px; }
   -webkit-box-orient: vertical;
   overflow-wrap: anywhere;
   font-size: clamp(19px, 4.25vw, 35px);
-  font-weight: 650;
+  font-weight: 560;
   line-height: 1.18;
-  text-shadow: 0 2px 9px #0a081b;
+  /* 两层光晕：近圈压实字形，远圈把字和桌面壁纸分开。 */
+  text-shadow: 0 1px 2px rgba(6, 6, 18, .85), 0 10px 30px rgba(6, 6, 18, .65);
 }
 
 .current[data-empty="true"] { font-size: clamp(16px, 3vw, 22px); font-weight: 450; color: #c5c8e1; }

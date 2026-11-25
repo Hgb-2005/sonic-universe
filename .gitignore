@@ -47,6 +47,7 @@ Thumbs.db
 !/outputs/audio-tuning.js
 !/outputs/audio-loudness.js
 !/outputs/lyric-structure.js
+!/outputs/lyric-ink.js
 
 !/outputs/share.html
 !/outputs/listening-room.css
