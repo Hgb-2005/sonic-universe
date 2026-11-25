@@ -320,11 +320,46 @@
     ridge(ctx, w, h, .929, .21, 1.6, '#0a1227', 1);
   }
 
+  // 公共质感层：暗角收边、细颗粒降色带、少量漂浮光尘，让画面不再显得平。
+  function atmosphere(ctx, frame) {
+    const { width: w, height: h, time: t, quality } = frame;
+    if (!(w > 0 && h > 0)) return;
+    const vignette = ctx.createRadialGradient(w * .5, h * .46, Math.min(w, h) * .3, w * .5, h * .52, Math.max(w, h) * .74);
+    vignette.addColorStop(0, 'rgba(0,0,0,0)');
+    vignette.addColorStop(.6, 'rgba(7,12,15,.10)');
+    vignette.addColorStop(1, 'rgba(5,9,12,.44)');
+    ctx.fillStyle = vignette;
+    ctx.fillRect(0, 0, w, h);
+
+    const grains = field(frame.seed, 0x7ac41b93, 240);
+    const grain = Math.round(150 * quality);
+    ctx.fillStyle = 'rgba(232,244,240,.035)';
+    for (let i = 0; i < grain; i++) {
+      const [a, b, c] = grains[i];
+      const x = ((a + t * .004) % 1) * w;
+      const y = ((b + t * .0022) % 1) * h;
+      const size = c > .86 ? 1.8 : 1.1;
+      ctx.fillRect(x, y, size, size);
+    }
+
+    ctx.fillStyle = 'rgba(216,240,234,.15)';
+    const motes = Math.round(20 * quality);
+    for (let i = 0; i < motes; i++) {
+      const [a, b, c] = grains[i + grain];
+      const drift = (t * .012 + a * 6) % 1;
+      const x = ((a + drift * .2) % 1) * w;
+      const y = ((b + Math.sin(t * .2 + c * 6.28) * .014) % 1) * h;
+      ctx.beginPath();
+      ctx.arc(x, y, .9 + c * 1.6, 0, tau);
+      ctx.fill();
+    }
+  }
+
   function isolated(painter) {
     return (ctx, frame) => {
       if (!(frame.width > 0 && frame.height > 0)) return;
       ctx.save();
-      try { painter(ctx, frame); }
+      try { painter(ctx, frame); atmosphere(ctx, frame); }
       finally { ctx.restore(); }
     };
   }

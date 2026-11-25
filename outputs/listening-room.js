@@ -74,6 +74,10 @@
     </header>
     <main class="lr-stage">
       <span class="lr-live" data-live role="status" hidden></span>
+      <div class="lr-scene-lyric" data-scene-lyric hidden aria-live="off">
+        <p class="lr-scene-line" data-scene-line></p>
+        <p class="lr-scene-translation" data-scene-translation hidden></p>
+      </div>
       <section class="sl-library" data-music-library aria-label="本机音乐库" hidden></section>
       <button type="button" class="lr-beat-clock" data-action="beat-clock" aria-label="视觉舞台节拍联动" aria-pressed="true" title="根据音频实时估算速度。四拍分组仅作参考。" hidden>
         <span class="lr-beat-clock-steps" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span data-beat-status>未播放歌曲</span>
@@ -104,10 +108,8 @@
           </div>
           <div class="lr-now-actions">
             <div class="lr-view-links" role="group" aria-label="切换播放视图">
-              <button type="button" class="lr-view-link lr-view-link-primary" data-now-lyrics data-action="full-lyrics" aria-controls="lrLyricReading" aria-expanded="false">${icon('lyrics')}全文歌词</button>
+              <button type="button" class="lr-view-link lr-view-link-primary lr-immersion-entry" data-action="enter-immersion" aria-controls="lrListenView">${icon('expand')}沉浸播放</button>
               <button type="button" class="lr-view-link lr-view-link-primary" data-import-current-lyrics data-action="import-current-lyrics" hidden>${icon('upload')}导入歌词</button>
-              <button type="button" class="lr-view-link lr-immersion-entry" data-action="enter-immersion" aria-controls="lrListenView">${icon('expand')}沉浸播放</button>
-              <button type="button" class="lr-view-link" data-action="lyric-effects" aria-haspopup="dialog">歌词样式</button>
             </div>
             <p class="lr-lyric-source" data-lyric-source-info role="status" hidden></p>
             <button type="button" class="lr-view-link" data-action="retry-lyrics" hidden>重新获取歌词</button>
@@ -139,6 +141,8 @@
           <details class="lr-more-lyrics">
             <summary>更多</summary>
             <div class="lr-lyric-options">
+              <button type="button" class="lr-lyrics-entry" data-now-lyrics data-action="full-lyrics" aria-controls="lrLyricReading" aria-expanded="false">${icon('lyrics')}全文歌词</button>
+              <button type="button" class="lr-lyrics-entry" data-action="lyric-effects" aria-haspopup="dialog">歌词样式</button>
               <button class="lr-lyrics-entry" data-action="lyric-mods" data-desktop-only hidden>样式模组</button>
               <details class="lr-lyric-timing" data-lyric-timing hidden>
                 <summary>时间校准 <output data-lyric-offset aria-live="polite"></output></summary>
@@ -702,7 +706,7 @@
     $('[data-desktop-lyrics]').checked=preferences.desktopLyrics;$('[data-energy]').checked=preferences.energySaver;
     $('[data-scene-backdrop]').checked=preferences.reactiveBackdrop;
     $('[data-background-label]').textContent=backgroundNames[preferences.background];
-    if(scenes)syncSceneLabels();
+    if(scenes){syncSceneLabels();syncSceneLyric();}
     if(save)persist();resize();schedule();updateUI(true);
     if(previousCover?.width)animateLyricView(view,previousCover);
   }
@@ -864,6 +868,33 @@
     return root.dataset.mode==='listen'&&root.dataset.lyricStyle==='effects';
   }
   function selectedScene() { return scenePins.get(snapshot.track?.id)||preferences.visualScene; }
+  // 视觉舞台里把当前歌词搬到画面中，跟着场景的留白走（烟雨江南放在亭子左侧）。
+  let sceneLyricKey = '';
+  function syncSceneLyric() {
+    const box = $('[data-scene-lyric]');
+    if (!box) return;
+    if (root.dataset.mode !== 'visual' || !snapshot.lyrics?.length || snapshot.external) {
+      if (!box.hidden) box.hidden = true;
+      sceneLyricKey = '';
+      return;
+    }
+    const { line } = core.lyricAt(snapshot.lyrics, lyricPosition(), snapshot.lyricDuration);
+    const text = line?.text?.trim() || '';
+    const translation = (line?.translation || '').trim();
+    const key = text + '\u0001' + translation;
+    if (!text) {
+      if (!box.hidden) box.hidden = true;
+      sceneLyricKey = '';
+      return;
+    }
+    box.hidden = false;
+    if (key === sceneLyricKey) return;
+    sceneLyricKey = key;
+    $('[data-scene-line]').textContent = text;
+    const sub = $('[data-scene-translation]');
+    sub.textContent = translation;
+    sub.hidden = !translation;
+  }
   function syncSceneLabels() {
     const track=snapshot.track?.id, pinned=scenePins.has(track), selection=selectedScene();
     const scene=scenes.get(sceneId), title=scene?.name||'动态场景';
@@ -1957,6 +1988,7 @@
     if(seekPreview&&!matchesSeek(seekPreview,snapshot)){seekPreview=null;snapLyrics=true;}
     if(snapshot.playing!==previous.playing){backgroundDirty=true;revealStageChrome();}
     if(trackChanged||force){backgroundDirty=true;if(scenes)syncSceneLabels();}
+    if(scenes&&root.dataset.mode==='visual')syncSceneLyric();
     if(trackChanged&&root.dataset.mode!=='listen')nowPlaying.sync(snapshot,snapshot.lyricPosition);
     musicLibrary.updatePlayback(snapshot);
     updatePlaybackRecovery();

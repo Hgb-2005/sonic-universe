@@ -136,3 +136,24 @@
   color: #fcf0ff;
   border-color: #c5a9d8;
 }
+
+/* 视觉舞台里浮在画面上的当前歌词：跟着场景留白走，烟雨江南时落在亭子左侧。 */
+#listeningRoom .lr-scene-lyric {
+  position: absolute; left: 8%; top: 36%; width: min(34%, 420px); z-index: 2;
+  pointer-events: none; opacity: 0; transform: translateY(6px);
+  transition: opacity .45s ease, transform .45s ease;
+}
+#listeningRoom .lr-scene-lyric:not([hidden]) { opacity: 1; transform: none; }
+#listeningRoom:not([data-mode=visual]) .lr-scene-lyric { display: none; }
+#listeningRoom .lr-scene-line {
+  margin: 0; font-size: clamp(20px, 2.3vw, 33px); line-height: 1.46; font-weight: 620; letter-spacing: .02em;
+  color: #f3f7f4; text-shadow: 0 2px 20px rgba(5, 16, 18, .55), 0 0 44px rgba(126, 178, 168, .16);
+}
+#listeningRoom .lr-scene-translation {
+  margin: 10px 0 0; font-size: clamp(12px, 1.05vw, 15px); line-height: 1.6;
+  color: rgba(228, 238, 233, .74); text-shadow: 0 1px 12px rgba(5, 16, 18, .5);
+}
+@media (max-width: 900px) {
+  #listeningRoom .lr-scene-lyric { left: 6%; right: 6%; width: auto; top: 28%; }
+  #listeningRoom .lr-scene-line { font-size: clamp(18px, 5vw, 26px); }
+}

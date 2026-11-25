@@ -9,7 +9,8 @@
     const rows=Array.from(preview.querySelectorAll('[data-preview-line]'));
     const previewButtons=Array.from(preview.querySelectorAll('[data-preview-row]'));
     const previewTranslation=preview.querySelector('[data-preview-translation]');
-    const fullEntry=preview.querySelector('[data-now-lyrics]');
+    // 「全文歌词」已收进「更多」菜单，不再和预览行同处一个容器。
+    const fullEntry=root.querySelector('[data-now-lyrics]');
     const importEntry=preview.querySelector('[data-import-current-lyrics]');
     const seekPreview=root.querySelector('[data-seek-lyrics]');
     const seekTime=seekPreview.querySelector('[data-seek-time]');
@@ -242,7 +243,9 @@
       }
       const canImport=!nextLines.length&&state.track?.kind==='file'&&!state.external;
       importEntry.hidden=!canImport;
-      fullEntry.hidden=!nextLines.length;
+      // 菜单里的「全文歌词」常驻显示，没有歌词时置灰，避免整个入口忽隐忽现。
+      fullEntry.hidden=false;
+      fullEntry.disabled=!nextLines.length;
       if(canImport)importEntry.setAttribute('aria-label','为《'+state.track.name+'》导入歌词');
       if(full) {
         const previousIndex=fullIndex;
