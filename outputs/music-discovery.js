@@ -274,7 +274,15 @@
     }catch(error){
       if(controller!==request||request.signal.aborted)return;
       const auth=kind==='daily'&&(error?.status===401||error?.code==='auth-required');
-      if(auth){feedCache.delete('daily');get('[data-discovery-items]').replaceChildren();}
+      if(auth){
+        feedCache.delete('daily');
+        // 未登录时别只留一句提示：直接给一个能落地的入口。
+        get('[data-discovery-items]').replaceChildren(button('去登录汽水音乐',()=>{
+          dialog.close();
+          window.SonicListeningRoom?.setMode?.('search');
+          setTimeout(()=>{document.querySelector('[data-sl-search-source="qishui"]')?.click();},150);
+        }));
+      }
       const message=auth?'请先在在线搜索中登录汽水音乐。':cached?'更新未完成，仍可查看上次结果。':error?.message||'音乐入口暂时不可用，请稍后重试。';
       status(message,true);refresh.hidden=auth;
     }

@@ -35,7 +35,25 @@
     }
     return orderedLines(rows);
   }
+  // 每条歌词在解析时就固定下「词 + 起止时间」，之后任何文字归一化/翻译合并都不会让时间错位。
+  function attachWords(row){
+    if(!row||!row.points?.length)return row;
+    const chars=split(row.text);
+    const marks=[...row.points].sort((a,b)=>a.index-b.index);
+    const words=[];
+    for(let i=0;i<marks.length;i++){
+      const mark=marks[i],next=marks[i+1];
+      const end=Number.isFinite(next?.index)?next.index:chars.length;
+      const text=chars.slice(mark.index,Math.max(mark.index,end)).join('');
+      if(!text)continue;
+      const stop=Number.isFinite(mark.end)?mark.end:(next?next.time:(row.end??row.time+6));
+      words.push({text,start:mark.time,end:Math.max(mark.time+.01,stop),index:mark.index});
+    }
+    if(words.length)row.words=words;
+    return row;
+  }
   function orderedLines(rows) {
+    for(const row of rows)attachWords(row);
     rows.sort((a,b)=>a.time-b.time||a.order-b.order);
     const unique=[];
     for(const row of rows) {
@@ -284,6 +302,14 @@
     return matches.size?lines.map((line,index)=>matches.has(index)?{...line,translation:matches.get(index).text}:line):lines;
   }
   function collectSpans(line, end, explicit) {
+    if(explicit&&line.words?.length){
+      let offset=0;
+      return line.words.map(word=>{
+        const span={text:word.text,start:word.start,end:word.end,index:Number.isFinite(word.index)?word.index:offset};
+        offset+=split(word.text).length;
+        return span;
+      });
+    }
     if(explicit&&!line.points?.length)return [];
     const characters=split(line.text);
     const cutoff=Number.isFinite(end)?end:line.end??line.time;

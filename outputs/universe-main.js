@@ -1,4 +1,4 @@
-
+﻿
 (() => {
   'use strict';
   try {
@@ -161,7 +161,8 @@
     origin:'bundled',offset:0,size:'medium',only:true,enabled:true
   });
   const demoBuffers=new Map(),demoBuilds=new Map();
-  let audioContext=null,analyser=null,masterGain=null,mediaNode=null,freqData=null,timeData=null,demoSource=null;
+  let audioContext=null,analyser=null,masterGain=null,normGain=null,mediaNode=null,freqData=null,timeData=null,demoSource=null;
+  const loudnessCache=new Map(),loudnessMeasuring=new Set(),LOUDNESS_KEY='sonic-loudness-v1';
   let mode='demo',playing=false,busy=false,duration=0,offset=0,startedAt=0,repeat=true,volume=.65,lastVolume=.65,objectUrl=null;
   let generation=0,loadGeneration=0,currentFile=null,pendingFile=null,seeking=false,toastTimer=0,dragDepth=0,lastUIUpdate=0;
   let onlinePending=null,onlineClipStart=0,onlineRetrying=false,onlineRetryCount=0,onlineSwitching=false,onlineClient=null,onlineReady=false,onlineLoggedIn=false,onlineLoginPoll=0,onlineLoginGeneration=0,onlinePlaylistCache=[],onlineCurrentPlaylistId='';
@@ -3446,16 +3447,72 @@
     tap.smoothingTimeConstant=.12;
     return tap;
   }
+  // 音量滑块走感知曲线；没有音频调音模块时退回线性，保证旧环境仍能出声。
+  function masterGainFor(value){return window.SonicAudioTuning?.perceptualGain?window.SonicAudioTuning.perceptualGain(value):value}
+  // 响度补偿：导入/首次播放时测一次，按 ±9dB 拉平不同音源的响度差。
+  function loudnessStore(){
+    if(!loudnessCache.size){
+      try{
+        const saved=JSON.parse(localStorage.getItem(LOUDNESS_KEY)||'{}');
+        for(const [id,db] of Object.entries(saved))if(Number.isFinite(db))loudnessCache.set(id,db);
+      }catch{}
+    }
+    return loudnessCache;
+  }
+  function persistLoudness(){
+    try{localStorage.setItem(LOUDNESS_KEY,JSON.stringify(Object.fromEntries(loudnessCache)))}catch{}
+  }
+  function applyLoudnessGain(db){
+    if(!normGain||!audioContext)return;
+    const value=window.SonicAudioTuning?.gainOfDb?window.SonicAudioTuning.gainOfDb(db):Math.pow(10,(Number.isFinite(db)?db:0)/20);
+    const now=audioContext.currentTime;
+    normGain.gain.cancelScheduledValues(now);
+    normGain.gain.setTargetAtTime(value,now,.25);
+  }
+  function syncLoudness(track){
+    const db=loudnessStore().get(track?.id);
+    applyLoudnessGain(Number.isFinite(db)?db:0);
+  }
+  async function measureLoudness(track,url){
+    if(!track||!url||!window.SonicAudioLoudness||loudnessStore().has(track.id)||loudnessMeasuring.has(track.id))return;
+    loudnessMeasuring.add(track.id);
+    try{
+      const response=await fetch(url);
+      const buffer=await response.arrayBuffer();
+      if(buffer.byteLength>120*1024*1024)return;
+      const decoded=await audioContext.decodeAudioData(buffer.slice(0));
+      const channels=[];
+      for(let c=0;c<Math.min(2,decoded.numberOfChannels);c++)channels.push(decoded.getChannelData(c));
+      const loudness=window.SonicAudioLoudness.estimateLoudnessDb(channels,decoded.sampleRate);
+      const peak=window.SonicAudioLoudness.peakOf(channels);
+      // 目标 -16 dBFS（近似响度），提升幅度同时受峰值余量限制，避免削波。
+      const wanted=window.SonicAudioLoudness.gainForLoudness(loudness,-16,6,9);
+      const headroom=peak>1e-6?20*Math.log10(.95/peak):wanted;
+      const gain=Math.min(wanted,headroom);
+      loudnessCache.set(track.id,gain);persistLoudness();
+      if(track.id===activeId)applyLoudnessGain(gain);
+    }catch{}
+    finally{loudnessMeasuring.delete(track.id)}
+  }
+  function scheduleLoudness(track,url){
+    const gain=loudnessStore().get(track?.id);
+    if(Number.isFinite(gain)){applyLoudnessGain(gain);return}
+    applyLoudnessGain(0);
+    if(mode==='online')return;
+    setTimeout(()=>measureLoudness(track,url),1500);
+  }
   function initAudio(){
     if(audioContext)return;
     const AC=window.AudioContext||window.webkitAudioContext;
     if(!AC)throw new Error('这个浏览器暂不支持音频分析，请使用新版 Chrome、Edge 或 Safari。');
     audioContext=new AC();analyser=audioContext.createAnalyser();analyser.fftSize=2048;analyser.smoothingTimeConstant=.62;analyser.minDecibels=-90;analyser.maxDecibels=-15;
     trackGain=audioContext.createGain();
+    normGain=audioContext.createGain();normGain.gain.value=1;
     const tone=window.SonicEqualizer?.create(audioContext);
-    if(tone){trackGain.connect(tone.input);tone.output.connect(analyser)}
-    else trackGain.connect(analyser);
-    masterGain=audioContext.createGain();masterGain.gain.value=volume;analyser.connect(masterGain);masterGain.connect(audioContext.destination);
+    if(tone){trackGain.connect(tone.input);tone.output.connect(normGain)}
+    else trackGain.connect(normGain);
+    normGain.connect(analyser);
+    masterGain=audioContext.createGain();masterGain.gain.value=masterGainFor(volume);analyser.connect(masterGain);masterGain.connect(audioContext.destination);
     beatAnalyser=createBeatAnalysisTap(analyser);
     freqData=new Uint8Array(analyser.frequencyBinCount);timeData=new Uint8Array(analyser.fftSize);
     beatFrequencyData=new Uint8Array(beatAnalyser.frequencyBinCount);beatTimeData=new Float32Array(beatAnalyser.fftSize);
@@ -3471,7 +3528,7 @@
   }
   async function decodeDemo(track){
     const isSample=track.id===bundledSample.id;
-    const asset=isSample?'./assets/auld-lang-syne.ogg':'./interstellar-drift.mp3';
+    const asset=demoSrcFor(track);
     const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),8000);
     try{
       app.dataset.demoAudio='loading';
@@ -3763,9 +3820,10 @@
     if(mode==='online'){
       return clamp((Number.isFinite(audio.currentTime)?audio.currentTime:onlineMediaStart)-onlineMediaStart,0,localDuration());
     }
+    if(mode==='demo')return clamp(Number.isFinite(audio.currentTime)?audio.currentTime:offset,0,duration);
     return clamp(offset+(playing&&audioContext?(audioContext.currentTime-startedAt)*playbackRate:0),0,duration);
   }
-  function stopDemo(){if(demoSource){demoSource.onended=null;try{demoSource.stop()}catch{}demoSource.disconnect();demoSource=null}}
+  function stopDemo(){if(mode==='demo')audio.pause()}
   function updatePlaying(){
     app.classList.toggle('playing',playing||Boolean(externalStream));playBtn.setAttribute('aria-label',playing?'暂停音乐':'播放音乐');
     playBtn.innerHTML=playing?'<svg viewBox="0 0 24 24"><path d="M6 4h4v16H6Zm8 0h4v16h-4Z"/></svg>':'<svg class="play-icon" viewBox="0 0 24 24"><path d="m7 3 15 9-15 9Z"/></svg>';
@@ -3778,12 +3836,28 @@
     if(listeningPresentation)window.dispatchEvent(new Event('sonic:transport-state'));
   }
   function updateTimeline(){if(externalStream){const info=externalPlayback?.snapshot(), timed=Number.isFinite(info?.position);$('currentTime').textContent=timed?formatTime(info.position):'LIVE';$('duration').textContent=timed?formatTime(info.duration):'外部播放';seek.disabled=true;seek.max=timed?info.duration:96;seek.value=timed?info.position:0;setFill(seek);seek.setAttribute('aria-valuetext',timed?formatTime(info.position)+' / '+formatTime(info.duration):'外部声音实时联动，进度由原播放器控制');updateJourneyTimeline();return}const pos=getPosition(),length=localDuration();$('currentTime').textContent=formatTime(pos);$('duration').textContent=formatTime(length);seek.max=length||96;if(!seeking){seek.value=pos;setFill(seek)}seek.setAttribute('aria-valuetext',formatTime(pos)+' / '+formatTime(length));updateJourneyTimeline();if(mode==='online')updateOnlineLyricDisplay()}
-  function startDemoAt(position){stopDemo();offset=clamp(position,0,Math.max(0,duration-.001));demoSource=audioContext.createBufferSource();demoSource.buffer=demoBuffers.get(activeId);demoSource.playbackRate.value=playbackRate;demoSource.connect(trackGain);demoSource.connect(beatAnalyser);startedAt=audioContext.currentTime;demoSource.start(0,offset);playing=true;demoSource.onended=handleEnded;updatePlaying()}
+  // 内置示例也走 <audio>：播放速度天然保调，也不必把整首解码进内存。
+  // 示例音频可以指向外部地址：在控制台 localStorage.setItem('sonic-asset-base','https://cdn.example.com/') 即可。
+  function assetBase(){
+    try{const value=localStorage.getItem('sonic-asset-base');return typeof value==='string'&&/^https?:\/\//i.test(value)?value.replace(/\/+$/,'')+'/':''}catch{return ''}
+  }
+  function demoAssetPath(track){return track?.id===bundledSample.id?'assets/auld-lang-syne.m4a':'interstellar-drift.mp3'}
+  function demoSrcFor(track){const base=assetBase();return base?base+demoAssetPath(track):'./'+demoAssetPath(track)}
+  async function startDemoAt(position){
+    const asset=demoSrcFor(currentTrack()),url=await resolveSharedAsset(asset);
+    const absolute=new URL(url,location.href).href;
+    // 必须和音频元素当前真实地址比：从本地文件切回同一首示例时，dataset 里的旧值不能作数。
+    if(audio.src!==absolute){audio.dataset.demoAsset=asset;audio.src=url;audio.load()}
+    offset=clamp(position,0,Math.max(0,duration-.001));
+    audio.playbackRate=playbackRate;audio.defaultPlaybackRate=playbackRate;
+    if(Number.isFinite(offset)&&Math.abs(audio.currentTime-offset)>.2)audio.currentTime=offset;
+    await audio.play();
+    app.dataset.demoAudio='asset';playing=true;updatePlaying();
+  }
   function setPlaybackRate(value){
     if(externalStream||instrumentOpen||clipLocked()||![.75,1,1.25,1.5,2].includes(value))return false;
-    const position=getLocalPosition();playbackRate=value;
+    playbackRate=value;
     audio.defaultPlaybackRate=value;audio.playbackRate=value;
-    if(playing&&mode==='demo')startDemoAt(position);
     beatTracker.reset();window.dispatchEvent(new Event('sonic:transport-state'));return true;
   }
   function setSleepTimer(minutes){
@@ -3829,12 +3903,9 @@
     try{
       initAudio();await audioContext.resume();if(token!==generation)return;fadeLocalIn();
       if(mode==='demo'){
-        if(!demoBuffers.has(activeId)){
-          busy=true;playBtn.disabled=true;$('orbitHint').textContent='正在准备示例音乐…';
-          try{await buildDemo(currentTrack())}finally{busy=false;renderActiveTrack()}
-        }
+        if(offset>=duration-.05)offset=0;
+        await startDemoAt(offset);
         if(token!==generation)return;
-        if(offset>=duration-.05)offset=0;startDemoAt(offset);
       }else{
         if(getLocalPosition()>=localDuration()-.05)audio.currentTime=mode==='online'?onlineMediaStart:0;
         if(queueSignal||mode==='online')await startQueuedAudio(queueSignal||loadAbort?.signal);else await audio.play();
@@ -3845,6 +3916,8 @@
         }
         playing=true;updatePlaying();
       }
+      syncLoudness(currentTrack());
+      scheduleLoudness(currentTrack(),audio.currentSrc);
       saveSession();
       return true;
     }catch(error){
@@ -3908,7 +3981,7 @@
       catch{return false;}
     }
     beatTracker.reset();memoryHold=false;beginSeekVisual(pos);
-    if(mode==='demo'){offset=pos;if(playing)startDemoAt(pos>=duration?0:pos);}
+    if(mode==='demo'){offset=pos;audio.currentTime=pos>=duration?0:pos;}
     updateTimeline();updatePlaying();saveSession();
     return true;
   }
@@ -4022,8 +4095,9 @@
   seek.addEventListener('input',()=>{seeking=true;setFill(seek);$('currentTime').textContent=formatTime(Number(seek.value))});
   seek.addEventListener('change',()=>{const pos=Number(seek.value);seeking=false;seekTo(pos)});
   function updateVolume(){
-    if(masterGain)masterGain.gain.setTargetAtTime(volume,audioContext.currentTime,.025);
-    $('volume').value=Math.round(volume*100);$('volume').setAttribute('aria-valuetext',Math.round(volume*100)+'%');setFill($('volume'));
+    if(masterGain)masterGain.gain.setTargetAtTime(masterGainFor(volume),audioContext.currentTime,.025);
+    const db=window.SonicAudioTuning?.formatDb?window.SonicAudioTuning.formatDb(window.SonicAudioTuning.dbOf(masterGainFor(volume))):'';
+    $('volume').value=Math.round(volume*100);$('volume').setAttribute('aria-valuetext',Math.round(volume*100)+'%'+(db?' · '+db:''));setFill($('volume'));
     $('muteBtn').setAttribute('aria-label',volume===0?'恢复音量':'静音');$('muteBtn').setAttribute('aria-pressed',String(volume===0));
     $('muteBtn').innerHTML=volume===0?'<svg viewBox="0 0 24 24"><path d="m11 4-6 5H2v6h3l6 5Zm5 5 6 6m0-6-6 6"/></svg>':'<svg viewBox="0 0 24 24"><path d="m11 4-6 5H2v6h3l6 5Zm4 4a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg>';
   }
@@ -6072,6 +6146,14 @@
   }
   // One playback engine serves the listening room, legacy creator and desktop mini player.
   // Only public track metadata crosses this boundary; blobs, cookies and signed URLs stay private.
+  // 只读诊断：音量曲线与响度补偿的实际增益，供自测与问题排查。
+  window.SonicAudioDiagnostics = () => ({
+    volumeGain: masterGain ? Number(masterGain.gain.value.toFixed(4)) : null,
+    loudnessGain: normGain ? Number(normGain.gain.value.toFixed(4)) : null,
+    loudnessDb: normGain && normGain.gain.value > 0 ? Number((20 * Math.log10(normGain.gain.value)).toFixed(2)) : null,
+    measuredTracks: [...loudnessCache.keys()],
+    measuring: [...loudnessMeasuring],
+  });
   window.SonicPlayback = Object.freeze({
     library() {
       return {

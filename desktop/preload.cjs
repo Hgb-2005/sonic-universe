@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 const { contextBridge, ipcRenderer, webUtils } = require('electron');
 async function folderImportKey(file, relativePath) {
   if (typeof relativePath !== 'string' || !relativePath.includes('/')) return '';
@@ -32,6 +32,7 @@ contextBridge.exposeInMainWorld('sonicDesktop', Object.freeze({
   authorizeCapture: () => ipcRenderer.invoke('sonic:capture'),
   externalNowPlaying: ({ sourceId } = {}) => ipcRenderer.invoke('sonic:external-now-playing', { sourceId }),
   publish: state => ipcRenderer.send('sonic:state', state),
+  publishLyrics: value => ipcRenderer.send('sonic:lyrics', value),
   command: command => ipcRenderer.send('sonic:command', command),
   onCommand: subscribe('sonic:command'), onVisibility: subscribe('sonic:visibility'),
   onPlayerState: subscribe('sonic:player-state'),

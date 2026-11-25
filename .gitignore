@@ -1,4 +1,4 @@
-# Publish a curated artwork, without local history, fixtures or debugging output.
+﻿# Publish a curated artwork, without local history, fixtures or debugging output.
 /work/
 /dist/
 /companion/node_modules/
@@ -44,6 +44,9 @@ Thumbs.db
 !/outputs/visual-presets.js
 !/outputs/visual-system.js
 !/outputs/lyric-karaoke.js
+!/outputs/audio-tuning.js
+!/outputs/audio-loudness.js
+!/outputs/lyric-structure.js
 
 !/outputs/share.html
 !/outputs/listening-room.css

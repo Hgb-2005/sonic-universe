@@ -47,7 +47,14 @@
         palette:waiting ? Object.freeze({waiting, sung}) : null});
     })),
   }));
-  const presets = new Map(groups.flatMap(group => group.entries).map(preset => [preset.id,preset]));
+  // 动效强度：轻=只做透明度/位移，中=元素入场，强=整屏构图变化。设置面板据此标注。
+  const intensityById={
+    impact:'strong',cut:'medium',neon:'medium',echo:'medium',film:'strong',flare:'strong',
+    orbit:'light',tide:'medium',ink:'light',mist:'light',sunrise:'light',petal:'light',
+    prism:'medium',stairs:'medium',paper:'medium',clock:'medium',wide:'strong',still:'light',
+  };
+  const presets = new Map(groups.flatMap(group => group.entries).map(preset =>
+    [preset.id,Object.freeze({...preset,intensity:intensityById[preset.id]||'medium'})]));
   const get = id => presets.get(id) || presets.get('orbit');
   const clamp = (value, min=0, max=1) => Math.min(max, Math.max(min,value));
   const smooth = x => x * x * (3 - 2 * x);
