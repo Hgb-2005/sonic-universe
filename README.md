@@ -1,5 +1,13 @@
 # 声波宇宙 · Sonic Universe
 
+[打开网页版](https://hgb-2005.github.io/sonic-universe/) · [Windows 版 0.47.2](https://github.com/Hgb-2005/sonic-universe/releases) · [Windows 正式版 0.42.0](https://github.com/Hgb-2005/sonic-universe/releases/tag/v0.42.0)
+
+- 歌词颜色跟着底图走：亮底用深墨、暗底用浅墨，不再是固定纯白。
+- 光晕分层：暗底两层（近实远虚），亮底只留一圈紧实亮边，细笔画不会被虚光洗淡。
+- 正在播放页歌词后加局部柔化蒙版，字像是长在画面里而不是贴上去。
+- 字重从 700 降到 560，桌面歌词同步换成两层光晕。
+
+自动测试 187 项。
 [打开网页版](https://hgb-2005.github.io/sonic-universe/) · [Windows 版 0.47.1](https://github.com/Hgb-2005/sonic-universe/releases) · [Windows 正式版 0.42.0](https://github.com/Hgb-2005/sonic-universe/releases/tag/v0.42.0)
 
 ## 0.47.1 · 设计调整
