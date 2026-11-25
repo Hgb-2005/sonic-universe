@@ -1,4 +1,15 @@
-﻿# 声波宇宙 · Sonic Universe
+# 声波宇宙 · Sonic Universe
+
+[打开网页版](https://hgb-2005.github.io/sonic-universe/) · [Windows 版 0.47.1](https://github.com/Hgb-2005/sonic-universe/releases) · [Windows 正式版 0.42.0](https://github.com/Hgb-2005/sonic-universe/releases/tag/v0.42.0)
+
+## 0.47.1 · 设计调整
+
+- 正在播放页只留「沉浸播放」，全文歌词与歌词样式收进「更多」。
+- 视觉舞台把当前歌词搬到画面里，放在场景留白处；烟雨江南落在亭子左侧，随换句更新。
+- 山水与氛围场景加公共质感层：暗角、细颗粒、漂浮光尘，画面不再显得平。
+- 修复收起按钮后 now-playing 的空引用报错。
+
+自动测试 181 项。
 
 ## 0.47.0 · 听感、歌词与工程地基
 
