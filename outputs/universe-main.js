@@ -4513,7 +4513,7 @@
         if(selectionError)throw selectionError;
         if(mode==='file'){
           const next=autoplay&&!selection.skipAlbum&&albumContinuation(track);
-          const joined=next?await window.SonicAlbumAudio?.join(track.blob,next.next.blob).catch(()=>null):null;
+          const joined=next?await window.SonicAlbumAudio?.join(track.blob,next.next.blob,signal).catch(()=>null):null;
           if(signal.aborted||token!==loadGeneration)return;
           if(joined)albumRun={...joined,...next,firstId:track.id,start:0};
           objectUrl=URL.createObjectURL(joined?.blob||track.blob);
