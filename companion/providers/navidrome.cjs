@@ -3,6 +3,8 @@ const {createHash,randomBytes}=require('node:crypto');
 
 function createNavidrome(){
   let account=null;
+  const playlistWrites=new Map();
+  const maxEntries=400;
   const invalid=(message,status=400,code='navidrome-error')=>Object.assign(new Error(message),{status,code});
   const array=value=>Array.isArray(value)?value:[];
   const id=value=>typeof value==='string'&&/^[a-zA-Z0-9_-]{1,128}$/.test(value)?value:'';
@@ -31,17 +33,30 @@ function createNavidrome(){
     const salt=randomBytes(12).toString('hex');
     const token=createHash('md5').update(state.password+salt).digest('hex');
     const url=new URL(state.root+'/rest/'+name+'.view');
-    url.search=new URLSearchParams({u:state.user,t:token,s:salt,c:'SonicUniverse',v:'1.16.1',f:'json',...params});
+    const query=new URLSearchParams({u:state.user,t:token,s:salt,c:'SonicUniverse',v:'1.16.1',f:'json'});
+    for(const [name,values] of Object.entries(params)){
+      for(const value of [values].flat())query.append(name,value);
+    }
+    url.search=query;
     return url;
   }
-  async function json(state,name,params){
+  async function json(state,name,params,write=false){
+    const url=endpoint(state,name,params);
+    const options={redirect:'error',signal:AbortSignal.timeout(8500)};
+    if(write&&state.formPost){
+      options.method='POST';
+      options.body=new URLSearchParams(url.search);
+      url.search='';
+    }
+    if(url.href.length>7500)throw invalid('当前服务器不支持表单请求，此列表过长。',400,'navidrome-limit');
     let response,result;
     try{
-      response=await fetch(endpoint(state,name,params),{redirect:'error',signal:AbortSignal.timeout(8500)});
+      response=await fetch(url,options);
       result=(await response.json())['subsonic-response'];
     }catch{throw invalid('Navidrome 未响应，请检查服务器地址和网络。',502,'connection');}
     if(result?.status==='ok'&&response.ok)return result;
     if([40,41,50].includes(result?.error?.code)||response.status===401||response.status===403)throw invalid('Navidrome 登录失败，请核对账号和权限。',401,'navidrome-auth');
+    if(result?.error?.code===70)throw invalid('服务器上找不到这项内容。',404,'not-found');
     throw invalid('Navidrome 未能完成此操作。',502);
   }
   function requireAccount(){
@@ -52,10 +67,74 @@ function createNavidrome(){
     if(typeof value!=='string'||!value.startsWith(state.key+'_')||!id(value.slice(21)))throw invalid('请连接这首歌所属的 Navidrome 曲库。',404,'not-found');
     return value.slice(21);
   }
+  async function playlist(state,key){
+    const group=(await json(state,'getPlaylist',{id:key})).playlist;
+    if(!group)throw invalid('服务器上找不到这张歌单。',404,'not-found');
+    const ids=array(group.entry).map(item=>item.id);
+    const items=array(group.entry).map(item=>song(item,state)).filter(Boolean);
+    const revision=createHash('sha256').update(JSON.stringify([group.name,group.changed,ids])).digest('hex');
+    return {name:text(group.name),items,ids,revision,editable:group.owner===state.user&&items.length===ids.length&&ids.length<=maxEntries};
+  }
+  function playlistView({ids,...view}){return view;}
+  function orderedIds(state,values,{allowEmpty=false}={}){
+    if(!Array.isArray(values)||values.length>maxEntries||!allowEmpty&&!values.length){
+      throw invalid('无法保存这个列表。每次最多同步 '+maxEntries+' 首。');
+    }
+    return values.map(value=>songId(state,value));
+  }
+  function savePlaylist(state,key,body){
+    const ids=orderedIds(state,body.items,{allowEmpty:true});
+    if(!/^[a-f0-9]{64}$/.test(body.revision||''))throw invalid('请重新读取这张歌单。');
+    const lock=state.key+':'+key;
+    const prior=playlistWrites.get(lock)||Promise.resolve();
+    const apply=prior.catch(()=>{}).then(async()=>{
+      if(account!==state)throw invalid('连接已改变，请刷新后再试。',409);
+      const latest=await playlist(state,key);
+      if(!latest.editable)throw invalid('这张歌单不可编辑，请核对所有者或列表长度。',403,'navidrome-playlist-readonly');
+      const desired=JSON.stringify(ids);
+      if(JSON.stringify(latest.ids)===desired)return {playlist:playlistView(latest),conflict:false};
+      if(latest.revision!==body.revision)return {playlist:playlistView(latest),conflict:true};
+      if(ids.length)await json(state,'createPlaylist',{playlistId:key,songId:ids},true);
+      else await json(state,'updatePlaylist',{playlistId:key,songIndexToRemove:latest.ids.map((_,index)=>index)},true);
+      const saved=await playlist(state,key);
+      return {playlist:playlistView(saved),conflict:JSON.stringify(saved.ids)!==desired};
+    });
+    playlistWrites.set(lock,apply);
+    return apply.finally(()=>{if(playlistWrites.get(lock)===apply)playlistWrites.delete(lock);});
+  }
+  async function resume(state){
+    const key=state.indexQueue?'playQueueByIndex':'playQueue';
+    const queue=(await json(state,state.indexQueue?'getPlayQueueByIndex':'getPlayQueue'))[key];
+    const entries=array(queue?.entry);
+    const current=state.indexQueue?queue?.currentIndex:entries.findIndex(item=>item.id===queue?.current);
+    const selected=entries[current];
+    if(!Number.isInteger(current)||!selected)return {items:[],index:-1,position:0};
+    const items=entries.map(item=>song(item,state)).filter(Boolean);
+    const index=entries.slice(0,current).filter(item=>song(item,state)).length;
+    if(!song(selected,state)||!items.length)return {items:[],index:-1,position:0};
+    const ms=Number(queue.position);
+    return {items,index,position:Number.isFinite(ms)?Math.max(0,Math.min(ms/1000,86400)):0};
+  }
+  async function saveResume(state,body){
+    const ids=orderedIds(state,body.items);
+    if(!Number.isInteger(body.index)||!ids[body.index]||!Number.isFinite(body.position)||body.position<0){
+      throw invalid('无有效的 Navidrome 续播位置。');
+    }
+    const position=Math.round(Math.min(86400,body.position)*1000);
+    const params={id:ids,position};
+    if(state.indexQueue)params.currentIndex=body.index;
+    else params.current=ids[body.index];
+    await json(state,state.indexQueue?'savePlayQueueByIndex':'savePlayQueue',params,true);
+    return {saved:true};
+  }
   async function operation(name,body){
     if(name==='connect'){
       const candidate=credentials(body);
       await json(candidate,'ping');
+      const response=await json(candidate,'getOpenSubsonicExtensions').catch(()=>null);
+      const extensions=array(response?.openSubsonicExtensions);
+      candidate.formPost=extensions.some(item=>item.name==='formPost');
+      candidate.indexQueue=extensions.some(item=>item.name==='indexBasedQueue');
       account=candidate;
       return {connected:true,user:candidate.user};
     }
@@ -78,12 +157,20 @@ function createNavidrome(){
       await json(state,body.liked===true?'star':'unstar',{id:key});
       return {liked:body.liked===true};
     }
+    if(name==='resume')return resume(state);
+    if(name==='resume-save')return saveResume(state,body);
+    if(name==='search'){
+      const query=text(body.query);
+      if(!query)return {items:[]};
+      const result=await json(state,'search3',{query,songCount:30,artistCount:0,albumCount:0});
+      return {items:array(result.searchResult3?.song).map(item=>song(item,state)).filter(Boolean)};
+    }
     const key=id(body.id);
-    if((name==='album'||name==='playlist')&&key){
-      const isAlbum=name==='album';
-      const result=await json(state,isAlbum?'getAlbum':'getPlaylist',{id:key});
-      const group=result[name];
-      return {name:text(group?.name||group?.title),items:array(isAlbum?group?.song:group?.entry).map(item=>song(item,state)).filter(Boolean)};
+    if(key&&name==='playlist')return playlistView(await playlist(state,key));
+    if(key&&name==='playlist-save')return savePlaylist(state,key,body);
+    if(key&&name==='album'){
+      const {album}=await json(state,'getAlbum',{id:key});
+      return {name:text(album?.name||album?.title),items:array(album?.song).map(item=>song(item,state)).filter(Boolean)};
     }
     throw invalid('未知的 Navidrome 操作。',404);
   }

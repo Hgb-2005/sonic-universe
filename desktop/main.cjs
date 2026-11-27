@@ -313,7 +313,7 @@ app.on('before-quit',event=>{
   if(quitCheckpointTimer){event.preventDefault();return;}
   if(!quitCheckpointComplete&&mainReady&&window&&!window.isDestroyed()&&!window.webContents.isCrashed()){
     event.preventDefault();
-    quitCheckpointTimer=setTimeout(completeQuitCheckpoint,1200);
+    quitCheckpointTimer=setTimeout(completeQuitCheckpoint,3000);
     send('sonic:save-quit-checkpoint');
     return;
   }

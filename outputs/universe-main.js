@@ -2914,16 +2914,46 @@
     setSessionQueue(items,first.entryId,String(label||'汽水音乐').slice(0,80),{fullOnly});
     return playQueueFrom(first.entryId,{holdOnFailure:Boolean(mediaId)});
   }
-  async function playNavidromeList(songs,label,mediaId){
+  async function playNavidromeList(songs,label,mediaId,{index,position=0}={}){
     const list=normalizeOnlineItems(songs).filter(track=>track.provider==='navidrome');
     if(!list.length||instrumentOpen||clipLocked())return false;
     cancelOnlinePick();
     if(externalStream||externalPending)stopExternal(undefined,true);
     const items=list.map(track=>queueItem(track,true));
-    const index=Math.max(0,list.findIndex(track=>track.mediaId===mediaId));
-    const first=items[index];
+    const chosen=Number.isInteger(index)&&items[index]?index:Math.max(0,list.findIndex(track=>track.mediaId===mediaId));
+    const first=items[chosen];
     setSessionQueue(items,first.entryId,String(label||'Navidrome').slice(0,80),{fullOnly:true});
-    return playQueueFrom(first.entryId,{holdOnFailure:true});
+    return playQueueFrom(first.entryId,{holdOnFailure:true,position});
+  }
+  function navidromeCheckpoint(){
+    const track=currentTrack(),position=getLocalPosition();
+    if(track?.provider!=='navidrome'||externalStream||preparedTrackId!==track.id||deferredResume||!playing&&position<=0)return null;
+    const prefix=track.mediaId.slice(0,21);
+    const items=[];
+    let index=-1;
+    for(const entry of sessionQueue?.items||[]){
+      const song=queueTrackDetails(entry);
+      if(song?.provider!=='navidrome'||!song.mediaId.startsWith(prefix))continue;
+      if(entry.entryId===sessionQueue.currentId)index=items.length;
+      items.push(song.mediaId);
+    }
+    if(index<0)return {items:[track.mediaId],index:0,position};
+    if(items.length>400){
+      const start=Math.max(0,index-200);
+      return {items:items.slice(start,start+400),index:index-start,position};
+    }
+    return {items,index,position};
+  }
+  async function syncNavidromeResume(timeout=4000){
+    const checkpoint=navidromeCheckpoint();
+    if(!checkpoint)return false;
+    const response=await fetch('/api/navidrome/resume-save',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(checkpoint),signal:AbortSignal.timeout(timeout)});
+    if(!response.ok){
+      const value=await response.json().catch(()=>null);
+      throw new Error(value?.error||'无法同步续播。');
+    }
+    return true;
   }
   async function playChartList(songs,label,{fullOnly=false}={}){
     if(!requireOnlineLogin('请先在在线搜索中登录汽水音乐。')||instrumentOpen||clipLocked())return false;
@@ -6113,7 +6143,10 @@
   function stopAnimation(){animationRunning=false;if(rafId)cancelAnimationFrame(rafId);rafId=0;app.dataset.rafRunning='false'}
   document.addEventListener('visibilitychange',()=>{if(document.hidden)stopAnimation();else if(app.dataset.visualFallback!=='active')startAnimation()});
   window.__retryVisualEngine=()=>{stopAnimation();visualFirstFrameReady=false;slowFrameCount=0;overloadFrames=0;energySaver=true;resize();syncEffects();startAnimation()};
-  window.sonicDesktop?.onQuitCheckpoint?.(saveSession);
+  window.sonicDesktop?.onQuitCheckpoint?.(async()=>{
+    saveSession();
+    await syncNavidromeResume(2500).catch(()=>{});
+  });
   window.addEventListener('pagehide',()=>{cancelNextOnlinePreparation();queueChartMatch?.abort();loadAbort?.abort();saveSession();stopExternal('',true);generation++;loadGeneration++;stopDemo();audio.pause();if(objectUrl)URL.revokeObjectURL(objectUrl);if(audioContext)audioContext.close()});
   window.addEventListener('pageshow',e=>{if(e.persisted)location.reload()});
 
@@ -6484,7 +6517,7 @@
     toggle: () => {cancelOnlinePick();return play();}, previous: () => navigateTrack(-1), next: () => navigateTrack(1),
     select: id => {cancelOnlinePick();usePlaybackScope(playbackScope);return playScopedFrom(id);}, seek: position => seekTo(Number(position)),
     openDiscovery: root=>window.SonicMusicDiscovery.open(root,onlineClient,window.SonicPlayback),
-    playNavidromeList,searchQishui,checkQishuiSearchTrack,playQishuiSearchTrack,saveQishuiSearchTrack,playOnlineList,playChartList,playRecording,refreshSyncedPlaylist:refreshQishuiMirror,
+    playNavidromeList,syncNavidromeResume,searchQishui,checkQishuiSearchTrack,playQishuiSearchTrack,saveQishuiSearchTrack,playOnlineList,playChartList,playRecording,refreshSyncedPlaylist:refreshQishuiMirror,
     retryQueue,retryPlayback,skipPlayback,
     selectQueueEntry: id => {cancelOnlinePick();return sessionQueue?playQueueFrom(id,{holdOnFailure:true}):playScopedFrom(id);},
     moveQueueEntry:moveSessionEntry,removeQueueEntry:removeSessionEntry,queueTrack:addSessionTrack,

@@ -38,8 +38,9 @@ contextBridge.exposeInMainWorld('sonicDesktop', Object.freeze({
   onPlayerState: subscribe('sonic:player-state'),
   onDesktopLyricsState: subscribe('sonic:desktop-lyrics-state'),
   onFullscreen: subscribe('sonic:fullscreen-state'),
-  onQuitCheckpoint: callback => subscribe('sonic:save-quit-checkpoint')(() => {
-    try { callback(); }
+  onQuitCheckpoint: callback => subscribe('sonic:save-quit-checkpoint')(async () => {
+    try { await callback(); }
+    catch {}
     finally { ipcRenderer.send('sonic:quit-checkpoint-saved'); }
   }),
 }));
