@@ -405,7 +405,7 @@ function createAppServer(options = {}) {
         if (!body||typeof body!=='object'||Array.isArray(body)) return sendJson(response,400,{error:'无效请求'},cors);
         if(action==='audio'){
           media ||= createMediaCache(qishui);
-          return sendJson(response,200,media.issueSource(navidrome.audio(body.mediaId)),cors);
+          return sendJson(response,200,media.issueSource(await navidrome.audio(body.mediaId,body.quality)),cors);
         }
         return sendJson(response,200,await navidrome.operation(action,body),cors);
       }

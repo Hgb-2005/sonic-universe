@@ -11,6 +11,8 @@ function createNavidrome(){
   const text=value=>typeof value==='string'?value.trim().slice(0,160):'';
   function song(item,state) {
     if(!id(item?.id)||!text(item.title))return null;
+    if(state.formats.size>=2048&&!state.formats.has(item.id))state.formats.delete(state.formats.keys().next().value);
+    state.formats.set(item.id,text(item.suffix).toLowerCase());
     const duration=Number(item.duration);
     return {provider:'navidrome',mediaId:state.key+'_'+item.id,name:text(item.title),artist:text(item.artist),
       album:text(item.album),duration:Number.isFinite(duration)&&duration>0?Math.min(duration,86400):0,liked:Boolean(item.starred)};
@@ -27,7 +29,7 @@ function createNavidrome(){
     if(!user||!password||password.length>1024)throw invalid('请输入用户名和密码。');
     const root=base.href.replace(/\/+$/,'');
     const mediaRoot=createHash('sha256').update(root+'\0'+user).digest('hex').slice(0,20);
-    return {root,user,password,key:mediaRoot};
+    return {root,user,password,key:mediaRoot,formats:new Map()};
   }
   function endpoint(state,name,params={}){
     const salt=randomBytes(12).toString('hex');
@@ -135,6 +137,7 @@ function createNavidrome(){
       const extensions=array(response?.openSubsonicExtensions);
       candidate.formPost=extensions.some(item=>item.name==='formPost');
       candidate.indexQueue=extensions.some(item=>item.name==='indexBasedQueue');
+      candidate.transcoding=extensions.some(item=>item.name==='transcoding');
       account=candidate;
       return {connected:true,user:candidate.user};
     }
@@ -174,10 +177,37 @@ function createNavidrome(){
     }
     throw invalid('未知的 Navidrome 操作。',404);
   }
-  function audio(mediaId){
+  async function canStreamMp3(url){
+    const signal=AbortSignal.timeout(6500),headers={Range:'bytes=0-4095'};
+    const isMp3=response=>response.ok&&/^audio\/(?:mpeg|mp3)(?:;|$)/i.test(response.headers.get('content-type')||'');
+    try{
+      let response=await fetch(url,{redirect:'error',signal,headers});
+      if(!isMp3(response)){await response.body?.cancel();return false;}
+      if(response.status===200){
+        // Navidrome ignores Range while creating a transcode. Let the first
+        // bounded request finish so the server can serve seekable cached bytes.
+        let received=0;
+        for await(const chunk of response.body){
+          received+=chunk.byteLength;
+          if(received>16*1024*1024)return false;
+        }
+        response=await fetch(url,{redirect:'error',signal,headers});
+      }
+      const seekable=isMp3(response)&&response.status===206&&/^bytes 0-\d+\/\d+$/.test(response.headers.get('content-range')||'');
+      await response.body?.cancel();
+      return seekable;
+    }catch{return false;}
+  }
+  async function audio(mediaId,requested){
     const state=requireAccount(),key=songId(state,mediaId);
-    return {mediaUrl:endpoint(state,'stream',{id:key,format:'raw'}).href,preview:false,
-      valid:()=>account===state,audioOnly:true};
+    const originalFlac=state.formats.get(key)==='flac';
+    const source={mediaUrl:endpoint(state,'stream',{id:key,format:'raw'}).href,preview:false,
+      quality:originalFlac?'lossless':undefined,valid:()=>account===state,audioOnly:true};
+    if(requested==='standard'&&originalFlac&&state.transcoding){
+      const mp3=endpoint(state,'stream',{id:key,format:'mp3',maxBitRate:128});
+      if(await canStreamMp3(mp3))return {...source,mediaUrl:mp3.href,quality:'standard'};
+    }
+    return source;
   }
   return {operation,audio};
 }

@@ -3820,16 +3820,16 @@
   const audioQualityLevels=['standard','high','lossless','hires'];
   let actualOnlineQuality=null,activeOnlineTicket=null;
   async function requestOnlineAudio(track,{signal,retry=true,quality}={}){
+    if(!quality&&track.id===activeId&&actualOnlineQuality)quality=actualOnlineQuality;
     if(track.provider==='navidrome'){
       const response=await fetch('/api/navidrome/audio',{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({mediaId:track.mediaId}),signal:AbortSignal.any([signal,AbortSignal.timeout(10000)].filter(Boolean))});
+        body:JSON.stringify({mediaId:track.mediaId,quality}),signal:AbortSignal.any([signal,AbortSignal.timeout(10000)].filter(Boolean))});
       const data=await response.json();
       if(!response.ok)throw Object.assign(new Error(data.error||'Navidrome 请求失败。'),{code:data.code,status:response.status});
       const stream=new URL(data.streamPath,location.origin);
       if(stream.origin!==location.origin||!stream.pathname.startsWith('/media/'))throw new Error('Navidrome 播放地址无效。');
       return {...data,url:stream.href};
     }
-    if(!quality&&track.id===activeId&&actualOnlineQuality)quality=actualOnlineQuality;
     if(!onlineReady||!onlineClient){
       throw Object.assign(new Error('本机音乐入口没有启动。'),{code:'unavailable'});
     }
@@ -6489,7 +6489,8 @@
       const track=currentTrack(),generation=loadGeneration;
       if(track?.kind!=='online'||trackLoading||!actualOnlineQuality)return [];
       const current=actualOnlineQuality;
-      const data=await requestOnlineAudio(track,{quality:'hires',retry:false});
+      const alternate=track.provider==='navidrome'?(current==='lossless'?'standard':'lossless'):'hires';
+      const data=await requestOnlineAudio(track,{quality:alternate,retry:false});
       if(loadGeneration!==generation||data.preview!==track.preview||!audioQualityLevels.includes(data.quality))return [];
       return [...new Set([current,data.quality])];
     },

@@ -2,6 +2,12 @@
 
 [打开网页版](https://hgb-2005.github.io/sonic-universe/) · [Windows 版 0.47.2](https://github.com/Hgb-2005/sonic-universe/releases) · [Windows 正式版 0.42.0](https://github.com/Hgb-2005/sonic-universe/releases/tag/v0.42.0)
 
+## 0.47.5 · Windows 测试候选版
+
+- Navidrome 支持编辑和同步服务器歌单、冲突时选择保留的版本，以及从另一台设备的续播位置继续听。
+- 兼容的同格式 FLAC 或带无缝播放信息的 MP3 可以连续播放。其他组合按普通方式切歌。
+- Navidrome 的 FLAC 遇到可拖动的服务器 MP3 转码时，可在原始无损和标准音质之间切换。
+
 ## 0.47.4 · Windows 测试候选版
 
 - 在线首播与断流重试保留歌曲、进度及队列。兼容的本地 PCM WAV 专辑支持连续播放。
