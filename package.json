@@ -1,6 +1,6 @@
 {
     "name":  "sonic-universe-desktop",
-    "version":  "0.47.2",
+    "version":  "0.47.4",
     "private":  true,
     "description":  "A quiet music companion with desktop lyrics and immersive visuals",
     "author":  "Sonic Universe",
@@ -13,6 +13,10 @@
                     "predesktop:pack":  "node scripts/stamp-assets.cjs \u0026\u0026 node scripts/build-now-playing.cjs",
                     "predesktop:build":  "node scripts/check-release.cjs \u0026\u0026 node scripts/stamp-assets.cjs \u0026\u0026 node scripts/build-now-playing.cjs",
                     "desktop:build":  "electron-builder --win nsis --x64",
+                    "postdesktop:build":  "npm run desktop:verify-candidate",
+                    "desktop:verify-candidate":  "node scripts/verify-windows-candidate.cjs",
+                    "desktop:build:signed":  "npm run desktop:build -- --config.forceCodeSigning=true && npm run desktop:verify-signature",
+                    "desktop:verify-signature":  "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File scripts/verify-windows-signature.ps1",
                     "check:release":  "node scripts/check-release.cjs",
                     "bundle:assets":  "node scripts/bundle-assets.cjs"
                 },
@@ -20,6 +24,9 @@
                     "node":  "\u003e=24"
                 },
     "dependencies":  {
+                         "opencc-js":  "1.4.2"
+                     },
+    "optionalDependencies":  {
                          "qishui-music-api":  "0.2.2"
                      },
     "devDependencies":  {
@@ -57,7 +64,9 @@
                   "win":  {
                               "target":  "nsis",
                               "icon":  "outputs/assets/sonic-icon.png",
-                              "signExecutable":  false
+                              "signtoolOptions":  {
+                                  "signingHashAlgorithms": ["sha256"]
+                              }
                           },
                   "nsis":  {
                                "oneClick":  false,

@@ -4,7 +4,10 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { createRequire } = require('node:module');
 const requireCompanion = createRequire(require.resolve('../companion/package.json'));
-const { createQishuiDeviceId } = requireCompanion('qishui-music-api');
+let createQishuiDeviceId;
+try { ({ createQishuiDeviceId } = requireCompanion('qishui-music-api')); }
+catch (error) { if (error.code !== 'MODULE_NOT_FOUND') throw error; }
+const sdkTest = { skip: !createQishuiDeviceId };
 const {
   createQishuiProvider,
   coverUrl,
@@ -73,7 +76,7 @@ test('normalizes playlist fields and parses range headers', () => {
   assert.deepEqual(parseRange('bytes=20-30', 20), { invalid: true });
 });
 
-test('Qishui playlist pages pass the owner and resume at the SDK cursor after 100 songs', async t => {
+test('Qishui playlist pages pass the owner and resume at the SDK cursor after 100 songs', sdkTest, async t => {
   const fs = require('node:fs/promises');
   const os = require('node:os');
   const path = require('node:path');
@@ -107,7 +110,7 @@ test('Qishui playlist pages pass the owner and resume at the SDK cursor after 10
   ]);
 });
 
-test('Qishui recommendations use a signed-in library and expose only normalized track metadata', async t => {
+test('Qishui recommendations use a signed-in library and expose only normalized track metadata', sdkTest, async t => {
   const fs = require('node:fs/promises');
   const os = require('node:os');
   const path = require('node:path');
@@ -153,7 +156,7 @@ test('Qishui recommendations use a signed-in library and expose only normalized 
   assert.equal((await provider.songFromShare('ValidShare')).item.mediaId, '123');
 });
 
-test('Qishui liked library paginates a complete account snapshot after 50 tracks', async t => {
+test('Qishui liked library paginates a complete account snapshot after 50 tracks', sdkTest, async t => {
   const fs = require('node:fs/promises');
   const os = require('node:os');
   const path = require('node:path');
@@ -407,6 +410,12 @@ test('upstream failures and stalled responses produce actionable bounded errors'
   await assert.rejects(hangingBody.search({ query: '海' }), error => error.code === 'upstream-timeout');
 });
 
+test('disabling Qishui skips SDK and account startup while retaining public providers', async () => {
+  const { createProviders } = require('../companion/providers/index.cjs');
+  const providers = await createProviders({ disableQishui: true, onError: error => { throw error; } });
+  assert.deepEqual([...providers.keys()], ['netease', 'qq', 'kugou']);
+});
+
 test('server exposes public searches and truthful capabilities even without Qishui', async t => {
   const http = require('node:http');
   const { createAppServer } = require('../companion/server.cjs');
@@ -508,6 +517,49 @@ test('cover errors, body limits and timeouts leave the music service running', {
   const health = await get('/health');
   assert.equal(health.status, 200);
   assert.deepEqual(health.body, { ok:true, companion:true, musicApiVersion:2, providers:['qishui'] });
+});
+
+test('the bundled M4A serves byte ranges so desktop playback can seek', async t => {
+  const http = require('node:http');
+  const fs = require('node:fs/promises');
+  const path = require('node:path');
+  const { createAppServer } = require('../companion/server.cjs');
+  const samplePath = '/assets/auld-lang-syne.m4a';
+  const sample = await fs.readFile(path.join(__dirname, '..', 'outputs', samplePath));
+  const app = createAppServer({ providers: new Map() });
+  await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise(resolve => app.server.close(resolve)));
+
+  async function request(method, range) {
+    const response = await new Promise((resolve, reject) => {
+      const headers = { Host: '127.0.0.1:8765', ...(range ? { Range: range } : {}) };
+      const client = http.request({ hostname: '127.0.0.1', port: app.server.address().port, path: samplePath, method, headers }, resolve);
+      client.once('error', reject);
+      client.end();
+    });
+    const chunks = [];
+    for await (const chunk of response) chunks.push(chunk);
+    return { status: response.statusCode, headers: response.headers, body: Buffer.concat(chunks) };
+  }
+
+  const metadata = await request('HEAD');
+  assert.equal(metadata.status, 200);
+  assert.equal(metadata.headers['content-type'], 'audio/mp4');
+  assert.equal(metadata.headers['accept-ranges'], 'bytes');
+  assert.equal(Number(metadata.headers['content-length']), sample.length);
+  assert.equal(metadata.body.length, 0);
+
+  const start = Math.floor(sample.length / 2), end = start + 255;
+  const partial = await request('GET', 'bytes=' + start + '-' + end);
+  assert.equal(partial.status, 206);
+  assert.equal(partial.headers['content-range'], 'bytes ' + start + '-' + end + '/' + sample.length);
+  assert.equal(Number(partial.headers['content-length']), 256);
+  assert.deepEqual(partial.body, sample.subarray(start, end + 1));
+
+  const beyondEnd = await request('GET', 'bytes=' + sample.length + '-');
+  assert.equal(beyondEnd.status, 416);
+  assert.equal(beyondEnd.headers['content-range'], 'bytes */' + sample.length);
+  assert.equal(beyondEnd.body.length, 0);
 });
 
 test('audio proxy forwards ranges and bounds stalled or abandoned upstream requests', { timeout:10000 }, async t => {

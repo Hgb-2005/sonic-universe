@@ -14,6 +14,23 @@
     kugou: { name: '酷狗音乐', host: 'www.kugou.com', id: /^[1-9]\d{0,29}$/, url: (_id,track) => `https://www.kugou.com/yy/html/search.html#searchType=song&searchKeyWord=${encodeURIComponent([text(track.name),text(track.artist)].filter(Boolean).join(' '))}` },
   });
 
+  const versionMarkers=[
+    ['现场版',/现场版|现场录音|演唱会版|\blive (?:at|from|version|recording)\b|(?:^|[-–—(\[（【]\s*|\s)live(?:\s*[)\]）】]|$)/i],
+    ['翻唱版',/翻唱|\bcover\b/i],
+    ['录音室版',/录音室版|\bstudio (?:version|recording)\b/i],
+    ['伴奏版',/伴奏版|纯伴奏|\binstrumental\b|\bkaraoke version\b/i],
+    ['重制版',/重制版|\bremaster(?:ed)?\b/i],
+    ['混音版',/混音版|\bremix\b/i],
+  ];
+
+  function recordingVersion({name, artist, album, duration}) {
+    if (!artist || !album || !(duration > 0)) return '版本待确认';
+    // A provider's title alone can contain promotional text such as “原唱”.
+    // Require the album to corroborate a version indicated by the title.
+    const matches = versionMarkers.filter(([, marker]) => marker.test(name) && marker.test(album));
+    return matches.length === 1 ? matches[0][0] : '版本待确认';
+  }
+
   function officialTrackUrl(provider, value) {
     const expected = Object.hasOwn(EXTERNAL_PROVIDERS, provider) ? EXTERNAL_PROVIDERS[provider] : null;
     if (!expected || typeof value !== 'string') return null;
@@ -77,27 +94,28 @@
   }
 
   function normalizeTrack(input) {
-    if (!input || input.provider !== PROVIDER || !/^\d{1,30}$/.test(String(input.mediaId || ''))) return null;
-    const mediaId = String(input.mediaId);
+    const provider=input?.provider,mediaId=String(input?.mediaId||'');
+    const navidrome=provider==='navidrome';
+    if(navidrome?!/^[a-f0-9]{20}_[a-zA-Z0-9_-]{1,128}$/.test(mediaId):provider!==PROVIDER||!/^\d{1,30}$/.test(mediaId))return null;
     const name = text(input.name, '未命名歌曲');
     const duration = Number(input.duration);
     return {
-      id: `online:${PROVIDER}:${mediaId}`,
+      id: `online:${provider}:${mediaId}`,
       kind: 'online',
-      provider: PROVIDER,
+      provider,
       mediaId,
       name,
       artist: text(input.artist),
       album: text(input.album),
       duration: Number.isFinite(duration) && duration > 0 ? duration : 0,
       cover: safeHttpsUrl(input.cover),
-      externalUrl: safeHttpsUrl(input.externalUrl) || `https://qishui.douyin.com/song/${encodeURIComponent(mediaId)}`,
+      externalUrl: navidrome?null:safeHttpsUrl(input.externalUrl) || `https://qishui.douyin.com/song/${encodeURIComponent(mediaId)}`,
       favorite: input.favorite === true,
       liked: input.liked === true,
       preview: input.preview === true,
       stored: true,
-      sourcePath: '汽水音乐',
-      signature: `qishui:${mediaId}`,
+      sourcePath: navidrome?'Navidrome':'汽水音乐',
+      signature: `${provider}:${mediaId}`,
     };
   }
 
@@ -185,7 +203,7 @@
         .map(value => String(value || '').trim().replace(/\/+$/, ''))
     ));
     let baseUrl = candidates[0] || '';
-    let available = null;
+    let available = null, providers = null;
     let detectionState = 'pending', detectionGeneration = 0, detectionController = null;
     const timeoutMs = Number.isFinite(Number(options.timeoutMs)) ? Math.max(1500, Number(options.timeoutMs)) : 8000;
 
@@ -209,9 +227,7 @@
         timer = setTimeout(() => {
           timedOut = true;
           controller.abort();
-          const error = new Error('连不上本机音乐入口，点「重新连接」再试。');
-          error.code = 'timeout';
-          reject(error);
+          reject(Object.assign(new Error('音乐请求超时，请重试。'), { code: 'timeout' }));
         }, Math.min(timeoutCap, requestTimeout));
       });
       try {
@@ -236,7 +252,7 @@
         })()]);
       } catch (error) {
         if (timedOut) {
-          const timeout = new Error('连不上本机音乐入口，点「重新连接」再试。');
+          const timeout = new Error('音乐请求超时，请重试。');
           timeout.code = 'timeout';
           throw timeout;
         }
@@ -383,6 +399,7 @@
 
     return {
       get available() { return available; },
+      get qishuiAvailable() { return providers?.includes(PROVIDER) ?? null; },
       get baseUrl() { return baseUrl; },
       get detectionState() { return detectionState; },
       async detect() {
@@ -399,16 +416,18 @@
               error.code = 'offline';
               throw error;
             }
-            return origin;
+            return { origin, providers: Array.isArray(data.providers) ? data.providers : null };
           }));
           if (generation !== detectionGeneration) return false;
-          baseUrl = candidate;
+          baseUrl = candidate.origin;
+          providers = candidate.providers;
           available = true;
           detectionState = 'ready';
           return true;
         } catch (error) {
           if (generation !== detectionGeneration) return false;
           available = false;
+          providers = null;
           detectionState = error.errors?.some(item => item.code === 'timeout') ? 'timeout' : 'offline';
           return false;
         } finally {
@@ -432,9 +451,19 @@
         if (share) return request(`/api/qishui/songs/resolve?share=${encodeURIComponent(share)}`, undefined, 10000);
         throw new Error('请输入汽水音乐的官方歌曲链接或歌曲 ID。');
       },
-      charts({ country = 'cn', limit = 25, signal } = {}) {
+      async charts({ country = 'cn', limit = 25, signal } = {}) {
         const params = new URLSearchParams({ country, limit: String(limit) });
-        return requestFrom(baseUrl,'/api/discovery/charts?' + params,undefined,10000,signal);
+        const origin = baseUrl;
+        try {
+          // Allow the server's 8-second Apple deadline to reach the client.
+          return await requestFrom(origin, '/api/discovery/charts?' + params, undefined, 10000, signal, 10000);
+        } catch (error) {
+          if (error.code !== 'timeout') throw error;
+          const health = await requestFrom(origin, '/health', undefined, 1500, signal).catch(() => null);
+          signal?.throwIfAborted();
+          error.code = health?.companion && health?.ok ? 'upstream-timeout' : 'offline';
+          throw error;
+        }
       },
       matchChartTrack({ name, artist, duration, album }, { signal, includeCandidates } = {}) {
         const payload = { name, artist };
@@ -463,7 +492,7 @@
       playlist: id => playlistPage(id),
       playlistAllTracks,
       lyrics: (id,{signal}={}) => requestFrom(baseUrl,`/api/qishui/songs/${encodeURIComponent(id)}/lyrics`,undefined,10000,signal),
-      audio: (mediaId, { signal } = {}) => requestFrom(baseUrl, `/api/qishui/tracks/${encodeURIComponent(mediaId)}/audio`, {}, 15000, signal),
+      audio: (mediaId, { signal, quality } = {}) => requestFrom(baseUrl, `/api/qishui/tracks/${encodeURIComponent(mediaId)}/audio`, quality ? { quality } : {}, 15000, signal),
       coverUrl,
       like: (mediaId, liked) => request('/api/qishui/like', { id: mediaId, liked }, 12000),
       playlistEdit: (operation, id, ids) => request(`/api/qishui/playlist/${operation}`, { id, ids }, 12000),
@@ -475,6 +504,7 @@
     PROVIDER,
     EXTERNAL_PROVIDERS,
     officialTrackUrl,
+    recordingVersion,
     normalizeExternalTrack,
     normalizeTrack,
     migrateLegacyLink,

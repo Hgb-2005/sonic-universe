@@ -53,6 +53,8 @@ Thumbs.db
 !/outputs/listening-room.css
 !/outputs/listening-room.js
 !/outputs/listening-core.js
+!/outputs/album-audio.js
+!/outputs/playback-queue-state.js
 !/outputs/reactive-scenes.css
 !/outputs/reactive-scenes.js
 !/outputs/reactive-scene-landscapes.js
@@ -77,6 +79,8 @@ Thumbs.db
 !/outputs/assets/lyric-stage-glass.webp
 !/outputs/assets/lyric-backdrop-*.webp
 !/outputs/music-library.css
+!/outputs/playlist-transfer.js
+!/outputs/navidrome-panel.js
 !/outputs/music-library.js
 !/outputs/music-discovery.css
 !/outputs/music-discovery.js

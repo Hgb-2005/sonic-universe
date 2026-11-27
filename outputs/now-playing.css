@@ -1118,3 +1118,37 @@ html:has(#listeningRoom:is([data-playback-tone=light], [data-playback-tone=mid])
 #listeningRoom[data-mode=listen][data-lyric-tone=dark] .lr-now-lines::before {
   background: linear-gradient(90deg, rgba(8,14,13,.22), rgba(8,14,13,.06) 78%, transparent);
 }
+
+#listeningRoom[data-mode=listen] {
+  --lr-small-lyric-ink: #f1edf8;
+  --lr-small-lyric-surface: #242635;
+}
+#listeningRoom[data-mode=listen][data-lyric-tone=light] {
+  --lr-small-lyric-ink: #28353b;
+  --lr-small-lyric-surface: #f4f1e9;
+}
+/* Keep the small type legible against the pixels directly under it. */
+#listeningRoom[data-mode=listen] .lr-full-lyrics .lr-full-time,
+#listeningRoom[data-mode=listen] .lr-full-lyrics .lr-full-translation,
+#listeningRoom[data-mode=listen] .lr-preview-row [data-preview-translation],
+#listeningRoom[data-mode=listen] .lr-preview-row :is([data-preview-line="-1"], [data-preview-line="1"]) {
+  color: var(--lr-small-lyric-ink);
+  background-color: var(--lr-small-lyric-surface);
+  padding-inline: .38em;
+  border-radius: .28em;
+  opacity: 1;
+  text-shadow: none;
+}
+#listeningRoom[data-mode=listen] .lr-full-lyrics .lr-full-time { justify-self: start; align-self: center; }
+#listeningRoom[data-mode=listen] .lr-full-lyrics .lr-full-translation { align-self: start; }
+#listeningRoom[data-mode=listen] .lr-full-lyrics .lr-full-content:has(.lr-full-translation) {
+  opacity: 1;
+  transition-property: transform;
+}
+#listeningRoom[data-mode=listen] .lr-full-lyrics button[data-lyric-distance=near]:not([aria-current=true]) .lr-full-text {
+  color: var(--lr-small-lyric-ink);
+  background-color: var(--lr-small-lyric-surface);
+  align-self: start;
+  padding-inline: .28em;
+  border-radius: .24em;
+}

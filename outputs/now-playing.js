@@ -22,6 +22,7 @@
     const fullNotice=document.createElement('p');
     let lines, trackId, queueEntryId, active=-2, fullIndex=-2, lastPosition=0, groups=[], currentNode;
     let view, following=true, readingTop=0, previewMessage='';
+    let autoReturn=false, returnTimer=0, pointerHeld=false;
     let targetLine, targetEnd, targetMessage, targetGroups=[];
     let scrollFrame=0;
     let scrollMode='smooth', lineTracks=[];
@@ -216,6 +217,7 @@
     }
 
     function resumeFollowing() {
+      clearTimeout(returnTimer);
       following=true;
       readingTop=0;
       scroll.removeAttribute('data-reading');
@@ -308,13 +310,26 @@
       const line=lines?.[Number(row?.dataset.fullLine)];
       if(line)seek(line.time);
     });
-    function pauseFollow() {
-      if(!following||!lines?.length||scroll.scrollHeight<=scroll.clientHeight)return;
-      following=false;
-      stopScroll();
-      scroll.setAttribute('data-reading','');
-      showFollowButton(true);
+    function scheduleReturn() {
+      clearTimeout(returnTimer);
+      if(!autoReturn||following||pointerHeld||view!=='full'||!lines?.length)return;
+      returnTimer=setTimeout(()=>{
+        resumeFollowing();
+        centerLine(false,.65,fullIndex);
+      },4000);
     }
+
+    function pauseFollow() {
+      if(!lines?.length||scroll.scrollHeight<=scroll.clientHeight)return;
+      if(following){
+        following=false;
+        stopScroll();
+        scroll.setAttribute('data-reading','');
+        showFollowButton(true);
+      }
+      scheduleReturn();
+    }
+    scroll.addEventListener('scroll',scheduleReturn,{passive:true});
     scroll.addEventListener('wheel',event=>{if(event.deltaY&&!event.ctrlKey)pauseFollow();},{passive:true});
     scroll.addEventListener('touchmove',event=>{if(event.touches.length===1)pauseFollow();},{passive:true});
     scroll.addEventListener('keydown',event=>{
@@ -327,12 +342,27 @@
       const left=scroll.getBoundingClientRect().left+scroll.clientLeft;
       const right=left+scroll.clientWidth;
       const overlayEdge=getComputedStyle(scroll).direction==='rtl'?event.clientX-left:right-event.clientX;
-      if(event.clientX<left||event.clientX>=right||event.target===scroll&&overlayEdge<=12)pauseFollow();
+      if(event.clientX<left||event.clientX>=right||event.target===scroll&&overlayEdge<=12){
+        pointerHeld=true;
+        pauseFollow();
+      }
     });
+    for(const event of ['pointerup','pointercancel','blur']){
+      window.addEventListener(event,()=>{
+        if(!pointerHeld)return;
+        pointerHeld=false;
+        scheduleReturn();
+      });
+    }
     follow.addEventListener('click',()=>{resumeFollowing();centerLine(true);});
 
     return {
       sync,showSeek,followPlayback:resumeFollowing,
+      setAutoReturn(enabled) {
+        if(autoReturn===enabled)return;
+        autoReturn=enabled;
+        scheduleReturn();
+      },
       setScrollMode(mode) {
         if(mode===scrollMode)return;
         scrollMode=mode;scroll.dataset.scrollEffect=mode;
@@ -352,6 +382,7 @@
           immersionSizes?.observe(previewTranslation);
         }
         showFollowButton(false);lines=null;
+        clearTimeout(returnTimer);
       },
     };
   }

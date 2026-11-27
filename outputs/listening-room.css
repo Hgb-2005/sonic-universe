@@ -422,6 +422,11 @@ html.listening-enabled .online-lyrics { display: none !important; }
 #listeningRoom .lr-work-recent { grid-area: recent; padding-block: 12px; }
 #listeningRoom .lr-recent-list { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; margin: 6px 0 0; padding: 0; list-style: none; }
 #listeningRoom .lr-recent-list > * { min-width: 0; }
+#listeningRoom [data-smart-area] { margin-block-start: 16px; }
+#listeningRoom .lr-smart-items { display: grid; grid-template-columns: repeat(auto-fit, minmax(156px, 1fr)); gap: 4px 12px; list-style: none; padding: 0; }
+#listeningRoom .lr-smart-items li { min-width: 0; display: flex; justify-content: space-between; gap: 4px; }
+#listeningRoom .lr-smart-items button:first-child { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#listeningRoom .lr-smart-items button:last-child { flex-shrink: 0; }
 #listeningRoom .lr-recent-track { display: flex; align-items: center; gap: 7px; width: 100%; min-width: 0; min-height: 44px; padding: 5px 6px; border: 1px solid #dfd0ff1a; border-radius: 8px; background: #f1e1fc08; text-align: start; }
 #listeningRoom .lr-recent-track:not(:disabled):hover { border-color: #dfd0ff55; background: #f1e1fc14; }
 #listeningRoom .lr-recent-cover { display: grid; place-items: center; flex: none; width: 32px; height: 32px; border-radius: 6px; object-fit: cover; background: #342d49; color: var(--room-accent); }

@@ -1,7 +1,6 @@
 'use strict';
 
 const { randomUUID } = require('node:crypto');
-const { createQishuiApi, createQishuiDeviceId } = require('qishui-music-api');
 const { EncryptedQishuiSessionStore } = require('../session-store.cjs');
 
 const MAX_TEXT = 180;
@@ -187,6 +186,7 @@ async function sharedSongId(code, fetchImpl) {
 }
 
 async function createQishuiProvider(options = {}) {
+  const { createQishuiApi, createQishuiDeviceId } = require('qishui-music-api');
   const fetchImpl = options.fetch || globalThis.fetch;
   const sessions = await new EncryptedQishuiSessionStore({
     directory: options.dataDirectory,
@@ -398,8 +398,8 @@ async function createQishuiProvider(options = {}) {
       }
       return { url: track.cover };
     },
-    async audio(id) {
-      const source = await request('audio', { id: String(id || ''), quality: 'standard' });
+    async audio(id, quality = 'standard') {
+      const source = await request('audio', { id: String(id || ''), quality });
       const url = httpsUrl(source?.url);
       if (!url) {
         const error = new Error('Protected Qishui audio is not available for in-app playback');

@@ -22,6 +22,23 @@ test('chart matching keeps the Qishui track and only normalizes equivalent title
   assert.deepEqual(result, { item: expected });
 });
 
+test('equivalent Chinese spellings and artist labels do not merge different recordings', async () => {
+  const expected = { ...track('12', '唯一', 'G.E.M. 鄧紫棋'), album: '啓示錄', duration: 253.74 };
+  const input = { name: '唯一', artist: '邓紫棋', album: '启示录', duration: 254, includeCandidates: true };
+  const other = [
+    { ...expected, mediaId: '1', name: '唯一 (Live)' },
+    { ...expected, mediaId: '2', artist: 'G.E.M. 鄧紫棋、其他艺人' },
+    { ...expected, mediaId: '3', duration: 60 },
+  ];
+  assert.deepEqual(await matchChartSong(async () => ({ items: [...other, expected] }), input), {
+    item: expected, reason: 'matched', candidates: [expected, other[2]],
+  });
+  const hongKong = track('41', 'Hong Kong (feat. 王菲季候风）', 'The Weeknd');
+  assert.deepEqual(await matchChartSong(async () => ({ items: [hongKong] }), {
+    name: 'Hong Kong (feat. 王菲季候風)', artist: 'The Weeknd',
+  }), { item: hongKong });
+});
+
 test('chart matching rejects wrong versions, wrong artists and distinct same-credit recordings', async () => {
   const input = { name: '一首歌', artist: '歌手' };
   const match = items => matchChartSong(async () => ({ items, hasMore: false }), input);

@@ -8,6 +8,7 @@ const crypto = require('node:crypto');
 const { once } = require('node:events');
 const { pipeline } = require('node:stream/promises');
 const { createProviders } = require('./providers/index.cjs');
+const {createNavidrome}=require('./providers/navidrome.cjs');
 const { createDiscoveryProvider } = require('./providers/discovery.cjs');
 const { matchChartSong } = require('./providers/chart-playback.cjs');
 const { createPlayableVideoProvider } = require('./providers/playable-videos.cjs');
@@ -38,6 +39,7 @@ const MIME = {
   '.jpeg': 'image/jpeg',
   '.svg': 'image/svg+xml',
   '.mp3': 'audio/mpeg',
+  '.m4a': 'audio/mp4',
   '.ogg': 'audio/ogg',
   '.webm': 'video/webm',
   '.ico': 'image/x-icon',
@@ -119,9 +121,9 @@ function createMediaCache(provider, options = {}) {
     const now = Date.now();
     for (const [token, entry] of entries) if (entry.expiresAt <= now) entries.delete(token);
   };
-  return {
-    async issue(id) {
-      const source = await provider.audio(id);
+  const cache = {
+    async issue(id, quality) { return cache.issueSource(await provider.audio(id, quality)); },
+    issueSource(source) {
       cleanup();
       while (entries.size >= max) entries.delete(entries.keys().next().value);
       const token = crypto.randomBytes(24).toString('base64url');
@@ -131,7 +133,7 @@ function createMediaCache(provider, options = {}) {
     },
     get(token) {
       const entry = entries.get(String(token || ''));
-      if (!entry || entry.expiresAt <= Date.now()) {
+      if (!entry || entry.expiresAt <= Date.now() || entry.valid?.()===false) {
         entries.delete(String(token || ''));
         return null;
       }
@@ -139,6 +141,7 @@ function createMediaCache(provider, options = {}) {
     },
     size() { return entries.size; },
   };
+  return cache;
 }
 
 async function proxyMedia(request, response, entry, extraHeaders, timeout) {
@@ -152,7 +155,7 @@ async function proxyMedia(request, response, entry, extraHeaders, timeout) {
   let timer = deadline();
   response.once('close', disconnected);
   try {
-    const upstream = await fetch(entry.mediaUrl, { headers, redirect: 'follow', signal });
+    const upstream = await fetch(entry.mediaUrl, { headers, redirect: entry.audioOnly?'error':'follow', signal });
     clearTimeout(timer);
     const range = upstream.headers.get('content-range');
     const finalHeaders = {
@@ -167,7 +170,7 @@ async function proxyMedia(request, response, entry, extraHeaders, timeout) {
       response.writeHead(416, finalHeaders).end();
       return;
     }
-    if (!upstream.ok) throw new Error('Media upstream failed');
+    if (!upstream.ok || entry.audioOnly&&!/^(?:audio\/|application\/octet-stream)/i.test(finalHeaders['Content-Type'])) throw new Error('Media upstream failed');
     const length = upstream.headers.get('content-length');
     if (length !== null && !upstream.headers.get('content-encoding')) finalHeaders['Content-Length'] = length;
     if (upstream.body) {
@@ -286,14 +289,30 @@ async function serveStatic(request, response, root, pathname) {
   try {
     const stat = await fsp.stat(filename);
     if (!stat.isFile()) return false;
-    response.writeHead(200, {
-      'Content-Type': MIME[path.extname(filename).toLowerCase()] || 'application/octet-stream',
+    const type = MIME[path.extname(filename).toLowerCase()] || 'application/octet-stream';
+    const headers = {
+      'Content-Type': type,
       'Content-Length': stat.size,
       'Cache-Control': path.basename(filename) === 'index.html' ? 'no-cache' : 'public, max-age=3600',
       'X-Content-Type-Options': 'nosniff',
-    });
-    if (request.method === 'HEAD') return response.end();
-    await pipeline(fs.createReadStream(filename), response);
+    };
+    let range = null;
+    if (type.startsWith('audio/')) {
+      headers['Accept-Ranges'] = 'bytes';
+      if (request.method === 'GET' && !request.headers['if-range']) range = parseRange(request.headers.range, stat.size);
+      if (range?.invalid) {
+        response.writeHead(416, { ...headers, 'Content-Range': 'bytes */' + stat.size, 'Content-Length': 0 });
+        response.end();
+        return true;
+      }
+      if (range) {
+        headers['Content-Range'] = 'bytes ' + range.start + '-' + range.end + '/' + stat.size;
+        headers['Content-Length'] = range.end - range.start + 1;
+      }
+    }
+    response.writeHead(range ? 206 : 200, headers);
+    if (request.method === 'HEAD') response.end();
+    else await pipeline(fs.createReadStream(filename, range || undefined), response);
     return true;
   } catch {
     if (response.destroyed || response.headersSent) {
@@ -314,9 +333,14 @@ function createAppServer(options = {}) {
   });
   let providers = options.providers || null;
   let media = null;
+  const navidrome=createNavidrome();
   const ready = providers
     ? Promise.resolve(providers)
-    : createProviders({ dataDirectory: options.dataDirectory, onError: options.onError });
+    : createProviders({
+      dataDirectory: options.dataDirectory,
+      onError: options.onError,
+      disableQishui: options.disableQishui ?? process.env.SONIC_DISABLE_QISHUI === '1',
+    });
 
   const server = http.createServer(async (request, response) => {
     const origin = request.headers.origin || '';
@@ -372,19 +396,33 @@ function createAppServer(options = {}) {
         const result = url.pathname.endsWith('/charts') ? await discovery.charts(input) : await discovery.musicVideos(input);
         return sendJson(response, 200, result, cors);
       }
+      if (url.pathname.startsWith('/api/navidrome/')) {
+        if (request.method!=='POST') return sendJson(response,405,{error:'Method not allowed'},cors);
+        if (origin!=='http://'+host||!/^application\/json(?:;|$)/i.test(request.headers['content-type']||'')) {
+          return sendJson(response,403,{error:'仅桌面播放器可以连接 Navidrome。'},cors);
+        }
+        const action=url.pathname.slice('/api/navidrome/'.length),body=await readJson(request);
+        if (!body||typeof body!=='object'||Array.isArray(body)) return sendJson(response,400,{error:'无效请求'},cors);
+        if(action==='audio'){
+          media ||= createMediaCache(qishui);
+          return sendJson(response,200,media.issueSource(navidrome.audio(body.mediaId)),cors);
+        }
+        return sendJson(response,200,await navidrome.operation(action,body),cors);
+      }
       if (!url.pathname.startsWith('/api/qishui/') && !url.pathname.startsWith('/media/')) {
         if (request.method !== 'GET' && request.method !== 'HEAD') return sendJson(response, 405, { error: 'Method not allowed' }, cors);
         if (await serveStatic(request, response, root, url.pathname)) return;
         return sendJson(response, 404, { error: 'Not found' }, cors);
       }
-      if (!qishui) return sendJson(response, 503, { error: 'Qishui provider is unavailable' }, cors);
       if (url.pathname.startsWith('/media/')) {
-        if (request.method !== 'GET') return sendJson(response, 405, { error: 'Method not allowed' }, cors);
+        if (request.method !== 'GET' && request.method !== 'HEAD') return sendJson(response, 405, { error: 'Method not allowed' }, cors);
         media ||= createMediaCache(qishui);
         const entry = media.get(url.pathname.slice('/media/'.length));
         if (!entry) return sendJson(response, 404, { error: 'Media token expired' }, cors);
+        if (request.method === 'HEAD') return sendJson(response, 204, {}, cors);
         return await proxyMedia(request, response, entry, cors, options.mediaTimeoutMs ?? MEDIA_TIMEOUT);
       }
+      if (!qishui) return sendJson(response, 503, { error: '汽水音乐未启用，仍可播放本地音乐。', code: 'provider-unavailable' }, cors);
       if (url.pathname === '/api/qishui/login-status' && request.method === 'GET') return sendJson(response, 200, await qishui.authStatus(), cors);
       if (url.pathname === '/api/qishui/login/start' && request.method === 'POST') return sendJson(response, 200, await qishui.loginStart(), cors);
       if (url.pathname === '/api/qishui/login/check' && request.method === 'POST') {
@@ -434,7 +472,11 @@ function createAppServer(options = {}) {
       match = /^\/api\/qishui\/tracks\/(\d{1,30})\/audio$/.exec(url.pathname);
       if (match && request.method === 'POST') {
         media ||= createMediaCache(qishui);
-        return sendJson(response, 200, await media.issue(match[1]), cors);
+        const { quality = 'standard' } = await readJson(request);
+        if (!['standard', 'high', 'lossless', 'hires'].includes(quality)) {
+          return sendJson(response, 400, { error: '不支持这个音质档位。', code: 'invalid-quality' }, cors);
+        }
+        return sendJson(response, 200, await media.issue(match[1], quality), cors);
       }
       if (url.pathname === '/api/qishui/like' && request.method === 'POST') {
         const body = await readJson(request);

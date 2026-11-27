@@ -302,6 +302,15 @@ test('merges repeated online results and keeps local favorites', () => {
   assert.equal(merged[0].favorite, true);
 });
 
+test('recording labels need corroboration and never treat 原唱 in a title as a credit', () => {
+  const live = { name: '夜曲（现场版）', artist: '艺人', album: '演唱会版', duration: 240 };
+  assert.equal(online.recordingVersion(live), '现场版');
+  assert.equal(online.recordingVersion({ ...live, album: '同名专辑' }), '版本待确认');
+  assert.equal(online.recordingVersion({ ...live, duration: 0 }), '版本待确认');
+  assert.equal(online.recordingVersion({ ...live, artist: '' }), '版本待确认');
+  assert.equal(online.recordingVersion({ ...live, name: '夜曲（原唱）', album: '原唱合集' }), '版本待确认');
+});
+
 test('parses LRC and resolves the active lyric', () => {
   const lines = online.parseLrc('[00:01.00]第一句\n[00:03.50][00:05.00]第二句\n[ar:artist]');
   assert.equal(lines.length, 3);
@@ -376,5 +385,5 @@ test('a normal request ends with an actionable timeout instead of remaining busy
   t.after(() => { globalThis.fetch = originalFetch; });
   globalThis.fetch = () => new Promise(() => {});
   const client = online.createClient({ timeoutMs: 1500 });
-  await assert.rejects(client.search('test'), error => error.code === 'timeout' && /重新连接/.test(error.message));
+  await assert.rejects(client.search('test'), error => error.code === 'timeout' && /请重试/.test(error.message));
 });

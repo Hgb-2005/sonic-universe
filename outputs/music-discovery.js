@@ -283,8 +283,15 @@
           setTimeout(()=>{document.querySelector('[data-sl-search-source="qishui"]')?.click();},150);
         }));
       }
-      const message=auth?'请先在在线搜索中登录汽水音乐。':cached?'更新未完成，仍可查看上次结果。':error?.message||'音乐入口暂时不可用，请稍后重试。';
-      status(message,true);refresh.hidden=auth;
+      const offline=error instanceof TypeError||error?.code==='offline';
+      const chartTimeout=kind==='charts'&&error?.code==='upstream-timeout';
+      const message=auth?'汽水登录已失效或尚未登录，请重新扫码。':
+        offline?'本机音乐入口已断开，请重新连接并重试。':
+        chartTimeout?'Apple Music 热门榜单加载超时，请重试榜单。':
+        error?.message||'暂时无法读取，请重试。';
+      status(message+(cached?.result?.items?.length&&!auth?' 仍可查看上次结果。':''),true);
+      refresh.textContent=offline?'重新连接并重试':kind==='charts'?'重试榜单':'重试';
+      refresh.hidden=auth||error?.code==='provider-unavailable';
     }
   }
   function stopVideo(resume) {

@@ -6,7 +6,7 @@
 })(typeof globalThis === 'object' ? globalThis : this, function () {
   'use strict';
   const clamp = (value, min, max) => Math.min(max, Math.max(min, Number.isFinite(value) ? value : min));
-  const defaults = Object.freeze({ mode: 'work', lyricStyle:'effects', lyricEffect:'tide', lyricScroll:'smooth', playbackBackground:'default', background: 'geometry', visualScene:'auto', reactiveBackdrop:false, beatClock:true, beatRatio:1, color: 'lilac', playbackColor:'cover', brightness: 55, response: 35, desktopLyrics: true, energySaver: true });
+  const defaults = Object.freeze({ mode: 'work', lyricStyle:'effects', lyricEffect:'tide', lyricScroll:'smooth', lyricAutoReturn:false, playbackBackground:'default', background: 'geometry', visualScene:'auto', reactiveBackdrop:false, beatClock:true, beatRatio:1, color: 'lilac', playbackColor:'cover', brightness: 55, response: 35, desktopLyrics: true, energySaver: true });
   function normalize(value) {
     const source = value && typeof value === 'object' ? value : {};
     return {
@@ -14,6 +14,7 @@
       lyricStyle: ['stage','list','fly','effects'].includes(source.lyricStyle)?source.lyricStyle:defaults.lyricStyle,
       lyricEffect: typeof source.lyricEffect==='string'&&/^[a-z]{1,16}$/.test(source.lyricEffect)?source.lyricEffect:defaults.lyricEffect,
       lyricScroll: ['smooth','track','rise'].includes(source.lyricScroll)?source.lyricScroll:defaults.lyricScroll,
+      lyricAutoReturn: source.lyricAutoReturn===true,
       playbackBackground: typeof source.playbackBackground==='string'&&/^[a-z][a-z0-9-]{0,47}$/.test(source.playbackBackground)?source.playbackBackground:defaults.playbackBackground,
       background: ['geometry', 'mist', 'plain', 'universe'].includes(source.background) ? source.background : defaults.background,
       visualScene: typeof source.visualScene==='string'&&/^[a-z-]{1,24}$/.test(source.visualScene)?source.visualScene:defaults.visualScene,

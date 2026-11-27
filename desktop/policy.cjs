@@ -39,6 +39,7 @@ function lyricDocument(value) {
     track: { name: text(source.track?.name, 160), artist: text(source.track?.artist, 120) },
     duration: time(source.duration),
     offset: Number.isFinite(source.offset) ? Math.max(-120, Math.min(120, source.offset)) : 0,
+    mediaStart: time(source.mediaStart),
     lines: lines.map(line => ({
       time: time(line?.time),
       end: Number.isFinite(line?.end) ? time(line.end) : null,

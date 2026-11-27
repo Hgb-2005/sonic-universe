@@ -40,7 +40,8 @@
 
   function folderMetadata(track) {
     if (!track || typeof track.sourceFolder !== 'string' || !/^[a-f0-9]{64}$/.test(track.sourceFolder)) return {};
-    return { sourceFolder: track.sourceFolder, sourceMissing: track.sourceMissing === true };
+    return { sourceFolder: track.sourceFolder, sourceMissing: track.sourceMissing === true,
+      sidecarStamp: typeof track.sidecarStamp==='string' ? track.sidecarStamp.slice(0,500) : null };
   }
 
   function manualFields(track) {
@@ -49,7 +50,7 @@
   }
 
   function reconcile(tracks, sourceFolder, files, pathFor) {
-    const byPath = new Map(), byAudio = new Map(), incoming = new Map();
+    const byPath = new Map(), byAudio = new Map(), bySize = new Map(), incoming = new Map();
     const present = new Set(files.map(file => relativeKey(pathFor(file))));
     if (sourceFolder) {
       for (const file of files) {
@@ -62,13 +63,22 @@
       if (track.kind !== 'file' || !track.blob) return;
       const path = trackPath(track);
       if (!path) return;
-      if (sourceFolder && track.sourceFolder === sourceFolder) byPath.set(path, track);
+      if (sourceFolder && track.sourceFolder === sourceFolder) {
+        byPath.set(path, track);
+        if (!bySize.has(track.blob.size)) bySize.set(track.blob.size,new Set());
+        bySize.get(track.blob.size).add(track);
+      }
       const key = audioKey(path, track.blob.size);
       if (!byAudio.has(key)) byAudio.set(key, new Set());
       byAudio.get(key).add(track);
     }
     tracks.forEach(index);
     return {
+      unchanged(source, filePath) {
+        const track=byPath.get(relativeKey(filePath));
+        if(track?.signature===fingerprint(source))return {track,unchanged:true};
+        return null;
+      },
       async match(file, filePath) {
         const path = relativeKey(filePath), exact = byPath.get(path);
         if (exact) return { track: exact, unchanged: await sameAudio(exact.blob, file) };
@@ -89,6 +99,13 @@
           if (!sourceFolder && previous === path) return { track, unchanged: true };
           if (match) ambiguous = true;
           else match = track;
+        }
+        if (!match && sourceFolder) {
+          for (const track of bySize.get(file.size) || []) {
+            if (claimed.has(track) || present.has(trackPath(track)) || !await sameAudio(track.blob,file)) continue;
+            if (match) ambiguous=true;
+            else match=track;
+          }
         }
         if (ambiguous) return { ambiguous: true };
         if (sourceFolder && match) return { track: match, unchanged: true, relinked: true };

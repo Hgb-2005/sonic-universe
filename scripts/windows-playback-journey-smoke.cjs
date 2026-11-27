@@ -272,6 +272,7 @@ async function verifyJourney(profile,fixtures,config) {
     assert.equal(await search.inputValue(),'Windows Flow');
     assert.equal(await pageScroll(page),searchTop);
     await dock.locator('[data-action="now-playing"]').click();
+    await room.locator('.lr-more-lyrics > summary').click();
     await room.locator('[data-now-lyrics]').click();
     const full=room.locator('[data-full-lyrics]');
     await full.waitFor();

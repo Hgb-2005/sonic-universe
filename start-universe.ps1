@@ -96,14 +96,16 @@ function Start-Companion {
     $node = Find-Node24
     if (-not $node) { throw '需要 Node.js 24 或更高版本才能启动音乐入口。' }
     $providerPackage = Join-Path $companionRoot 'node_modules\qishui-music-api\package.json'
-    if (-not (Test-Path -LiteralPath $providerPackage)) {
+    $matchingPackage = Join-Path $companionRoot 'node_modules\opencc-js\package.json'
+    $needsProvider = $env:SONIC_DISABLE_QISHUI -ne '1' -and -not (Test-Path -LiteralPath $providerPackage)
+    if ($needsProvider -or -not (Test-Path -LiteralPath $matchingPackage)) {
         $npm = Find-Npm
-        if (-not $npm) { throw '汽水音乐组件尚未安装，且没有找到 npm。请先运行 npm ci。' }
-        Write-Host '首次启动：正在安装汽水音乐组件…'
+        if (-not $npm) { throw '音乐入口组件尚未安装，且没有找到 npm。请先在 companion 目录运行 npm ci。' }
+        Write-Host '正在安装音乐入口组件…'
         Push-Location $companionRoot
         try {
             & $npm ci --no-audit --no-fund *> (Join-Path $logRoot 'companion-install.log')
-            if ($LASTEXITCODE -ne 0) { throw '汽水音乐组件安装失败，请查看 work\companion-install.log。' }
+            if ($LASTEXITCODE -ne 0) { throw '音乐入口组件安装失败，请查看 work\companion-install.log。' }
         } finally {
             Pop-Location
         }

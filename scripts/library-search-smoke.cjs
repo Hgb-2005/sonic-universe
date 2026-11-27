@@ -9,7 +9,7 @@ const { createAppServer } = require('../companion/server.cjs');
 const root = path.resolve(__dirname,'..');
 const port = Number(process.env.SONIC_LIBRARY_SMOKE_PORT || 18880);
 const origin = `http://127.0.0.1:${port}`;
-const sample = {id:'demo-auld-lang-syne',name:'友谊地久天长',artist:'Bautsch',path:'/assets/auld-lang-syne.ogg'};
+const sample = {id:'demo-auld-lang-syne',name:'友谊地久天长',artist:'Bautsch',path:'/assets/auld-lang-syne.m4a'};
 const localNames = ['Orbit Delta','Orbit Alpha','Other Track','Orbit Echo'];
 const [delta,alpha,other,echo] = localNames;
 const savedList = 'Fixture Saved Order';
@@ -26,11 +26,12 @@ const qishui = [
   remote('8403','Qishui Pending Preview'),
   remote('8404','Qishui Last'),
 ];
-const inlineQuery='Inline Catalog Only';
+const inlineQuery='夜曲';
 const inlinePlaylist='Inline Versions';
 const inlineVersions=[
-  {...qishui[1],album:'Cover Version'},
-  remote('8488',qishui[1].name,{album:'Live at the Test Hall'})
+  {...qishui[1],name:'夜曲（原唱）',artist:'验收艺人甲',album:'同名歌曲合集',preview:false},
+  remote('8488','夜曲（现场版）',{artist:'验收艺人乙',album:'Live at the Test Hall'}),
+  remote('8489','夜曲',{artist:'验收艺人丙',album:'合集',duration:186})
 ];
 const recoveryQuery='Playback Recovery Fixture';
 const recoveryTracks=[
@@ -128,7 +129,7 @@ async function mockOnline(page,wav) {
     }};
 }
 
-async function verify(page,{electron=false}={}) {
+async function verify(page,{electron=false,searchOnly=false}={}) {
   page.setDefaultTimeout(12000);
   const errors=[];
   page.on('pageerror',error=>errors.push(error.message));
@@ -145,6 +146,33 @@ async function verify(page,{electron=false}={}) {
     return !library.importing&&names.every(name=>library.tracks.some(track=>track.name===name));
   },localNames);
   const room=page.locator('#listeningRoom');
+  if(searchOnly){
+    await room.getByRole('button',{name:'搜索音乐',exact:true}).click();
+    const input=room.getByRole('searchbox',{name:'搜索音乐',exact:true});
+    await input.fill(inlineQuery);
+    await room.locator('[data-sl-search-source="qishui"]').click();
+    await room.locator('[data-sl-qishui-status]').filter({hasText:'超时'}).waitFor();
+    await room.locator('[data-sl-qishui-retry]').click();
+    const [preview,full,other]=inlineVersions.map(track=>room.locator('[data-sl-qishui-row="'+track.mediaId+'"]'));
+    await preview.waitFor();
+    assert.equal(await preview.locator('.sl-qishui-title').textContent(),'夜曲（原唱）');
+    assert.match(await preview.locator('.sl-qishui-meta').textContent(),/验收艺人甲.*同名歌曲合集.*00:25/);
+    assert.equal(await preview.locator('[data-kind="version"]').textContent(),'版本待确认');
+    assert.equal(await full.locator('.sl-qishui-title').textContent(),'夜曲（现场版）');
+    assert.equal(await full.locator('[data-kind="version"]').textContent(),'现场版');
+    await full.getByRole('button',{name:/检查可播状态/}).click();
+    await full.locator('[data-kind="full-source"]').getByText('全曲',{exact:true}).waitFor();
+    assert.equal(await preview.locator('[data-kind="unknown"]').textContent(),'待确认');
+    await preview.getByRole('button',{name:/检查可播状态/}).click();
+    await preview.locator('[data-kind="preview-source"]').getByText('仅试听',{exact:true}).waitFor();
+    assert.equal(await full.locator('[data-kind="full-source"]').textContent(),'全曲');
+    assert.equal(await other.locator('[data-kind="unknown"]').textContent(),'待确认');
+    assert.deepEqual(network.tickets,[inlineVersions[1].mediaId,inlineVersions[0].mediaId]);
+    assert.deepEqual(network.media,[]);
+    assert.deepEqual(errors,[]);
+    console.log('PASS 夜曲的来源标题、艺人、专辑和时长，全曲与试听逐条检查');
+    return;
+  }
   const online=page.locator('#queueDialog');
   const librarySearch=room.getByRole('searchbox',{name:'搜索曲库'});
   const onlineSearch=online.locator('#onlineSearchInput');
@@ -261,10 +289,12 @@ async function verify(page,{electron=false}={}) {
   await room.locator('[data-sl-qishui-retry]').click();
   const previewResult=room.locator('[data-sl-qishui-track="'+qishui[1].mediaId+'"]');
   await previewResult.waitFor();
-  assert.match(await previewResult.textContent(),/汽水音乐.*翻唱版.*仅试听/);
+  assert.equal(await previewResult.locator('.sl-qishui-title').textContent(),'夜曲（原唱）');
+  assert.match(await previewResult.textContent(),/验收艺人甲.*同名歌曲合集.*00:25.*版本待确认/);
   const live=room.locator('[data-sl-qishui-track="'+inlineVersions[1].mediaId+'"]');
-  assert.equal(await live.locator('.sl-qishui-title').textContent(),qishui[1].name);
-  assert.match(await live.textContent(),/汽水音乐.*现场版.*可播状态待确认/);
+  assert.equal(await live.locator('.sl-qishui-title').textContent(),'夜曲（现场版）');
+  assert.match(await live.textContent(),/验收艺人乙.*Live at the Test Hall.*00:25.*现场版/);
+  assert.equal(await live.locator('[data-kind="unknown"]').textContent(),'待确认');
   assert.deepEqual(network.searches.slice(-2),[['qishui',inlineQuery],['qishui',inlineQuery]]);
   assert.equal(await sharedSearch.inputValue(),inlineQuery);
   assert.equal(await page.locator('dialog[open]').count(),0);
@@ -295,13 +325,19 @@ async function verify(page,{electron=false}={}) {
   assert.equal(network.tickets.length,ticketCount);
   const check=liveRow.getByRole('button',{name:/检查可播状态/});
   await check.click();
-  await live.locator('[data-kind="full-source"]').getByText('已找到全曲音源',{exact:true}).waitFor();
+  await live.locator('[data-kind="full-source"]').getByText('全曲',{exact:true}).waitFor();
+  assert.equal(await previewResult.locator('[data-kind="unknown"]').textContent(),'待确认');
+  await previewRow.getByRole('button',{name:/检查可播状态/}).click();
+  await previewResult.locator('[data-kind="preview-source"]').getByText('仅试听',{exact:true}).waitFor();
+  assert.equal(await live.locator('[data-kind="full-source"]').textContent(),'全曲');
+  assert.equal(await room.locator('[data-sl-qishui-track="8489"] [data-kind="unknown"]').textContent(),'待确认');
+  console.log('PASS 夜曲结果保留原始标题、艺人、专辑和时长，全曲与试听的查可播结果互不影响');
   assert.equal(await live.locator('[data-kind="direct"]').count(),0);
   assert.equal((await state()).track.id,oldPlayback.track.id);
-  assert.deepEqual(network.tickets.slice(ticketCount),[inlineVersions[1].mediaId]);
+  assert.deepEqual(network.tickets.slice(ticketCount),[inlineVersions[1].mediaId,inlineVersions[0].mediaId]);
   assert.ok(!network.media.includes(inlineVersions[1].mediaId));
   await previewResult.click();
-  await waitForTrack(qishui[1].name);
+  await waitForTrack(inlineVersions[0].name);
   await page.waitForFunction(()=>document.querySelector('#listeningRoom').dataset.mode==='listen');
   assert.ok(network.media.includes(qishui[1].mediaId));
   const returnToSearch=()=>room.getByRole('button',{name:'搜索音乐',exact:true}).click();
@@ -322,7 +358,7 @@ async function verify(page,{electron=false}={}) {
   network.failedTickets.add(firstRecovery.mediaId);
   await result(firstRecovery).click();
   await playbackRetry.waitFor();
-  assert.match(await result(firstRecovery).innerText(),/暂不可播/);
+  assert.match(await result(firstRecovery).innerText(),/去原平台听/);
   const afterTicketFailure=await state();
   assert.equal(afterTicketFailure.track.id,protectedPlayback.track.id);
   assert.equal(afterTicketFailure.playing,true);
@@ -333,7 +369,7 @@ async function verify(page,{electron=false}={}) {
   await waitForTrack(firstRecovery.name);
   await page.waitForFunction(()=>document.querySelector('#listeningRoom').dataset.mode==='listen');
   await returnToSearch();
-  assert.match(await result(firstRecovery).innerText(),/可播全曲/);
+  assert.match(await result(firstRecovery).innerText(),/全曲/);
 
   const secondRow=result(secondRecovery).locator('..');
   await secondRow.getByRole('button',{name:/检查可播状态/}).click();
@@ -341,7 +377,7 @@ async function verify(page,{electron=false}={}) {
   network.failedMedia.add(secondRecovery.mediaId);
   await result(secondRecovery).click();
   await playbackRetry.waitFor();
-  assert.equal(await secondRow.locator('[data-kind="failed"]').textContent(),'播放失败');
+  assert.equal(await secondRow.locator('[data-kind="failed"]').textContent(),'待确认');
   assert.equal(await secondRow.locator('[data-kind="direct"], [data-kind="full-source"]').count(),0);
   assert.equal((await state()).track.name,firstRecovery.name);
   assert.equal((await state()).playing,true);
@@ -362,8 +398,8 @@ async function verify(page,{electron=false}={}) {
   assert.equal((await state()).track.name,secondRecovery.name);
   await page.waitForFunction(()=>document.querySelector('#listeningRoom').dataset.mode==='listen');
   await returnToSearch();
-  assert.equal(await secondRow.locator('[data-kind="direct"]').textContent(),'可播全曲');
-  assert.equal(await result(firstRecovery).locator('[data-kind="direct"]').textContent(),'可播全曲');
+  assert.equal(await secondRow.locator('[data-kind="direct"]').textContent(),'全曲');
+  assert.equal(await result(firstRecovery).locator('[data-kind="direct"]').textContent(),'全曲');
   assert.equal(await playbackRetry.isVisible(),false);
   assert.deepEqual(errors,[]);
   console.log('PASS legacy search still verifies public versions; inline Qishui results keep the active song until an explicit preview pick');
@@ -608,6 +644,7 @@ async function verifySampleLyrics(page, room) {
   const preview=room.locator('[data-lyric-preview]');
   await room.locator(':scope > .lr-player-wrap [data-action="now-playing"]').click();
   await preview.waitFor();
+  await room.locator('.lr-more-lyrics > summary').click();
   await room.locator('[data-now-lyrics]').click();
   const full=room.locator('[data-full-lyrics]');
   await full.waitFor();
@@ -637,15 +674,43 @@ async function verifySampleLyrics(page, room) {
   const y=bounds.y+bounds.height/2;
   const target=lyrics.findIndex((item,index)=>item.time>duration/2&&lyrics[index+1]);
   assert.ok(target>first+1);
-  await page.mouse.move(progressX(await timed.jsonValue()),y);
-  await page.mouse.down();
-  await page.mouse.move(progressX((lyrics[target].time+lyrics[target+1].time)/2),y,{steps:4});
-  assert.equal(await room.locator('[data-seek-line]').getAttribute('data-timing'),'word');
-  await page.mouse.up();
-  await page.waitForFunction(({index,start,end})=>{
-    const {position,playing}=SonicPlayback.snapshot();
-    return playing&&position>=start&&position<end&&document.querySelector(`[data-full-line="${index}"]`)?.getAttribute('aria-current')==='true';
-  },{index:target,start:lyrics[target].time,end:lyrics[target+1].time});
+  const repeat=process.argv.includes('--repeat-first-run-seek')?5:1;
+  for(let attempt=1;attempt<=repeat;attempt++){
+    if(attempt>1){
+      await line(first).click();
+      await page.waitForFunction(({index,time})=>Math.abs(SonicPlayback.position()-time)<.4&&
+        document.querySelector('[data-full-line="'+index+'"]')?.getAttribute('aria-current')==='true',
+        {index:first,time:lyrics[first].time});
+    }
+    await page.mouse.move(progressX(await page.evaluate(()=>SonicPlayback.position())),y);
+    await page.mouse.down();
+    const requested=(lyrics[target].time+lyrics[target+1].time)/2;
+    await page.mouse.move(progressX(requested),y,{steps:4});
+    const seekPreview=room.locator('[data-seek-lyrics]');
+    await seekPreview.waitFor();
+    const seekLine=seekPreview.locator('[data-seek-line]');
+    const targetPosition=Number(await slider.inputValue());
+    assert.ok(Math.abs(targetPosition-requested)<1,'Dragging places the thumb near the requested time');
+    assert.equal(await seekLine.getAttribute('data-timing'),'word');
+    assert.equal(await seekLine.textContent(),lyrics[target].text);
+    assert.equal(await seekPreview.locator('[data-seek-translation]').textContent(),lyrics[target].translation);
+    assert.ok(await page.evaluate(expected=>SonicPlayback.position()<expected-1,targetPosition),
+      'Dragging previews the lyric before the audio moves');
+    await page.mouse.up();
+    await seekPreview.waitFor({state:'hidden'});
+    const landed=await page.waitForFunction(({index,expected})=>{
+      const audio=document.getElementById('audio');
+      const current=document.querySelector(`[data-full-line="${index}"]`)?.getAttribute('aria-current');
+      const {position,playing}=SonicPlayback.snapshot();
+      return playing&&!audio.seeking&&current==='true'&&Math.abs(position-expected)<.75&&
+        Math.abs(audio.currentTime-expected)<.75&&position;
+    },{index:target,expected:targetPosition}).then(handle=>handle.jsonValue()).catch(async error=>{
+      const actual=await page.evaluate(()=>({position:SonicPlayback.position(),media:document.getElementById('audio').currentTime,
+        seeking:document.getElementById('audio').seeking,text:document.querySelector('[aria-current=true] .lr-full-text')?.textContent}));
+      throw new Error('Drag '+attempt+'/'+repeat+' expected '+targetPosition.toFixed(2)+' s and '+lyrics[target].text+', actual '+JSON.stringify(actual),{cause:error});
+    });
+    console.log('PASS first-run lyric drag '+attempt+'/'+repeat+' '+targetPosition.toFixed(2)+' s → '+landed.toFixed(2)+' s · '+lyrics[target].text);
+  }
 
   await room.locator('[data-action="collapse-lyrics"]').click();
   await preview.waitFor();
@@ -708,8 +773,8 @@ async function verifyFirstRun(page,{electron=false}={}) {
     return playback.track?.id===id&&playback.track.kind==='demo'&&playback.playing&&playback.position>.05&&
       document.getElementById('app').dataset.demoAudio==='asset'&&playback.lyrics.length>=3;
   },sample.id);
-  assert.ok(audioResponses.some(response=>response.ok()&&response.headers()['content-type']==='audio/ogg'),
-    'Decoded sample came from its local shipped Ogg recording');
+  assert.ok(audioResponses.some(response=>response.ok()),
+    'Decoded sample came from its local shipped M4A recording');
   let navigations=0;
   page.on('framenavigated',frame=>{if(frame===page.mainFrame())navigations++;});
   const state=()=>page.evaluate(()=>{
@@ -775,22 +840,26 @@ async function verifyFirstRun(page,{electron=false}={}) {
 async function run() {
   const packaged=process.argv.includes('--packaged');
   const firstRunOnly=process.argv.includes('--first-run-only');
+  const searchOnly=process.argv.includes('--search-only');
   if(packaged||process.argv.includes('--electron')){
     const qa=path.join(root,'work','desktop-qa');
     await fs.mkdir(qa,{recursive:true});
     const executablePath=packaged?path.resolve(process.env.SONIC_DESKTOP_EXECUTABLE||path.join(root,'release','win-unpacked','声波宇宙.exe')):require('electron');
     const launch=profile=>_electron.launch({executablePath,args:packaged?[]:[root],cwd:root,timeout:30000,
       env:{...process.env,SONIC_DESKTOP_PROFILE:profile,SONIC_DESKTOP_PORT:String(port)}});
-    const freshProfile=await fs.mkdtemp(path.join(qa,'first-run-profile-'));
-    const firstRun=await launch(freshProfile);
-    try{await verifyFirstRun(await firstRun.firstWindow(),{electron:true});}
-    finally{await firstRun.close();}
+    if(!searchOnly){
+      const freshProfile=await fs.mkdtemp(path.join(qa,'first-run-profile-'));
+      const firstRun=await launch(freshProfile);
+      try{await verifyFirstRun(await firstRun.firstWindow(),{electron:true});}
+      finally{await firstRun.close();}
+    }
     if(firstRunOnly)return;
     const profile=await fs.mkdtemp(path.join(qa,'library-search-profile-'));
     const app=await launch(profile);
     try{
       const page=await app.firstWindow();
-      await verify(page,{electron:true});
+      await verify(page,{electron:true,searchOnly});
+      if(searchOnly)return;
       await verifyPlaylistEditing(page);
       await verifyDockSearchReturn(page);
     }

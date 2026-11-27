@@ -70,6 +70,8 @@ async function mockQishui(page) {
   const matchRequests = [];
   const loginRequests = [];
   const resumeFailures = new Map();
+  let expiredTicketFor=null;
+  let issuedExpiredUrl='';
   const delayedMatch = Promise.withResolvers();
   const delayedMatchFinished = Promise.withResolvers();
   let authenticated = true, serviceInterrupted = false, upstreamOffline = false, pendingLogin = null, allowManualRetry = false;
@@ -173,8 +175,14 @@ async function mockQishui(page) {
           id === manualSkip || id === manualRetry && !allowManualRetry) {
         return route.fulfill({ status:422, json:{ code:'not-playable', error:'测试歌曲暂不可播' } });
       }
+      if(id===expiredTicketFor){
+        expiredTicketFor=null;
+        issuedExpiredUrl='/media/queue-smoke/expired/'+id;
+        return route.fulfill({json:{streamPath:issuedExpiredUrl,preview:false}});
+      }
       return route.fulfill({ json:{ streamPath:`/media/queue-smoke/${id}`, preview:false } });
     }
+    if(url.pathname===issuedExpiredUrl)return route.fulfill({status:404});
     const mediaMatch = /^\/media\/queue-smoke\/(\d+)$/.exec(url.pathname);
     if (mediaMatch) {
       const id = mediaMatch[1];
@@ -189,6 +197,7 @@ async function mockQishui(page) {
   });
   return { playlistReads, audioRequests, mediaRequests, edits, matchRequests, loginRequests,
     allowManualRetry(){ allowManualRetry = true; },
+    expireNextMedia(id){expiredTicketFor=id; },
     expireSession(){ authenticated = false; },
     setServiceInterrupted(value){ serviceInterrupted = value; },
     setUpstreamOffline(value){ upstreamOffline = value; },
@@ -281,6 +290,43 @@ async function verifyQueue(page) {
   const queueNames = () => visibleRows.locator('.lr-queue-info strong').allTextContents();
   const queueRow = id => visibleRows.filter({ hasText:title(id) });
 
+  if(process.argv.includes('--stream-only')){
+    await launchOnline();
+    await openPlaylist(authPlaylistId);
+    await trackRow(authLater).locator('[data-online-action="play"]').click();
+    await waitForPlaying(authLater);
+    await page.keyboard.press('Escape');
+    await room.getByRole('button',{name:'正在播放',exact:true}).first().click();
+    const slider=room.locator(':scope > .lr-player-wrap [data-seek]');
+    await slider.press('ArrowRight');
+    await page.waitForFunction(()=>SonicPlayback.position()>=5);
+    const original=await state();
+    const natural=await exerciseStall(authLater,{expires:true});
+    assert.equal(natural.after.queueEntryId,original.queueEntryId);
+    assert.deepEqual(natural.after.queue.map(track=>track.entryId),original.queue.map(track=>track.entryId));
+    network.setUpstreamOffline(true);
+    const failedAt=await page.evaluate(()=>{
+      const audio=document.querySelector('#audio'),position=SonicPlayback.position();
+      Object.defineProperty(audio,'error',{value:{code:2},configurable:true});
+      audio.dispatchEvent(new Event('error'));
+      delete audio.error;
+      return position;
+    });
+    await page.waitForFunction(()=>SonicPlayback.snapshot().playbackRecovery?.reason==='connection'&&!SonicPlayback.snapshot().busy);
+    await retryPlayback.filter({visible:true}).first().waitFor();
+    network.setUpstreamOffline(false);
+    await retryPlayback.filter({visible:true}).first().click();
+    await waitForPlaying(authLater);
+    const restored=await state();
+    assert.equal(restored.queueEntryId,original.queueEntryId);
+    assert.deepEqual(restored.queue.map(track=>track.entryId),original.queue.map(track=>track.entryId));
+    assert.ok(Math.abs(restored.position-failedAt)<1);
+    assert.equal(restored.buffering,false);
+    assert.deepEqual(errors,[]);
+    console.log('PASS expiry renewed near '+natural.after.position.toFixed(2)+' s, reconnect retried '+failedAt.toFixed(2)+' → '+restored.position.toFixed(2)+' s without changing queue');
+    return;
+  }
+
   await launchOnline();
   await openPlaylist(playlistId);
   await trackRow(moveUp).waitFor();
@@ -316,15 +362,15 @@ async function verifyQueue(page) {
   await libraryTrack.locator('[data-sl-command="queue"]').click();
   await room.locator('[data-sl-command="queue-next"]').click();
   await room.locator('[data-sl-queue]').waitFor({ state:'hidden' });
-  const withDuplicate = await state();
-  assert.deepEqual(withDuplicate.queue.map(track => track.name),[...edited.slice(0,4),duplicate,...edited.slice(4)].map(title));
-  const inserted = withDuplicate.queue[4];
-  assert.notEqual(inserted.entryId,originalDuplicate.entryId);
-  assert.equal(withDuplicate.track.name,title(interrupted));
-  assert.equal(withDuplicate.playing,true);
+  const movedQueue=await state();
+  assert.deepEqual(movedQueue.queue.map(track=>track.name),[...edited.slice(0,4),duplicate,moveUp].map(title));
+  const inserted=movedQueue.queue[4];
+  assert.equal(inserted.entryId,originalDuplicate.entryId,'The existing song moves to next without duplication');
+  assert.equal(movedQueue.track.name,title(interrupted));
+  assert.equal(movedQueue.playing,true);
   assert.deepEqual(network.edits,[]);
   await room.getByRole('button',{ name:'工作陪伴',exact:true }).click();
-  console.log('PASS active queue supports moves, removal and duplicate insert-next without editing the source');
+  console.log('PASS active queue supports moves, removal and promotion of the existing next track without editing the source');
 
   await page.evaluate(() => document.querySelector('#audio').dispatchEvent(new Event('error')));
   await waitForPlaying(duplicate);
@@ -470,7 +516,8 @@ async function verifyQueue(page) {
   await recoveryPanel.waitFor({state:'hidden'});
   console.log('PASS the now-playing bar retries temporary service failure on its held queue entry');
 
-  async function exerciseStall(id) {
+  async function exerciseStall(id,{expires=false}={}) {
+    if(expires)network.expireNextMedia(id);
     await page.evaluate(()=>SonicPlayback.seek(4));
     await page.waitForFunction(()=>{
       const media=document.querySelector('#audio');
@@ -500,15 +547,15 @@ async function verifyQueue(page) {
     }
     await waitForPlaying(id);
     const after = await state();
-    assert.deepEqual(network.audioRequests.slice(retryOffset),[id]);
+    assert.deepEqual(network.audioRequests.slice(retryOffset),expires?[id,id]:[id]);
     assert.ok(Math.abs(after.position-stalledAt)<1);
     assert.equal(after.buffering,false);
     return {before,after};
   }
-  const {before:beforeStall,after:afterStall} = await exerciseStall(authLater);
+  const {before:beforeStall,after:afterStall} = await exerciseStall(authLater,{expires:true});
   assert.equal(afterStall.queueEntryId,beforeStall.queueEntryId);
   assert.deepEqual(afterStall.queue.map(track=>track.entryId),beforeStall.queue.map(track=>track.entryId));
-  console.log('PASS a stalled media clock reopens the same stream at its last position and preserves the queue');
+  console.log('PASS a stalled media clock and expired ticket renew the same stream at its last position and preserve the queue');
 
   await launchOnline();
   await page.locator('[data-online-provider="qq"]').click();

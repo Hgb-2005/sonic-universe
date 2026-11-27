@@ -8,24 +8,26 @@
     favorites:'收藏歌曲后，就能在这里找到。',recent:'你播放过的歌曲会显示在这里。',
   };
   const pageSize=40;
-  const versionMarkers=[
-    ['现场版',/现场版|现场录音|演唱会版|\blive (?:at|from|version|recording)\b|(?:^|[-–—(\[（【]\s*|\s)live(?:\s*[)\]）】]|$)/i],
-    ['翻唱版',/翻唱|\bcover\b/i],
-    ['原唱版',/原唱|\boriginal version\b/i],
-    ['录音室版',/录音室版|\bstudio (?:version|recording)\b/i],
-    ['伴奏版',/伴奏版|纯伴奏|\binstrumental\b|\bkaraoke version\b/i],
-    ['重制版',/重制版|\bremaster(?:ed)?\b/i],
-    ['混音版',/混音版|\bremix\b/i],
-  ];
-  const trackVersions=track=>versionMarkers.filter(([,marker])=>marker.test(track.name)||marker.test(track.album)).map(([label])=>label);
+  function oneSpellingEdit(title,query){
+    if(query.length<3||Math.abs(title.length-query.length)>1)return false;
+    const [short,long]=title.length<query.length?[title,query]:[query,title];
+    let left=0,right=0,edits=0;
+    while(left<short.length&&right<long.length){
+      if(short[left]===long[right]){left++;right++;continue;}
+      if(++edits>1)return false;
+      if(short.length===long.length)left++;
+      right++;
+    }
+    return true;
+  }
   const qishuiAvailabilityLabels={
-    unknown:'可播状态待确认',
-    'full-source':'已找到全曲音源',
-    'preview-source':'已找到试听音源',
-    direct:'可播全曲',
+    unknown:'待确认',
+    'full-source':'全曲',
+    'preview-source':'仅试听',
+    direct:'全曲',
     preview:'仅试听',
-    unavailable:'暂不可播',
-    failed:'播放失败',
+    unavailable:'去原平台听',
+    failed:'待确认',
   };
 
   function mount(root,{api,icon,formatTime,openNowPlaying}) {
@@ -44,6 +46,7 @@
         <div class="sl-heading">
           <div><h1 id="sl-title">全部歌曲</h1><p data-sl-total role="status"></p></div>
           <div class="sl-heading-actions">
+            <button class="sl-button" type="button" data-sl-command="transfer">导入 / 备份 / 分享歌单</button>
             <button class="sl-button" data-action="import">${icon('upload')}导入歌曲</button>
             <button class="sl-button" data-action="folder" title="选择新文件夹，或重新扫描已导入、已移动的文件夹">${icon('folder')}导入 / 重扫文件夹</button>
           </div>
@@ -62,9 +65,10 @@
         </div>
         <div class="sl-search-page" data-sl-search-page hidden>
           <form class="sl-search-actions" role="search" aria-label="音乐搜索">
-            <label class="sl-search">${icon('search')}<input type="search" data-sl-local-search aria-label="搜索音乐" placeholder="搜索歌名、歌手或专辑" maxlength="100" autocomplete="off"></label>
+            <label class="sl-search">${icon('search')}<input type="search" data-sl-local-search aria-label="搜索音乐" placeholder="搜索歌名、歌手或专辑" maxlength="100" autocomplete="off" aria-controls="sl-suggestions"></label>
             <button class="sl-button" type="submit" data-sl-qishui-submit hidden>搜索汽水</button>
           </form>
+          <div id="sl-suggestions" class="lr-choice-row sl-suggestions" aria-label="搜索联想" hidden></div>
           <div class="sl-search-sources" role="group" aria-label="搜索来源">
             <button class="sl-source-tab" type="button" data-sl-search-source="local" aria-pressed="true" aria-controls="sl-local-results">本机</button>
             <button class="sl-source-tab" type="button" data-sl-search-source="qishui" aria-pressed="false" aria-controls="sl-qishui-results">汽水音乐</button>
@@ -175,6 +179,7 @@
     const demoCover=new URL('./assets/interstellar-drift-cover.webp',document.baseURI).href;
     const collate=new Intl.Collator('zh-CN',{numeric:true,sensitivity:'base'});
     let database, view='all', shown=pageSize, searchPage=false, searchShown=pageSize, filtered=[];
+    const openTransfer=window.SonicPlaylistTransfer.mount(root,{api,currentPlaylist:()=>view});
     let playback, playbackKey=[], editId=null, memberId=null, addingToNew=false, queueTrackId=null;
     let enrichJob, enrichIds=[], matches=[];
     let selectionMode=false, playlistSaving=false, playlistSaveFailed=false;
@@ -183,7 +188,60 @@
     let browseKey=null,browseLimit=pageSize,browseRestoreFrame=0,filterEditKey=null;
     const activeSearch=()=>searchPage?localSearch:search;
     const sharedQuery=()=>localSearch.value.trim();
-    let searchSource='local', composing=false;
+    let searchSource='local', composing=false, suggestIndex=-1, suggestTimer=0;
+    const suggestions=$('#sl-suggestions'),recentSearchKey='sonic-universe-recent-search-v1';
+    let recentSearch=[],lyricHits=new Set();
+    const trackSearchText=new WeakMap();
+    function searchableTrack(track){
+      let value=trackSearchText.get(track);
+      if(!value){
+        value={title:track.name.toLocaleLowerCase(),
+          text:[track.name,track.artist,track.album,track.sourcePath].join(' ').toLocaleLowerCase()};
+        trackSearchText.set(track,value);
+      }
+      return value;
+    }
+    try{
+      const saved=JSON.parse(localStorage.getItem(recentSearchKey)||'[]');
+      if(Array.isArray(saved))recentSearch=saved.filter(term=>typeof term==='string'&&term.length<=100).slice(0,12);
+    }catch{}
+    function rememberSearch(term){
+      if(!term)return;
+      recentSearch=[term,...recentSearch.filter(value=>value!==term)].slice(0,12);
+      try{localStorage.setItem(recentSearchKey,JSON.stringify(recentSearch));}catch{}
+    }
+    function applySuggestion(value){
+      localSearch.value=value;rememberSearch(value);sharedQueryChanged();
+      if(searchSource==='qishui')void runQishuiSearch();
+      localSearch.focus();
+    }
+    function renderSuggestions(){
+      if(!searchPage)return;
+      const query=sharedQuery().toLocaleLowerCase(),online=searchSource==='qishui';
+      const choices=new Map();
+      if(query){
+        for(const track of (online?qishui.items:filtered).slice(0,6)){
+          if(choices.size>=5)break;
+          const name=track.name,artist=track.artist||'';
+          if(name.toLocaleLowerCase()!==query)choices.set(name,artist?'歌曲 · '+artist:'歌曲');
+          if(artist&&artist.toLocaleLowerCase()!==query&&artist.toLocaleLowerCase().includes(query))
+            choices.set(artist,'艺人');
+        }
+      }
+      for(const term of recentSearch){
+        if(choices.size>=6)break;
+        if(term.toLocaleLowerCase()!==query&&term.toLocaleLowerCase().includes(query)&&!choices.has(term))choices.set(term,'最近搜索');
+      }
+      const nodes=[...choices].slice(0,6).map(([term,kind],index)=>{
+        const button=document.createElement('button');
+        button.type='button';button.className='sl-button';button.id='sl-suggest-'+index;
+        button.textContent=term+' · '+kind;
+        button.addEventListener('click',()=>applySuggestion(term));
+        return button;
+      });
+      suggestIndex=-1;localSearch.removeAttribute('aria-activedescendant');
+      suggestions.replaceChildren(...nodes);suggestions.hidden=!nodes.length;
+    }
     let qishui={query:'',status:'idle',items:[]}, qishuiRows=null, qishuiMessage='';
     let qishuiFailure=null;
     let qishuiSearchJob=null, qishuiPlayJob=null, qishuiCheckJob=null, localPick=0;
@@ -239,8 +297,7 @@
       row.querySelector('strong').textContent=track.name;
       const caption=row.querySelector('.sl-song-copy small');
       const showVersion=searchPage||track.kind==='online';
-      const versions=showVersion?trackVersions(track):[];
-      caption.textContent=[artist,...versions].join(' · ');
+      caption.textContent=showVersion?artist+' · '+window.SonicOnlineMusic.recordingVersion(track):artist;
       if(showVersion&&track.album){
         const album=document.createElement('span');
         album.className='sl-search-album';album.textContent=' · '+track.album;
@@ -254,7 +311,10 @@
       const play=row.querySelector('[data-sl-command="play"]');
       play.dataset.label=(track.kind==='soda'?'打开':'播放')+' '+track.name;
       play.setAttribute('aria-label',play.dataset.label);
-      if(track.kind==='online')play.setAttribute('aria-description',[artist,track.album,...versions].filter(Boolean).join(' · '));
+      if(track.kind==='online')play.setAttribute('aria-description',[artist,track.album].filter(Boolean).join(' · '));
+      if(searchPage&&lyricHits.has(track.id)&&!track.name.toLocaleLowerCase().includes(sharedQuery().toLocaleLowerCase())){
+        const match=document.createElement('span');match.className='sl-search-album';match.textContent=' · 歌词匹配';caption.append(match);
+      }
       const favorite=row.querySelector('[data-sl-command="favorite"]');
       favorite.setAttribute('aria-label',(track.favorite?'取消收藏':'收藏')+' '+track.name);
       favorite.setAttribute('aria-pressed',String(track.favorite));
@@ -310,8 +370,13 @@
         const visibleIds=new Set(list.map(track=>track.id));
         for(const id of selected)if(!visibleIds.has(id))selected.delete(id);
       }
-      const matches=list.filter(track=>[track.name,track.artist,track.album,track.sourcePath].join(' ').toLocaleLowerCase().includes(query));
+      lyricHits=new Set(searchPage&&query.length>=2?(api.lyricSearch?.(query)||[]):[]);
+      const matches=query?list.filter(track=>{
+        const indexed=searchableTrack(track);
+        return indexed.text.includes(query)||searchPage&&(lyricHits.has(track.id)||oneSpellingEdit(indexed.title,query));
+      }):list.slice();
       filtered=searchPage?matches:sortTracks(matches);
+      if(searchSource==='local')renderSuggestions();
       $('[data-sl-command="enrich"]').hidden=database.readFailed||!filtered.some(track=>track.kind==='file');
       const active=document.activeElement;
       const focus=tracksList.contains(active)?[active.closest('[data-sl-id]').dataset.slId,active.dataset.slCommand]:null;
@@ -400,6 +465,7 @@
     }
 
     async function playResult(id,keepPlaying=false) {
+      if(searchPage)rememberSearch(sharedQuery());
       const resultIds=usesVisibleOrder()?filtered.map(track=>track.id):null;
       const directSearch=searchPage&&!keepPlaying;
       const pick=++localPick;
@@ -456,13 +522,14 @@
       row.dataset.slQishuiRow=track.mediaId;row.dataset.trackId=track.id;row.dataset.slSongLabel=qishuiSongLabel(track);
       button.dataset.slQishuiTrack=track.mediaId;button.dataset.trackId=track.id;
       button.innerHTML=`${icon('play')}<span class="sl-qishui-copy"><strong class="sl-qishui-title"></strong><span class="sl-qishui-meta"></span></span><span class="sl-qishui-badges"></span>`;
-      const versions=trackVersions(track),metadata=[track.artist,track.album,track.duration>0?formatTime(track.duration):''].filter(Boolean);
+      const version=window.SonicOnlineMusic.recordingVersion(track);
+      const metadata=[track.artist||'歌手未知',track.album||'专辑未知',track.duration>0?formatTime(track.duration):'时长未知'];
       const title=button.querySelector('.sl-qishui-title'),meta=button.querySelector('.sl-qishui-meta');
       title.textContent=track.name;title.title=track.name;
       meta.textContent=metadata.join(' · ');meta.title=meta.textContent;meta.hidden=!metadata.length;
       const availability=track.availability||'unknown';
       const badges=button.querySelector('.sl-qishui-badges');
-      for(const [kind,label] of [['source','汽水音乐'],['version',versions.join(' · ')||'版本未标明'],
+      for(const [kind,label] of [['source','汽水音乐'],['version',version],
         [availability,qishuiAvailabilityLabels[availability]]]){
         const badge=document.createElement('span');
         badge.className='sl-qishui-badge';badge.dataset.kind=kind;badge.textContent=label;
@@ -471,7 +538,7 @@
       const actions=document.createElement('div');
       actions.className='sl-qishui-actions';
       actions.innerHTML=`<button class="lr-icon sl-qishui-favorite" type="button" data-sl-qishui-action="favorite">${icon('heart')}</button><button class="sl-button sl-qishui-membership" type="button" data-sl-qishui-action="membership" aria-haspopup="dialog">${icon('queueAdd')}加入歌单</button><button class="lr-icon sl-qishui-more" type="button" data-sl-qishui-action="more" aria-haspopup="dialog" aria-controls="sl-qishui-more-dialog" title="更多操作"><span aria-hidden="true">⋯</span></button>`;
-      if(availability==='unknown'){
+      if(availability==='unknown'||availability==='failed'){
         const check=document.createElement('button');
         check.type='button';
         check.className='sl-button sl-qishui-check';
@@ -494,7 +561,8 @@
       for(const button of searchPageElement.querySelectorAll('[data-sl-search-source]')){
         button.setAttribute('aria-pressed',String(button.dataset.slSearchSource===searchSource));
       }
-      if(!onQishui)return;
+      if(!onQishui){renderSuggestions();return;}
+      renderSuggestions();
       qishuiSubmit.disabled=!sharedQuery()||qishui.status==='loading';
       qishuiRetry.hidden=!['timeout','unavailable','error'].includes(qishui.status);
       $('[data-sl-qishui-recovery]').hidden=!qishuiFailure;
@@ -512,8 +580,12 @@
       if(qishuiRows!==qishui.items){
         const active=document.activeElement,focused=qishuiList.contains(active)?active.closest('[data-sl-qishui-row]'):null;
         const selector=active?.dataset.slQishuiAction?`[data-sl-qishui-action="${active.dataset.slQishuiAction}"]`:'[data-sl-qishui-track]';
+        if(qishuiRows?.length===qishui.items.length){
+          qishui.items.forEach((track,index)=>{
+            if(track!==qishuiRows[index])qishuiList.children[index].replaceWith(makeQishuiRow(track));
+          });
+        }else qishuiList.replaceChildren(...qishui.items.map(makeQishuiRow));
         qishuiRows=qishui.items;
-        qishuiList.replaceChildren(...qishuiRows.map(makeQishuiRow));
         if(focused){
           const row=qishuiList.querySelector('[data-sl-qishui-row="'+CSS.escape(focused.dataset.slQishuiRow)+'"]');
           (row?.querySelector(selector)||row?.querySelector('[data-sl-qishui-track]')||localSearch).focus({preventScroll:true});
@@ -575,6 +647,9 @@
     }
 
     function sharedQueryChanged(){
+      clearTimeout(suggestTimer);
+      if(searchPage&&searchSource==='qishui'&&!composing&&sharedQuery().length>=2)
+        suggestTimer=setTimeout(()=>{if(localSearch===document.activeElement)void runQishuiSearch();},330);
       localPick++;
       searchShown=pageSize;
       if(qishui.query!==sharedQuery())clearQishuiSearch();
@@ -608,6 +683,7 @@
     }
 
     async function playQishuiResult(id){
+      rememberSearch(sharedQuery());
       const track=qishui.items.find(item=>item.mediaId===id);
       if(searchSource!=='qishui'||!searchPage||!track||qishuiPlayJob?.id===id)return;
       if(playback?.playing&&playback.track?.id===track.id){openNowPlaying();return;}
@@ -908,6 +984,7 @@
       const command=button.dataset.slCommand,id=button.closest('[data-sl-id]')?.dataset.slId;
       if(command==='new'||command==='rename')openEditor(command==='rename'?view:null);
       if(command==='enrich')openEnrichment();
+      if(command==='transfer')openTransfer();
       if(command==='scan-enrich')scanEnrichment();
       if(command==='apply-enrich'){
         const selected=[...enrichResults.querySelectorAll('input:checked')].map(input=>matches[Number(input.value)]);
@@ -1018,10 +1095,24 @@
     });
     localSearch.addEventListener('input',sharedQueryChanged);
     localSearch.addEventListener('compositionstart',()=>{composing=true;});
-    localSearch.addEventListener('compositionend',()=>{composing=false;});
+    localSearch.addEventListener('compositionend',()=>{composing=false;sharedQueryChanged();});
+    localSearch.addEventListener('keydown',event=>{
+      if(composing||suggestions.hidden)return;
+      const buttons=[...suggestions.children];
+      if(event.key==='Enter'&&suggestIndex>=0){
+        event.preventDefault();buttons[suggestIndex]?.click();return;
+      }
+      if(!['ArrowUp','ArrowDown'].includes(event.key)||!buttons.length)return;
+      event.preventDefault();
+      suggestIndex=(suggestIndex+(event.key==='ArrowDown'?1:suggestIndex<0?0:-1)+buttons.length)%buttons.length;
+      buttons.forEach((button,index)=>button.classList.toggle('sl-online-primary',index===suggestIndex));
+      localSearch.setAttribute('aria-activedescendant',buttons[suggestIndex].id);
+    });
     searchPageElement.querySelector('form').addEventListener('submit',event=>{
       event.preventDefault();
+      clearTimeout(suggestTimer);
       if(composing||!sharedQuery())return;
+      rememberSearch(sharedQuery());
       if(searchSource==='local'){
         if(!filtered.length)chooseSearchSource('qishui');
         return;

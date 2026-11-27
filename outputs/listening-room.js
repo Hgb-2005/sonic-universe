@@ -93,6 +93,12 @@
           <h1 class="lr-now-title" data-now-title>选择一首歌</h1>
           <p class="lr-now-artist" data-now-artist></p>
           <p class="lr-now-recording" data-now-recording hidden></p>
+          <div class="lr-now-recording" data-now-audio hidden>
+            <span data-now-audio-label></span>
+            <button type="button" class="lr-choice" data-audio-quality-probe>查音质</button>
+            <select class="lr-choice" data-audio-quality-options aria-label="切换音质" hidden></select>
+            <span data-audio-quality-status role="status"></span>
+          </div>
         </div>
         <div class="lr-now-content">
         <section class="lr-seek-lyrics" data-seek-lyrics aria-label="进度预览" hidden>
@@ -129,6 +135,9 @@
               <option value="smooth">顺滑滚动</option><option value="track">聚焦轨道</option><option value="rise">上浮</option>
             </select></label>
             <button type="button" class="lr-choice" data-action="lyric-effects" aria-haspopup="dialog">歌词样式 · 全文</button>
+            <label class="lr-scroll-choice"><select class="lr-choice" data-lyric-return aria-label="手动滚动后">
+              <option value="stay">停在我看的地方</option><option value="return">自动回到当前句</option>
+            </select></label>
             <button type="button" class="lr-choice" data-lyric-follow hidden>回到当前句</button>
             <button type="button" class="lr-choice lr-immersion-entry" data-action="enter-immersion" aria-controls="lrListenView">${icon('expand')}沉浸播放</button>
           </div>
@@ -180,6 +189,7 @@
             <button type="button" class="lr-primary" data-action="demo-play"><span class="lr-play-icon" data-demo-icon>${icon('play')}</span><span data-sample-label>试听示例</span></button>
             <button type="button" class="lr-choice lr-start-import" data-action="import" data-start-import>${icon('folder')}导入音乐</button>
             <button type="button" class="lr-choice lr-demo-lyrics" data-demo-lyrics data-action="expand-lyrics" aria-controls="lrLyricReading" aria-expanded="false" hidden>${icon('lyrics')}同步歌词</button>
+            <button type="button" class="lr-choice" data-demo-caption data-action="desktop-lyrics-window" aria-pressed="false" hidden>桌面歌词</button>
           </div>
         </div>
         <div class="lr-signal">
@@ -190,6 +200,11 @@
       <section class="lr-work-recent lr-work-panel" data-work-recent hidden aria-labelledby="lrRecentHeading">
         <div class="lr-panel-heading"><h2 id="lrRecentHeading">最近播放</h2></div>
         <div class="lr-recent-list" data-recent-list></div>
+        <div data-smart-area hidden>
+          <div class="lr-panel-heading"><h2>为你推荐</h2></div>
+          <ul class="lr-smart-items" data-smart-items></ul>
+          <button type="button" class="lr-panel-link" data-smart-undo hidden></button>
+        </div>
       </section>
       <section class="lr-work-caption lr-work-panel" data-work-caption hidden aria-labelledby="workLyricHeading">
         <div class="lr-panel-heading"><h2 id="workLyricHeading">${icon('lyrics')}同步歌词</h2><button class="lr-panel-link" data-caption-action data-action="listen"><span>打开歌词</span>${icon('arrow')}</button></div>
@@ -206,6 +221,7 @@
         </section>
         <nav class="lr-source-shelf lr-work-panel" aria-labelledby="workSourcesHeading">
           <div class="lr-panel-heading"><h2 id="workSourcesHeading">音乐来源</h2></div>
+          <button class="lr-source" data-navidrome>${icon('music')}<span>Navidrome 曲库</span></button>
           <button class="lr-source" data-action="online" aria-label="打开汽水音乐库">${icon('music')}<span>汽水音乐</span>${icon('arrow')}</button>
           <button class="lr-source" data-action="import">${icon('folder')}<span>导入音乐</span>${icon('arrow')}</button>
           <button class="lr-source" data-action="external" aria-label="联动正在播放的声音">${icon('sound')}<span>外部声音联动</span><small data-source-status hidden>已连接</small>${icon('arrow')}</button>
@@ -359,6 +375,7 @@
   }
   const dockResize=new ResizeObserver(reserveDockSpace);
   dockResize.observe(playerDock);
+  window.SonicNavidrome.mount(root,$('[data-navidrome]'),api,openSearchPlayback);
   const musicLibrary=window.SonicMusicLibrary.mount($('[data-music-library]'),{api,icon,formatTime:core.formatTime,openNowPlaying:openSearchPlayback});
   const isLibraryMode=mode=>mode==='library'||mode==='search';
   const canvas=$('.lr-background'),context=canvas.getContext('2d');
@@ -420,7 +437,7 @@
   let shownPhoto=null, paintedPlaybackBackdrop=null, playbackBackdropFade=null, playbackBackdropTime=0, playbackBackdropEnergy=0;
   let phase = 0, energy = 0, bass = 0, flow = 0, seekPreview = null, seekPointer = null, volumeChanging = false, toastTimer = 0;
   let artworkSource = '', lastTitle = '', displayedPlaying = null, lastRgb = '', artworkRgb = '', coverScale=1;
-  let recentTracks=[],recentShelfDirty=true;
+  let recentTracks=[],smartTracks=[],smartUndo=null,recentShelfDirty=true;
   let lastQueueRefresh=0,workQueueKey=[],lastSpectrumKey='';
   const emptyLyrics=[], lyricRows=new Map(), lyricTimeline=$('[data-lyric-timeline]');
   const effectStage=$('[data-effect-stage]'),effectDialog=$('[data-effect-dialog]');
@@ -454,7 +471,8 @@
   function seekLyrics(time) {
     const state=api.snapshot();
     const target=seekTarget(snapshot);
-    if(matchesSeek(target,state))return commitSeek({...target,position:time+state.position-state.lyricPosition});
+    // Media timestamps can round down at the exact start of a lyric line.
+    if(matchesSeek(target,state))return commitSeek({...target,position:time+state.position-state.lyricPosition+.002});
     return false;
   }
   function cancelSeek() {
@@ -528,7 +546,12 @@
   const lyricPreview=window.SonicAppearancePreview.mount(effectDialog,()=>appearanceState(lyricDraft));
   const picturePreview=window.SonicAppearancePreview.mount(pictureDialog,()=>appearanceState(pictureDraft,true));
   const headerSettings=$('.lr-header [data-action="settings"]');
-  const lyricScrollSelect=$('[data-lyric-scroll]');
+  const lyricScrollSelect=$('[data-lyric-scroll]'),lyricReturnSelect=$('[data-lyric-return]');
+  lyricReturnSelect.addEventListener('change',()=>{
+    preferences.lyricAutoReturn=lyricReturnSelect.value==='return';
+    nowPlaying.setAutoReturn(preferences.lyricAutoReturn);
+    persist();
+  });
   lyricScrollSelect.addEventListener('change',()=>{
     preferences.lyricScroll=lyricScrollSelect.value;
     nowPlaying.setScrollMode(preferences.lyricScroll);
@@ -648,6 +671,8 @@
     $('[data-action="settings"].lr-immersion-atmosphere').hidden=!listenImmersive;
     syncPictureControls();
     lyricScrollSelect.value=preferences.lyricScroll;
+    lyricReturnSelect.value=preferences.lyricAutoReturn?'return':'stay';
+    nowPlaying.setAutoReturn(preferences.lyricAutoReturn);
     nowPlaying.setScrollMode(preferences.lyricScroll);
     listenView.setAttribute('aria-label',listenImmersive?'沉浸播放':'正在播放');
     listenCover.inert=listenImmersive;
@@ -1911,7 +1936,7 @@
     if(message.textContent!==text)message.textContent=text;
   }
   const musicSourceNames={file:'本地音乐',online:'汽水音乐',demo:'内置示例',chart:'在线榜单'};
-  const recoveryDetails={auth:'汽水登录已失效',connection:'音乐连接已中断',timeout:'播放连接超时',file:'本地音频读取失败',unplayable:'这首歌暂时无法播放','resume-source':'当前音源不包含上次的播放进度'};
+  const recoveryDetails={auth:'汽水登录已失效',connection:'音乐连接已中断',timeout:'播放连接超时',file:'本地音频读取失败',unplayable:'没有可播放的音源','resume-source':'当前音源不包含上次的播放进度'};
   function updateHomeResume(){
     const saved=snapshot.ready&&!snapshot.playing&&!snapshot.external?api.resumeInfo():null;
     const resume=saved?.kind==='demo'&&snapshot.demoOnly?null:saved;
@@ -1957,11 +1982,30 @@
   function updateRecentShelf(){
     const shelf=$('[data-work-recent]');
     if(preferences.mode!=='work'||!snapshot.ready){shelf.hidden=true;return;}
-    shelf.hidden=!recentTracks.length;
+    shelf.hidden=!recentTracks.length&&!smartTracks.length&&!smartUndo;
     if(!recentShelfDirty)return;
     recentShelfDirty=false;
-    const items=api.recentTracks(4);
-    shelf.hidden=!items.length;
+    const items=api.recentTracks(4),smart=api.smartMusic();
+    smartTracks=smart.items;
+    smartUndo=smart.excluded;
+    $('[data-smart-area]').hidden=!smartTracks.length&&!smartUndo;
+    const undo=$('[data-smart-undo]');
+    undo.hidden=!smartUndo;
+    undo.textContent=smartUndo?'撤销不感兴趣 · '+smartUndo.name:'';
+    $('[data-smart-items]').replaceChildren(...smartTracks.map(track=>{
+      const row=document.createElement('li');
+      const play=document.createElement('button'),dismiss=document.createElement('button');
+      play.type=dismiss.type='button';
+      play.className=dismiss.className='lr-panel-link';
+      play.dataset.smartTrack=track.id;
+      play.textContent=track.name;
+      dismiss.dataset.smartDismiss=track.id;
+      dismiss.textContent='不感兴趣';
+      dismiss.setAttribute('aria-label',track.name+' · 不感兴趣');
+      row.append(play,dismiss);
+      return row;
+    }));
+    shelf.hidden=!items.length&&!smartTracks.length&&!smartUndo;
     if(items.length===recentTracks.length&&items.every((item,index)=>{
       const prev=recentTracks[index];
       return item.id===prev.id&&item.name===prev.name&&item.artist===prev.artist&&item.kind===prev.kind&&item.cover===prev.cover;
@@ -1990,12 +2034,57 @@
     }));
     if(focused)list.querySelector('[data-recent-track="'+CSS.escape(focused)+'"]')?.focus({preventScroll:true});
   }
+  const qualityLabels={standard:'标准',high:'高品',lossless:'无损',hires:'Hi-Res'};
+  const qualityOptions=$('[data-audio-quality-options]'),qualityStatus=$('[data-audio-quality-status]');
+  const qualityProbe=$('[data-audio-quality-probe]');
+  function syncAudioQuality(state,trackChanged){
+    const online=state.track?.kind==='online'&&!state.external;
+    $('[data-now-audio]').hidden=!online;
+    if(trackChanged){
+      qualityOptions.hidden=true;qualityOptions.replaceChildren();qualityStatus.textContent='';
+    }
+    if(!online)return;
+    const text=[state.audioQuality?qualityLabels[state.audioQuality]:'音质待确认',
+      state.audioPreview===true?'仅试听':state.audioPreview===false?'全曲':''].filter(Boolean).join(' · ');
+    const label=$('[data-now-audio-label]');
+    if(label.textContent!==text)label.textContent=text;
+    qualityProbe.disabled=!state.audioQuality||state.busy||qualityProbe.dataset.checking==='true';
+    if([...qualityOptions.options].some(option=>option.value===state.audioQuality))qualityOptions.value=state.audioQuality;
+  }
+  qualityProbe.addEventListener('click',async ()=>{
+    const id=api.snapshot().track?.id;
+    qualityProbe.dataset.checking='true';qualityProbe.disabled=true;
+    qualityStatus.textContent='正在查询…';
+    try{
+      const levels=await api.audioQualities();
+      const state=api.snapshot();
+      if(state.track?.id!==id)return;
+      qualityOptions.replaceChildren(...levels.map(level=>new Option(qualityLabels[level],level)));
+      qualityOptions.value=state.audioQuality;
+      qualityOptions.hidden=levels.length<2;
+      qualityStatus.textContent=levels.length>1?'':'当前只确认了这一个档位。';
+    }catch{if(api.snapshot().track?.id===id)qualityStatus.textContent='暂时查不到其他音质。';}
+    finally{delete qualityProbe.dataset.checking;syncAudioQuality(api.snapshot(),false);}
+  });
+  qualityOptions.addEventListener('change',async ()=>{
+    const start=api.snapshot();
+    qualityOptions.disabled=true;
+    try{
+      const changed=await api.switchAudioQuality(qualityOptions.value);
+      const state=api.snapshot();
+      if(state.track?.id!==start.track?.id)return;
+      syncAudioQuality(state,false);
+      qualityStatus.textContent=changed?'已切换音质。':state.audioQuality
+        ?'切换失败，当前为'+qualityLabels[state.audioQuality]+'。':'切换失败，请重试播放。';
+    }finally{qualityOptions.disabled=false;}
+  });
   function updateUI(force=false,snapLyrics=false,current=api.snapshot()) {
     uiRefreshes++;
     current=structureSnapshot(current);
     const previous=snapshot;
     snapshot=current;
     const trackChanged=!samePlayback(previous,snapshot);
+    syncAudioQuality(snapshot,trackChanged);
     const playingChanged=lyricsPlaying(previous)!==lyricsPlaying();
     const activityChanged=snapshot.busy!==previous.busy||snapshot.buffering!==previous.buffering||
       Boolean(snapshot.queueTarget)!==Boolean(previous.queueTarget)||
@@ -2084,6 +2173,7 @@
     if(sampleLabel.textContent!==sampleText)sampleLabel.textContent=sampleText;
     $('[data-demo-actions]').hidden=!demoControls;
     $('[data-demo-lyrics]').hidden=!isBundledSample;
+    $('[data-demo-caption]').hidden=!desktop||!isBundledSample||!snapshot.playing;
     $('[data-home-now-playing]').hidden=Boolean(resume)||demoControls&&isBundledSample;
     $('[data-sample-license]').hidden=!isBundledSample||snapshot.external;
     $('[data-start-import]').disabled=snapshot.importing;
@@ -2167,27 +2257,32 @@
     skip.hidden=!recovery.canSkip;
     panel.hidden=false;
   }
-  let lastPublishedLyricTrack=null;
+  let lastPublishedLyrics=[];
   function publishPlayerState(){
-    const state=api.snapshot(), {index,line}=core.lyricAt(state.lyrics,state.lyricPosition,state.lyricDuration);
-    // 歌词整份只在换歌时发一次；随后的逐行变化走轻量的 state 通道。
+    const state=structureSnapshot(api.snapshot());
+    const {index,line}=core.lyricAt(state.lyrics,state.lyricPosition,state.lyricDuration);
+    const track={name:state.track?.name,artist:state.track?.artist};
+    // 歌词加载、编辑和导入会替换行数组，校准会改变时间偏移。
     const lyricTrackId=state.track?.id||null;
-    if(lyricTrackId!==lastPublishedLyricTrack){
-      lastPublishedLyricTrack=lyricTrackId;
+    const offset=-state.lyricOffset;
+    const lyrics=[lyricTrackId,track.name,track.artist,state.lyrics,state.duration,offset,state.lyricMediaStart];
+    if(!lyrics.every((value,index)=>value===lastPublishedLyrics[index])){
+      lastPublishedLyrics=lyrics;
       desktop?.publishLyrics?.(lyricTrackId?{
-        track:{name:state.track?.name,artist:state.track?.artist},
+        track,
         duration:state.duration,
-        offset:0,
-        lines:structureLines(state.lyrics).slice(0,400),
+        offset,
+        mediaStart:state.lyricMediaStart,
+        lines:state.lyrics.slice(0,400),
       }:null);
     }
-    const track={name:state.track?.name,artist:state.track?.artist};
     const desktopLyric=line?.text||'',nextLyric=state.lyrics[index+1]?.text||'';
     const previousLyric=state.lyrics[index-1]?.text||'', translation=line?.translation||'';
     const text=preferences.desktopLyrics?desktopLyric:'';
-    const time=Math.floor(state.position);
     const playing=state.external?state.externalMetadata?.playing===true:state.playing;
-    const values=[track.name,track.artist,playing,state.external,time,Math.floor(state.duration),text,desktopLyric,nextLyric,previousLyric,translation];
+    const time=playing?Math.floor(state.position):state.position;
+    const values=[lyricTrackId,track.name,track.artist,playing,state.external,time,index,offset,state.lyricMediaStart,
+      Math.floor(state.duration),text,desktopLyric,nextLyric,previousLyric,translation];
     if(values.every((value,index)=>value===lastPublishedState[index]))return;
     lastPublishedState=values;
     desktop.publish({track,playing,external:state.external,position:state.position,duration:state.duration,lyric:text,desktopLyric,nextLyric,previousLyric,translation});
@@ -2694,6 +2789,12 @@
   root.addEventListener('click',event=>{
     const button=event.target.closest('button');if(!button||button.disabled||button.matches('.lr-recovery-actions [aria-disabled=true]'))return;
     if(button.hasAttribute('data-home-resume')&&button.getAttribute('aria-disabled')==='true')return;
+    if(button.dataset.smartTrack){
+      runQueueAction(()=>api.playFromLibrary(button.dataset.smartTrack,'smart',true,smartTracks.map(track=>track.id)));
+      return;
+    }
+    if(button.dataset.smartDismiss){api.setSmartInterest(button.dataset.smartDismiss,false);return;}
+    if(button.hasAttribute('data-smart-undo')&&smartUndo){api.setSmartInterest(smartUndo.id,true);return;}
     if(button.dataset.recentTrack){
       const id=button.dataset.recentTrack;
       if(!snapshot.busy&&!(snapshot.playing&&snapshot.track?.id===id)){
@@ -2953,7 +3054,9 @@
     setTimeout(()=>desktop.checkRelease?.().then(result=>{if(result?.available)showRelease(result);}).catch(()=>{}),8000);
     $$('[data-desktop-only]').forEach(element=>element.hidden=false);
     if(lyricMods?.current())preferences.lyricStyle=lyricMods.current().layout;
-    desktop.onDesktopLyricsState?.(visible=>$('[data-action="desktop-lyrics-window"]').setAttribute('aria-pressed',String(visible)));
+    desktop.onDesktopLyricsState?.(visible=>{
+      $$('[data-action="desktop-lyrics-window"]').forEach(button=>button.setAttribute('aria-pressed',String(visible)));
+    });
     desktop.onCommand(command=>{
       if(command==='work'||command==='listen'){if(legacy)setLegacy(false);setMode(command);}
       else if(command==='show'){if(legacy)setLegacy(false);}

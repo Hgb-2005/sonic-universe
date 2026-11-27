@@ -7,6 +7,7 @@ async function createProviders(options = {}) {
   providers.set('netease', createPublicSearchProvider('netease', options));
   providers.set('qq', createPublicSearchProvider('qq', options));
   providers.set('kugou', createPublicSearchProvider('kugou', options));
+  if (options.disableQishui) return providers;
   try {
     const { createQishuiProvider } = require('./qishui.cjs');
     const qishui = await createQishuiProvider(options);

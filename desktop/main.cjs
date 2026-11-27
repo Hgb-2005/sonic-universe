@@ -208,10 +208,11 @@ async function start() {
     dataDirectory:profile?path.join(app.getPath('userData'),'music-session'):undefined,
     lyricState:()=>{
       if(!lastLyricState)return null;
-      const position=lastState.position, offset=lastLyricState.offset||0;
+      const position=lastState.position;
+      const lyricPosition=position+lastLyricState.mediaStart+lastLyricState.offset;
       let index=-1;
       for(let i=0;i<lastLyricState.lines.length;i+=1){
-        if(lastLyricState.lines[i].time<=position+offset)index=i;
+        if(lastLyricState.lines[i].time<=lyricPosition)index=i;
         else break;
       }
       return {...lastLyricState,position,playing:lastState.playing,index,line:lastLyricState.lines[index]||null};

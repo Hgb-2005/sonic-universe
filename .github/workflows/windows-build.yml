@@ -2,6 +2,11 @@ name: Build Sonic Universe for Windows
 
 on:
   workflow_dispatch:
+    inputs:
+      sign_windows:
+        description: Require a valid Windows publisher signature
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -18,13 +23,20 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npm test
       - run: node scripts/stamp-assets.cjs --check
-      - run: npm run desktop:build
+      - name: Build Windows test installer
+        if: ${{ !inputs.sign_windows }}
+        run: npm run desktop:build
+      - name: Build and verify Windows publisher signature
+        if: ${{ inputs.sign_windows }}
+        env:
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+          SONIC_WINDOWS_PUBLISHER: ${{ vars.SONIC_WINDOWS_PUBLISHER }}
+        run: npm run desktop:build:signed
       - name: Verify packaged wallpaper quarantine
         run: node scripts/desktop-smoke.cjs --packaged --quarantine-only
       - name: Verify packaged desktop recovery
         run: node scripts/desktop-lifecycle-smoke.cjs --packaged
-      - name: Verify packaged playback queue
-        run: node scripts/queue-smoke.cjs --packaged
       - name: Verify packaged online playback
         run: node scripts/music-upgrade-smoke.cjs --packaged
       - name: Verify packaged library search

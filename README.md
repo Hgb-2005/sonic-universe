@@ -2,6 +2,23 @@
 
 [打开网页版](https://hgb-2005.github.io/sonic-universe/) · [Windows 版 0.47.2](https://github.com/Hgb-2005/sonic-universe/releases) · [Windows 正式版 0.42.0](https://github.com/Hgb-2005/sonic-universe/releases/tag/v0.42.0)
 
+## 0.47.4 · Windows 测试候选版
+
+- 在线首播与断流重试保留歌曲、进度及队列。兼容的本地 PCM WAV 专辑支持连续播放。
+- 搜索新增联想、歌词匹配和最近搜索，播放页显示实际确认的音源档位。
+- 首页示例、智能推荐、全文歌词自动回位和小字对比度更新。
+- 本地文件夹增量扫描，支持 M3U8 导入导出、曲目与歌词独立备份和歌单目录分享。
+- 可连接自有 Navidrome 浏览、播放和保存服务器收藏。
+- 候选安装包自动跑 Windows 播放、队列和升级验收。
+
+## 0.47.3 · Windows 测试候选版
+
+- 榜单超时、本机入口断开、汽水登录失效和无音源分别提示，并提供对应操作。
+- 搜索保留来源标题，单独显示版本判断和可播状态。
+- 直播歌词跟随异步加载、编辑、导入与校准，切换无歌词歌曲时清空。
+- 汽水音乐可以关闭或从依赖中省略。本地曲库可继续导入、播放和续播。
+- Windows 打包支持发布者签名和校验。
+
 ## 0.47.2 · 歌词墨色
 
 - 歌词颜色跟着底图走：亮底用深墨、暗底用浅墨，不再是固定纯白。
@@ -115,6 +132,10 @@ Windows 预览包已通过离线首次安装和覆盖升级验收，联网下载
 
 在 Windows x64 上运行 `npm ci`、`npm run desktop:build`，可在 `release/` 找到独立安装包。构建需要 Node.js 24、.NET Framework 编译器和 Windows 10/11 SDK。GitHub Actions 也可手动运行 **Build Sonic Universe for Windows** 下载构建产物。
 
+发布者签名由 electron-builder 调用 Windows SignTool。使用已授权的代码签名证书时，在构建环境提供 `WIN_CSC_LINK` 和 `WIN_CSC_KEY_PASSWORD`，把证书在 Windows 显示的发布者名设为 `SONIC_WINDOWS_PUBLISHER`，再运行 `npm run desktop:build:signed`。命令要求签名成功，并检查安装包和主程序的签名状态及发布者。CI 可勾选 `sign_windows`，证书和密码读自 Actions secrets，发布者名读自 Actions variable。无证书时可用普通命令生成未签名测试包。
+
+`npm run desktop:build` 在生成 Windows 安装包后运行候选验收。它覆盖榜单超时、入口恢复、歌词晚到、全新配置连续拖进度、队列，以及独立配置的安装和覆盖。可用 `npm run desktop:verify-candidate` 单独重跑。自定义输出目录时，将 `SONIC_DESKTOP_EXECUTABLE` 指向候选包的解包 EXE。可设置 `SONIC_PREVIOUS_WINDOWS_INSTALLER` 指向上一版安装包，执行跨版本覆盖。默认用同版覆盖检验数据保留。
+
 本地调试前运行 `node scripts/stamp-assets.cjs`，它会按文件内容生成主页面样式和脚本的缓存版本。构建安装包时会自动运行。
 
 ## 0.38.1 · 封面歌词与曲库整理
@@ -180,6 +201,8 @@ MV 区还可切换到维基共享资源、YouTube 或 Apple Music 官方索引�
 使用外部汽水音乐时，在「外部声音联动」点击「连接声音」，再在原播放器里播放。桌面版从系统播放音频实时提取强度，关闭联动或退出程序会停止分析。外部声音没有歌词或歌曲进度，想显示同步歌词时，可在项目内播放汽水可用曲目或导入本地 LRC。
 
 开发启动需要 Windows x64、Node.js 24 和系统自带的 .NET Framework 编译器。在项目根目录执行 `npm ci`、`npm start`。运行 `npm run desktop:build` 在 `release/` 生成安装包。桌面版与浏览器的本地曲库分别保存，可通过「星空与创作」里的完整备份迁移。
+
+汽水音乐是可选依赖。要只安装本地播放器所需的依赖，使用 `npm ci --omit=optional` 后照常打包。已安装的桌面版可以先退出，再在 PowerShell 中设置 `$env:SONIC_DISABLE_QISHUI='1'` 并从同一个窗口启动 EXE。本地导入、播放和续播仍然可用。
 
 ## 第三十三版 · 更多音乐入口
 

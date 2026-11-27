@@ -1,5 +1,8 @@
 'use strict';
 
+const { Converter } = require('opencc-js/t2cn');
+const simplifyChinese = Converter({ from: 'tw', to: 'cn' });
+
 const SEARCH_PAGE_SIZE = 20;
 const SEARCH_PAGE_LIMIT = 3;
 const CANDIDATE_LIMIT = 15;
@@ -11,13 +14,15 @@ function chartText(value) {
 }
 
 function titleKey(value) {
-  return chartText(value).toLowerCase();
+  return simplifyChinese(chartText(value)).toLowerCase();
 }
 
 function artistKey(value) {
   // The Qishui adapter joins artists with 、. Apple sometimes joins the
   // same ordered credits with a spaced ampersand. Keep the full credit.
-  return titleKey(value).replace(/\s*、\s*|\s+&\s+/g, '、');
+  return titleKey(value).split(/\s*、\s*|\s+&\s+/)
+    .map(credit => /^g\.e\.m\.\s*(?:邓紫棋)?$/.test(credit) ? '邓紫棋' : credit)
+    .join('、');
 }
 
 function knownDuration(value) {

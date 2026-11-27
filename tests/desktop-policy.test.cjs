@@ -24,6 +24,7 @@ test('the lyric document is bounded and strips anything but lyric data', () => {
     track: { name: 'x'.repeat(500), artist: 'A' },
     duration: 200,
     offset: 999,
+    mediaStart: 301.5,
     cookie: 'secret',
     lines: Array.from({ length: 500 }, (_, i) => ({
       time: i, end: i + 1, text: 'line ' + i, translation: 'tr',
@@ -34,6 +35,7 @@ test('the lyric document is bounded and strips anything but lyric data', () => {
   assert.equal(doc.lines.length, 400);
   assert.equal(doc.track.name.length, 160);
   assert.equal(doc.offset, 120);
+  assert.equal(doc.mediaStart, 301.5);
   assert.equal(doc.lines[0].words.length, 120);
   assert.equal(JSON.stringify(doc).includes('secret'), false);
   assert.equal(doc.lines[1].isChorus, false);
