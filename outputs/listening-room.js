@@ -417,6 +417,7 @@
   const nowPlaying=window.SonicNowPlaying.mount(root,seekLyrics);
   let snapshot = api.snapshot(), legacy = false, occluded = false;
   let timer = 0, rafTick=0, frameDue=0, lyricFrameId=0, lastFrame = 0, lastPaint=0, lastUI = 0, renderedFrames = 0, uiRefreshes = 0, lyricPaints = 0;
+  let lastLyricFrame=0,slowLyricFrames=0,holdLyricBackground=false;
   let coverMotion, lyricViewMotion;
   let backgroundDirty=true, lastPublishedState=[];
   const colors = { amber:[229,196,131], ocean:[149,188,209], lilac:[196,176,249] };
@@ -2344,7 +2345,13 @@
   }
   function drawLyricFrame(now) {
     lyricFrameId=0;
-    if(!needsLyricFrame()){nextEffectFrame=0;return;}
+    if(!needsLyricFrame()){nextEffectFrame=lastLyricFrame=slowLyricFrames=0;return;}
+    // 软件渲染等情况下，连续错过帧时先停掉播放页背景的动效，让逐字歌词有足够的绘制机会。
+    if(!holdLyricBackground&&lastLyricFrame){
+      slowLyricFrames=now-lastLyricFrame>50?slowLyricFrames+1:0;
+      if(slowLyricFrames>=2){holdLyricBackground=true;backgroundDirty=true;}
+    }
+    lastLyricFrame=now;
     // 所有歌词样式都走同一个节流窗口：动效 60/120，普通排版 60，省电减半。
     const baseRate=showsLyricEffects()?(tideAtmosphere.hidden?120:60):60;
     const interval=1000/(preferences.energySaver?baseRate/2:baseRate);
@@ -2398,18 +2405,20 @@
     const now=performance.now(),refresh=now-lastUI>=100;
     if(refresh){lastUI=now;updateUI();}
     const mode=root.dataset.mode,reduced=reducedMotion.matches;
+    if(mode!=='listen')holdLyricBackground=false;
     const active=snapshot.playing||snapshot.external;
     const tideActive=!tideAtmosphere.hidden;
     const picked=mode==='listen'?playbackBackdrop?.entry:null;
     const prism=!picked&&!tideActive&&usesImmersivePrism(),reactive=!tideActive&&!picked&&(prism||usesReactiveScene());
     const lyricEffects=showsLyricEffects();
-    const animate=active&&!reduced&&!isLibraryMode(mode)&&(picked?picked.motion!=='static':reactive||!lyricEffects&&preferences.background!=='plain');
+    const followLyrics=mode==='listen'&&lyricsPlaying()&&snapshot.lyrics.length>0;
+    const stillBackground=holdLyricBackground&&followLyrics;
+    const animate=active&&!reduced&&!stillBackground&&!isLibraryMode(mode)&&(picked?picked.motion!=='static':reactive||!lyricEffects&&preferences.background!=='plain');
     const showSpectrum=mode==='work';
-    const coverBeat=active&&!reduced&&!listenImmersive&&(mode==='listen'&&!lyricExpanded||mode==='work');
+    const coverBeat=active&&!reduced&&!stillBackground&&!listenImmersive&&(mode==='listen'&&!lyricExpanded||mode==='work');
     const lyricBeat=lyricEffects&&!reduced&&preferences.response>0&&lyricsPlaying()&&effects.get(preferences.lyricEffect).beat;
     const tideMotion=tideActive&&!reduced&&lyricsPlaying()&&preferences.response>0;
     const stageBeat=active&&mode==='visual'&&preferences.beatClock;
-    const followLyrics=mode==='listen'&&lyricsPlaying()&&snapshot.lyrics.length>0;
     const artworkMoving=Boolean(coverTransition||playbackBackdropFade);
     const fps=core.frameRate({active:artworkMoving||active&&(animate||showSpectrum||snapshot.external||followLyrics||coverBeat||stageBeat||tideMotion),reduced,mode,energySaver:preferences.energySaver,onBattery});
     const wasActive=lastFrame>0;
@@ -2447,6 +2456,7 @@
     clearTimeout(timer);timer=0;
     cancelAnimationFrame(lyricFrameId);lyricFrameId=0;
     nextEffectFrame=0;
+    lastLyricFrame=slowLyricFrames=0;
     nextSceneryFrame=0;
     if(tideBeat!==null)resetTideRipples();
     if(!onScreen()||reducedMotion.matches){
