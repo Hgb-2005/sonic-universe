@@ -6,7 +6,8 @@ const {once}=require('node:events');
 const {_electron}=require('playwright');
 const binary=process.env.SONIC_NAVIDROME_TEST_EXE;
 if(!binary)throw new Error('Set SONIC_NAVIDROME_TEST_EXE to an official portable Navidrome EXE.');
-const address='http://127.0.0.1:18994';
+const navidromePort=Number(process.env.SONIC_QA_NAVIDROME_PORT||18994);
+const address='http://127.0.0.1:'+navidromePort;
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 
 async function launch(port,profile){
@@ -34,7 +35,7 @@ async function main(){
   }
   const password=randomBytes(20).toString('hex');
   const server=spawn(binary,[],{cwd:working,windowsHide:true,stdio:['ignore','ignore','pipe'],
-    env:{...process.env,ND_MUSICFOLDER:songs,ND_DATAFOLDER:data,ND_ADDRESS:'127.0.0.1',ND_PORT:'18994',
+    env:{...process.env,ND_MUSICFOLDER:songs,ND_DATAFOLDER:data,ND_ADDRESS:'127.0.0.1',ND_PORT:String(navidromePort),
       ND_LOGLEVEL:'warn',ND_ENABLEINSIGHTSCOLLECTOR:'false',ND_DEVAUTOCREATEADMINPASSWORD:password}});
   const logs=[];server.stderr.on('data',value=>{logs.push(value.toString());if(logs.length>10)logs.shift();});
   let first,second;
@@ -72,8 +73,43 @@ async function main(){
     const names=['真实服务器曲目一','真实服务器曲目二','真实服务器曲目三'];
     const label=(index)=>names[index]+' · 本机验收';
     const {playlist}=await api('createPlaylist',{name:'真实服务器共享歌单',songId:albumData.song.slice(0,2).map(item=>item.id)});
-    first=await launch(18995,path.join(working,'first'));
-    second=await launch(18996,path.join(working,'second'));
+    first=await launch(navidromePort+1,path.join(working,'first'));
+    second=await launch(navidromePort+2,path.join(working,'second'));
+    if(process.argv.includes('--main-library')){
+      await first.page.getByRole('button',{name:'音乐库',exact:true}).click();
+      const launcher=first.page.locator('[data-music-library]').getByRole('button',{name:'Navidrome 曲库',exact:true});
+      const waitForSong=async name=>first.page.waitForFunction(name=>{
+        const state=SonicPlayback.snapshot(),audio=document.querySelector('#audio');
+        return state.track?.provider==='navidrome'&&state.track.name===name&&state.playing&&state.position>.2&&audio.webkitAudioDecodedByteCount>0;
+      },name);
+      const nav=first.page.getByRole('dialog',{name:'Navidrome 曲库'});
+      await launcher.click();
+      await nav.getByLabel('服务器地址').fill(address);
+      await nav.getByLabel('用户名').fill('admin');
+      await nav.getByLabel('密码').fill(password);
+      await nav.getByRole('button',{name:'连接',exact:true}).click();
+      await nav.getByRole('button',{name:'真实服务器验收专辑 · 本机验收',exact:true}).waitFor();
+      await nav.getByRole('button',{name:'艺人',exact:true}).click();
+      await nav.getByRole('button',{name:'本机验收',exact:true}).click();
+      await nav.getByRole('button',{name:'真实服务器验收专辑',exact:true}).click();
+      await nav.getByRole('button',{name:label(0),exact:true}).click();
+      await waitForSong(names[0]);
+      await first.page.getByRole('button',{name:'音乐库',exact:true}).click();
+      await launcher.click();
+      await nav.getByRole('button',{name:'专辑与歌单',exact:true}).click();
+      await nav.getByRole('button',{name:'真实服务器共享歌单',exact:true}).click();
+      await nav.getByRole('button',{name:'收藏到服务器',exact:true}).first().click();
+      await nav.getByRole('button',{name:'服务器收藏',exact:true}).click();
+      await nav.getByRole('button',{name:label(0),exact:true}).waitFor();
+      await nav.getByRole('button',{name:'专辑与歌单',exact:true}).click();
+      await nav.getByRole('button',{name:'真实服务器共享歌单',exact:true}).click();
+      await nav.getByRole('button',{name:label(1),exact:true}).click();
+      await waitForSong(names[1]);
+      const played=await first.page.evaluate(()=>{const s=SonicPlayback.snapshot({queue:true});return s.queue.map(row=>row.id);});
+      assert.equal(played.length,2);
+      console.log('PASS main library → artists → album and shared playlist playback, server favorite, verified decoded audio and two-track queue.');
+      return;
+    }
     const a=await open(first.page),b=await open(second.page);
     const click=(view,name)=>view.getByRole('button',{name,exact:true}).click();
     const message=(view,expected)=>view.getByRole('status').filter({hasText:expected}).waitFor();
@@ -125,6 +161,54 @@ async function main(){
     await first.page.mouse.click(box.x+box.width*.31,box.y+box.height/2);
     await first.page.waitForFunction(()=>SonicPlayback.position()>7);
     const before=await first.page.evaluate(()=>SonicPlayback.position());
+    if(process.argv.includes('--progress-conflict')){
+      assert.equal(await first.page.evaluate(()=>SonicPlayback.syncNavidromeResume()),true);
+      const initial=(await api('getPlayQueueByIndex')).playQueueByIndex;
+      assert.equal(initial.entry[initial.currentIndex].title,names[2]);
+      await click(b,'专辑与歌单');
+      await click(b,'真实服务器共享歌单');
+      await click(b,label(0));
+      await second.page.waitForFunction(()=>SonicPlayback.snapshot().playing&&SonicPlayback.position()>.2);
+      assert.equal(await second.page.evaluate(()=>SonicPlayback.seek(15)),true);
+      await second.page.waitForFunction(()=>SonicPlayback.position()>=15);
+      if(process.argv.includes('--expect-conflict')){
+        assert.equal(await second.page.evaluate(()=>SonicPlayback.syncNavidromeResume()),false);
+        await second.page.locator('[data-room-mode=work]').click();
+        await second.page.getByRole('button',{name:'Navidrome 曲库',exact:true}).click();
+        await click(b,'同步当前进度');
+        await message(b,'本机和服务器的续播记录不同');
+        const compare=await b.locator('[data-nav-results] li').allTextContents();
+        assert.ok(compare[0].includes(names[0])&&compare[1].includes(names[2]));
+        assert.match(compare.join(' '),/SonicUniverse Windows [A-Z0-9]{6}/);
+        assert.doesNotMatch(compare.join(' '),/时间未知/);
+        await click(b,'继续用本机记录');
+        await message(b,'进度已同步到服务器');
+        await click(b,'关闭');
+      }else assert.equal(await second.page.evaluate(()=>SonicPlayback.syncNavidromeResume()),true);
+      const replacement=(await api('getPlayQueueByIndex')).playQueueByIndex;
+      assert.equal(replacement.entry[replacement.currentIndex].title,names[0]);
+      assert.ok(replacement.position>=15000);
+      await first.page.locator('[data-room-mode=work]').click();
+      await first.page.getByRole('button',{name:'Navidrome 曲库',exact:true}).click();
+      const connection=first.page.getByRole('dialog',{name:'Navidrome 曲库'});
+      await connection.getByRole('status').filter({hasText:'首歌曲'}).waitFor();
+      await click(connection,'从服务器继续听');
+      if(process.argv.includes('--expect-conflict')){
+        await message(connection,'本机和服务器的续播记录不同');
+        await click(connection,'继续用本机记录');
+        await message(connection,'已保留本机续播点');
+        assert.equal(await first.page.evaluate(()=>SonicPlayback.snapshot().track.name),names[2]);
+        await click(connection,'从服务器继续听');
+        await click(connection,'使用服务器记录');
+      }
+      await first.page.waitForFunction(name=>SonicPlayback.snapshot().track?.name===name&&SonicPlayback.snapshot().playing,names[0]);
+      assert.equal(await connection.isVisible(),false);
+      const result=await first.page.evaluate(()=>SonicPlayback.position());
+      assert.ok(Math.abs(result-replacement.position/1000)<.65);
+      const method=process.argv.includes('--expect-conflict')?'Compare showed device and time; keep local and choose server both worked.':'Only B remained on the server. A resumed B directly; no progress conflict chooser.';
+      console.log('OBSERVED playback checkpoints: A '+names[2]+' '+(initial.position/1000).toFixed(2)+' s; B '+names[0]+' '+(replacement.position/1000).toFixed(2)+' s. A resumed at '+result.toFixed(2)+' s. '+method);
+      return;
+    }
     const exited=once(first.app.process(),'exit',{signal:AbortSignal.timeout(12000)});
     await first.app.evaluate(({app})=>{setTimeout(()=>app.quit(),0);});
     assert.deepEqual(await exited,[0,null]);first=null;

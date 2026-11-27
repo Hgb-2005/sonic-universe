@@ -1,10 +1,73 @@
 (function () {
   'use strict';
-  const tabs = {daily:'每日推荐',charts:'热门榜单',mv:'MV',resolve:'解析链接'};
+  const tabs = {daily:'每日推荐',charts:'热门榜单',scenes:'场景歌单',mv:'MV',resolve:'解析链接'};
   const bilibiliVideoId = /^BV[A-Za-z0-9]{10}$/;
   const youtubeVideoId = /^[A-Za-z0-9_-]{11}$/;
   let dialog,client,player,tab,controller,chartMatch,objectUrl,musicBeforeVideo,videoSequence=0;
-  const feedCache=new Map(),feedRequests=new Map();
+  let openLyrics,openQueue,scenePick=null,playingRow=null;
+  const scrollPositions=new Map(),feedCache=new Map(),feedRequests=new Map();
+
+  function updateCurrent(){
+    if(!dialog?.open)return;
+    const state=player.snapshot();
+    for(const row of dialog.querySelectorAll('[data-discovery-track]')){
+      const active=row.dataset.discoveryTrack===state.track?.id;
+      row.classList.toggle('sd-current',active);
+      const pill=row.querySelector('[data-discovery-current]');
+      pill.hidden=!active;
+      if(active)pill.textContent=state.playing?'正在播放':'当前曲目';
+      row.querySelector('[data-discovery-lyrics]').hidden=!active;
+    }
+  }
+
+  function restoreScroll(){
+    dialog.scrollTop=scrollPositions.get(tab)||0;
+  }
+
+  function renderScenePlaylists(){
+    controller?.abort();controller=null;
+    const mixes=player.homeMixes();
+    if(!mixes.length){
+      get('[data-discovery-items]').replaceChildren(button('打开音乐库',()=>{
+        dialog.close();window.SonicListeningRoom?.setMode('library');
+      }));
+      status('导入本地音乐后，可浏览专注、放松和夜听歌单。');return;
+    }
+    const row=mixes.find(mix=>mix.id===scenePick)||mixes[0];
+    scenePick=row.id;
+    const choices=document.createElement('div');choices.className='lr-choice-row';
+    for(const mix of mixes){
+      const choice=button(mix.name,()=>{scenePick=mix.id;renderScenePlaylists();});
+      choice.setAttribute('aria-pressed',String(mix.id===row.id));choices.append(choice);
+    }
+    const songs=new Map(player.library().tracks.map(track=>[track.id,track]));
+    const list=document.createElement('ol');list.className='sd-items';
+    for(const id of row.trackIds){
+      const track=songs.get(id);
+      if(!track)continue;
+      const entry=document.createElement('li');
+      entry.append(button([track.name,track.artist,track.album].filter(Boolean).join(' · '),()=>
+        void player.playFromLibrary(id,'local',true,row.trackIds,row.name)));
+      markTrack(entry,id);
+      list.append(entry);
+    }
+    get('[data-discovery-items]').replaceChildren(choices,list);
+    status(row.name+' · '+list.childElementCount+' 首本机歌曲');
+    updateCurrent();
+  }
+
+  function markTrack(row,id){
+    if(!id)return;
+    row.dataset.discoveryTrack=id;
+    const current=document.createElement('small');
+    current.dataset.discoveryCurrent='';current.hidden=true;
+    const lyrics=button('查看歌词',()=>{
+      scrollPositions.set(tab,dialog.scrollTop);
+      dialog.close();openLyrics?.();
+    });
+    lyrics.dataset.discoveryLyrics='';lyrics.hidden=true;
+    row.append(current,lyrics);
+  }
   const isFeed=kind=>kind==='daily'||kind==='charts';
   const freshFor={daily:5*60000,charts:10*60000};
   const keepFor={daily:30*60000,charts:2*60*60000};
@@ -88,22 +151,22 @@
     input.setAttribute('aria-label',input.placeholder);
     get('[data-discovery-submit]').textContent=value==='mv'?'查找 MV':'解析';
     if(value==='daily'||value==='charts')void load(value);
+    else if(value==='scenes')renderScenePlaylists();
     else{
       controller?.abort();controller=null;get('[data-discovery-items]').replaceChildren();
       status(value==='resolve'?'支持汽水歌曲详情与官方音乐链接。':'输入歌名或歌手，搜索可在这里播放的 MV。');
     }
   }
-  async function playChartTrack(item,control,label,showResult,checking) {
+  async function playChartTrack(item,control,label,showResult) {
     abortChartMatch();
     const request=new AbortController();chartMatch=request;
     const idleLabel=label.textContent;
     control.disabled=true;control.setAttribute('aria-busy','true');
-    label.textContent=checking?'正在查找…':'正在打开…';
-    status((checking?'正在查找可播版本「':'正在打开「')+item.name+'」…');
+    label.textContent='正在打开…';
+    status('正在打开「'+item.name+'」…');
     let result;
     try {
-      result=checking?await player.checkRecording(item,{signal:request.signal}):
-        await player.playRecording(item,{signal:request.signal,label:'热门榜单',preserveCurrent:true});
+      result=await player.playRecording(item,{signal:request.signal,label:'热门榜单',preserveCurrent:true});
     } catch(error) {
       const state=error?.status===401||error?.code==='auth-required'?'auth-required':error?.name==='AbortError'?'cancelled':'failed';
       result={status:state};
@@ -111,7 +174,16 @@
       control.disabled=false;control.removeAttribute('aria-busy');label.textContent=idleLabel;
       if(chartMatch===request){
         chartMatch=null;
-        if(!request.signal.aborted&&dialog.open&&tab==='charts'&&control.isConnected)showResult(result,item);
+        if(!request.signal.aborted&&dialog.open&&tab==='charts'&&control.isConnected){
+          const row=control.closest('li');
+          if(result?.track&&row){
+            playingRow={id:result.track.id,sourceId:item.mediaId};
+            if(row.hasAttribute('data-discovery-track'))row.dataset.discoveryTrack=playingRow.id;
+            else markTrack(row,playingRow.id);
+          }
+          showResult(result,item);
+          updateCurrent();
+        }
       }
     }
   }
@@ -132,6 +204,11 @@
     const url=officialUrl(item.externalUrl,['music.apple.com','itunes.apple.com','geo.itunes.apple.com']);
     const main=chartControl(item,info,'chart',url);
     content.append(main,message,choices,online);row.append(content);
+    if(openQueue){
+      const queue=button('队列操作',()=>openQueue(item));
+      queue.setAttribute('aria-label','队列操作 '+item.name);
+      row.append(queue);
+    }
 
     if(url){
       const original=document.createElement('a');original.className='lr-choice';
@@ -145,11 +222,10 @@
       let availability='unknown',selected=target;
       const badge=document.createElement('span');
       badge.className='sd-playback-status';details.append(badge);
-      const control=playableRow(details,'查找可播版本',kind,(control,label)=>{
+      const control=playableRow(details,'播放这首',kind,(control,label)=>{
         if(availability==='auth-required'){dialog.close();player.openOnline();return;}
         if(availability==='unavailable'&&original&&kind==='chart-candidate'){window.open(original.href,'_blank','noopener,noreferrer');return;}
-        const checking=!['full-source','preview-source','full','preview'].includes(availability);
-        void playChartTrack(checking?target:selected,control,label,result=>{
+        void playChartTrack(selected,control,label,result=>{
           availability=result?.availability||({full:'full',preview:'preview','auth-required':'auth-required'}[result?.status])||'unknown';
           if(result?.officialOnly)availability='unavailable';
           if(result?.track)selected=result.track;
@@ -157,9 +233,9 @@
           const source=window.SonicOnlineMusic.playbackSourceLabel(result?.track);
           badge.textContent=[text,source].filter(Boolean).join(' · ');
           label.textContent=({可播整曲:'播放整曲',仅试听:'试听',需登录:'去登录'})[text]||
-            (availability==='unavailable'?(kind==='chart-candidate'&&original?'打开原平台':'重新查找可播版本'):'查找可播版本');
+            (availability==='unavailable'&&kind==='chart-candidate'&&original?'打开原平台':'重试播放');
           showResult(result,target,kind);
-        },checking);
+        });
       });
       badge.textContent=window.SonicOnlineMusic.playbackStatusLabel(availability);
       return control;
@@ -217,7 +293,7 @@
   function showItems(items,kind,title) {
     abortChartMatch();
     const root=get('[data-discovery-items]');root.replaceChildren();
-    if(!items.length){status('暂时没有相关内容。');return}
+    if(!items.length){status('暂时没有相关内容。');updateCurrent();return}
     status(title||'已找到 '+items.length+' 条结果。');
     if(kind==='daily'){
       const playAll=button('播放推荐',()=>void player.playOnlineList(items,'每日推荐'));
@@ -267,9 +343,13 @@
         const url=officialUrl(item.externalUrl,['music.apple.com','itunes.apple.com','geo.itunes.apple.com']);
         if(url)row.append(button(kind==='mv'?'打开官方 MV':'打开官方歌曲',()=>window.open(url.href,'_blank','noopener,noreferrer')));
       }
+      if(item.provider==='qishui')markTrack(row,'online:qishui:'+item.mediaId);
+      else if(kind==='charts'&&playingRow?.sourceId===item.mediaId)markTrack(row,playingRow.id);
       list.append(row);
     }
     root.append(list);
+    updateCurrent();
+    restoreScroll();
   }
   async function load(kind,query='') {
     controller?.abort();const request=new AbortController();controller=request;
@@ -403,10 +483,20 @@
       <div class="sd-embed" data-discovery-embed hidden></div>
       <p class="lr-status" data-discovery-status role="status" aria-live="polite"></p><button type="button" class="lr-choice" data-discovery-retry hidden>重试</button><div data-discovery-items></div>`;
     for(const [key,label] of Object.entries(tabs)){
-      const choice=button(label,()=>{if(tab==='mv'&&key!=='mv')stopVideo(true);chooseTab(key)});
+      const choice=button(label,()=>{
+        scrollPositions.set(tab,dialog.scrollTop);
+        if(tab==='mv'&&key!=='mv')stopVideo(true);
+        chooseTab(key);restoreScroll();updateCurrent();
+      });
       choice.dataset.discoveryTab=key;get('.lr-choice-row').append(choice);
     }
-    get('[data-discovery-close]').addEventListener('click',()=>dialog.close());
+    function closeDiscovery(){
+      scrollPositions.set(tab,dialog.scrollTop);
+      dialog.close();
+    }
+    get('[data-discovery-close]').addEventListener('click',closeDiscovery);
+    dialog.addEventListener('cancel',()=>scrollPositions.set(tab,dialog.scrollTop));
+    window.addEventListener('sonic:transport-state',updateCurrent);
     get('[data-discovery-retry]').addEventListener('click',()=>void load(tab,get('[data-discovery-query]').value.trim()));
     get('[data-discovery-video-close]').addEventListener('click',()=>{stopVideo(true);status('已关闭视频。')});
     get('[data-discovery-mv-source]').addEventListener('change',()=>{
@@ -441,12 +531,13 @@
     dialog.addEventListener('close',()=>{controller?.abort();controller=null;abortChartMatch();stopVideo(true)});
     root.append(dialog);
   }
-  function open(root,companion,playback) {
+  function open(root,companion,playback,{lyrics,queue}={}) {
     if(client&&client!==companion){invalidateDaily();feedCache.delete('charts');}
-    client=companion;player=playback;
+    client=companion;player=playback;openLyrics=lyrics;openQueue=queue;
     if(!dialog)create(root);
     if(!dialog.open)dialog.showModal();
-    chooseTab('daily');
+    chooseTab(tab==='mv'||tab==='resolve'?'daily':tab||'daily');
+    restoreScroll();updateCurrent();
   }
   window.SonicMusicDiscovery=Object.freeze({open,warmDaily,invalidateDaily});
 })();

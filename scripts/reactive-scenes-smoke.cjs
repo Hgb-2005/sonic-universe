@@ -114,7 +114,7 @@ async function verifyScenes(page) {
   await waitForScene('neon-grid');
   await page.reload();
   await waitForScene('neon-grid');
-  assert.equal(await room.getAttribute('data-mode'), 'listen');
+  assert.equal(await room.getAttribute('data-mode'), process.argv.includes('--packaged')?'work':'listen');
   await setMode('visual');
   await openGallery();
   assert.equal(await sceneButton('neon-grid').getAttribute('aria-pressed'), 'true');

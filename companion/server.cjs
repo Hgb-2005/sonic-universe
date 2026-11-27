@@ -129,7 +129,8 @@ function createMediaCache(provider, options = {}) {
       const token = crypto.randomBytes(24).toString('base64url');
       const expiresAt = Math.min(Date.now() + ttl, Number(source.expiresAt) > 0 ? Number(source.expiresAt) : Infinity);
       entries.set(token, { ...source, expiresAt });
-      return { streamPath: `/media/${token}`, expiresAt, preview: source.preview, quality: source.quality, clipStartMs: source.clipStartMs };
+      return { streamPath: `/media/${token}`, expiresAt, preview: source.preview, quality: source.quality, clipStartMs: source.clipStartMs,
+        ...(source.delivery?{sourceFormat:source.sourceFormat,delivery:source.delivery}:{}) };
     },
     get(token) {
       const entry = entries.get(String(token || ''));
@@ -410,7 +411,7 @@ function createAppServer(options = {}) {
         if (!body||typeof body!=='object'||Array.isArray(body)) return sendJson(response,400,{error:'无效请求'},cors);
         if(action==='audio'){
           media ||= createMediaCache(qishui);
-          return sendJson(response,200,media.issueSource(await navidrome.audio(body.mediaId,body.quality)),cors);
+          return sendJson(response,200,media.issueSource(await navidrome.audio(body.mediaId,body.quality,{verify:body.verify===true})),cors);
         }
         return sendJson(response,200,await navidrome.operation(action,body),cors);
       }
@@ -433,6 +434,10 @@ function createAppServer(options = {}) {
       if (url.pathname === '/api/qishui/login/check' && request.method === 'POST') {
         const body = await readJson(request);
         return sendJson(response, 200, await qishui.loginCheck(body.sessionId), cors);
+      }
+      if (url.pathname === '/api/qishui/login/cancel' && request.method === 'POST') {
+        const body = await readJson(request);
+        return sendJson(response, 200, await qishui.loginCancel(body.sessionId), cors);
       }
       if (url.pathname === '/api/qishui/logout' && request.method === 'POST') return sendJson(response, 200, await qishui.logout(), cors);
       if (url.pathname === '/api/qishui/search' && request.method === 'POST') return sendJson(response, 200, await qishui.search(await readJson(request)), cors);

@@ -360,7 +360,7 @@ async function verifyUpgrade(page) {
     const snapshot = SonicPlayback.snapshot();
     return snapshot.playing && snapshot.track?.id === `online:qishui:${id}`;
   },matchedChartSong.mediaId);
-  await status.filter({hasText:'已开始播放完整歌曲'}).waitFor();
+  await status.filter({hasText:'播放完整歌曲'}).waitFor();
   assert.deepEqual(companion.chartMatches,[matchInput(chart,true)]);
   assert.ok(requests.includes(`/api/qishui/tracks/${matchedChartSong.mediaId}/audio`));
   const fallback = await lyricResult(matchedChartSong,'ready');
@@ -393,7 +393,7 @@ async function verifyUpgrade(page) {
     const state=SonicPlayback.snapshot({queue:true});
     return state.queueCount===3&&state.playing&&!state.busy&&state.track?.id==='online:qishui:'+id;
   },matchedChartSong.mediaId);
-  assert.deepEqual(companion.chartMatches.slice(before),[matchInput(chart)]);
+  assert.deepEqual(companion.chartMatches.slice(before),[matchInput(chart,true)]);
   await page.evaluate(()=>SonicPlayback.next());
   try {
     await page.waitForFunction(id=>SonicPlayback.snapshot().playing&&SonicPlayback.snapshot().track?.id==='online:qishui:'+id,matchedLastChartSong.mediaId);
@@ -403,7 +403,7 @@ async function verifyUpgrade(page) {
       playing,busy,track:track?.id,queue:queue.map(item=>item.id),queueRecovery,queueEntryId,matches:companion.chartMatches.slice(before),
     }),{cause:error});
   }
-  assert.deepEqual(companion.chartMatches.slice(before),[chart,unmatchedChartSong,lastChartSong].map(song=>matchInput(song)));
+  assert.deepEqual(companion.chartMatches.slice(before),[chart,unmatchedChartSong,lastChartSong].map(song=>matchInput(song,true)));
   const wrongRecording = await lyricResult(matchedLastChartSong,'missing');
   assert.deepEqual(wrongRecording.lines,[]);
   assert.deepEqual(companion.lyricLookups.at(-1),lookupInput(matchedLastChartSong));
@@ -419,7 +419,7 @@ async function verifyUpgrade(page) {
   const matchingButtons=page.locator('[data-online-action="match-qishui"]');
   await matchingButtons.last().click();
   const searchStatus=page.locator('#onlineResultStatus');
-  await searchStatus.filter({hasText:'请选择要播放的录音版本'}).waitFor();
+  await searchStatus.filter({hasText:'无法确认版本，请手动选择'}).waitFor();
   assert.deepEqual(companion.chartMatches.at(-1),matchInput(livePublicSong,true));
 
   const currentPlayback=()=>page.evaluate(()=>{
@@ -434,7 +434,7 @@ async function verifyUpgrade(page) {
   const versions=page.getByRole('dialog',{name:'选择汽水版本'});
   await chooseVersion.click();
   await versions.getByRole('button',{name:/音乐节现场/}).click();
-  await searchStatus.filter({hasText:'版权或会员保护内容无法在声波宇宙内播放'}).waitFor();
+  await searchStatus.filter({hasText:'没有可播放的音源'}).waitFor();
   assert.ok(requests.includes(`/api/qishui/tracks/${rejectedVersion.mediaId}/audio`));
   const rejected=await page.evaluate(()=>SonicPlayback.snapshot());
   assert.equal(rejected.playing,false);

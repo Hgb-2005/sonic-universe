@@ -225,7 +225,10 @@
       const trackChanged=trackId!==state.track?.id||queueEntryId!==state.queueEntryId;
       trackId=state.track?.id;
       queueEntryId=state.queueEntryId;
-      if(trackChanged)resumeFollowing();
+      if(trackChanged){
+        resumeFollowing();
+        if(!full)scroll.replaceChildren();
+      }
       if(view==='hidden'||view==='stage')return;
       const nextLines=state.lyrics.length?state.lyrics:empty;
       const {index,line,end}=lyricAt(nextLines,position,state.lyricDuration);
@@ -276,8 +279,20 @@
           const text=lines[index+slot-1]?.text;
           const isCurrent=slot===1;
           button.hidden=!isCurrent&&!text;
-          button.disabled=!text;
+          const currentPreview=isCurrent&&view==='preview';
+          button.disabled=currentPreview?!nextLines.length:!text;
           rows[slot].textContent=text||(isCurrent?previewMessage:'');
+          if(isCurrent){
+            if(currentPreview&&!button.disabled){
+              button.dataset.action='full-lyrics';
+              button.setAttribute('aria-label',(text||previewMessage)+'，展开全文歌词');
+              button.title='展开全文歌词';
+            }else {
+              delete button.dataset.action;
+              button.removeAttribute('aria-label');
+              button.removeAttribute('title');
+            }
+          }
           if(isCurrent&&text)button.setAttribute('aria-current','true');
           else button.removeAttribute('aria-current');
         }
@@ -293,7 +308,7 @@
 
     preview.addEventListener('click',event=>{
       const row=event.target.closest('[data-preview-row]');
-      if(!row||row.disabled)return;
+      if(!row||row.disabled||row.dataset.action==='full-lyrics')return;
       const line=lines?.[active+Number(row.dataset.previewRow)];
       if(line)seek(line.time);
     });

@@ -97,6 +97,11 @@ async function main(){
       return JSON.parse(result.stdout.toString()).streams[0];
     };
     assert.equal(await label.textContent(),'无损 · 全曲');
+    const details=page.locator('[data-audio-format-info]');
+    if(process.argv.includes('--format-detail')){
+      await details.filter({hasText:'播放器收到源文件流 FLAC'}).waitFor();
+      assert.match(await details.textContent(),/服务器源文件 FLAC/);
+    }
     const flac=await inspect('desktop-original');
     assert.equal(flac.codec_name,'flac');
     await page.getByRole('button',{name:'查音质',exact:true}).click();
@@ -124,6 +129,10 @@ async function main(){
     const toStandard=await setQuality('standard','standard','标准 · 全曲'),mp3=await inspect('desktop-standard');
     assert.equal(mp3.codec_name,'mp3');
     assert.equal(mp3.bit_rate,'128000');
+    if(process.argv.includes('--format-detail')){
+      await details.filter({hasText:'播放器收到服务器转码 MP3'}).waitFor();
+      assert.match(await details.textContent(),/服务器源文件 FLAC.*MP3.*最高 128 kbps/);
+    }
     const toLossless=await setQuality('lossless','lossless','无损 · 全曲');
     assert.deepEqual(await inspect('desktop-restored'),flac);
     console.log('PASS real Navidrome FLAC 44100 Hz → MP3 128 kbps → FLAC, same song/queue, profile Windows seek/resume',JSON.stringify({toStandard,toLossless,flac,mp3}));

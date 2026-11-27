@@ -139,7 +139,7 @@
   let reduced=motionQuery.matches;
   app.classList.toggle('reduced',reduced);
   motionQuery.addEventListener('change',e=>{reduced=e.matches;app.classList.toggle('reduced',reduced)});
-  const bundledSample=Object.freeze({id:'demo-auld-lang-syne',kind:'demo',name:'友谊地久天长',artist:'Bautsch',duration:42.733583,cover:null,stored:true});
+  const bundledSample=Object.freeze({id:'demo-auld-lang-syne',kind:'demo',name:'友谊地久天长',artist:'Bautsch',duration:42.733583,cover:'./assets/nebula-galaxy.webp',stored:true});
   const bundledLyrics=Object.freeze({
     // Word cues follow the recording's phrase starts and the traditional melody's note values.
     raw:`[1030,4820](1030,600,0)Should (1630,900,0)old (2530,1500,0)acquaintance (4030,900,0)be (4930,920,0)forgot,
@@ -192,17 +192,20 @@
     if(Array.isArray(saved))recentTrackIds=[...new Set(saved.filter(id=>typeof id==='string'&&id.length<=160))].slice(0,60);
   }catch{}
   const smartKey='sonic-library-smart-v1';
-  const smartCounts=new Map();
+  const smartCounts=new Map(),smartSkips=new Map();
   let smartExcluded=[];
   try {
     const saved=JSON.parse(localStorage.getItem(smartKey)||'{}');
     for(const [id,count] of (Array.isArray(saved.counts)?saved.counts:[]).slice(0,500)){
       if(typeof id==='string'&&Number.isInteger(count)&&count>0)smartCounts.set(id,Math.min(count,99));
     }
+    for(const [id,count] of (Array.isArray(saved.skips)?saved.skips:[]).slice(0,500)){
+      if(typeof id==='string'&&Number.isInteger(count)&&count>0)smartSkips.set(id,Math.min(count,99));
+    }
     if(Array.isArray(saved.excluded))smartExcluded=[...new Set(saved.excluded.filter(id=>typeof id==='string'))].slice(0,500);
   }catch{}
   function saveSmartMusic(){
-    try{localStorage.setItem(smartKey,JSON.stringify({counts:[...smartCounts],excluded:smartExcluded}));}catch{}
+    try{localStorage.setItem(smartKey,JSON.stringify({counts:[...smartCounts],skips:[...smartSkips],excluded:smartExcluded}));}catch{}
   }
   let editingSodaId=null,sodaBatchPreview=null,sodaBatchText='';
   let shuffleBag=[],shuffleHistory=[],shuffleCursor=-1;
@@ -232,6 +235,7 @@
     app.dataset.saveState=!libraryReady?'loading':problem?'error':saving?'saving':'saved';if(app.dataset.recoveryReady==='true')updateRecoveryButtons();
   }
   const missingResumeTracks=new Map();
+  let fileRecoverySave=null;
   let backupRestoring=false, resumePoint=null, preparedTrackId=null, resumeQueueCheckpoint=null, deferredResume=false;
   function persistResumePoint(){
     try{localStorage.setItem('sonic-universe-session',JSON.stringify(resumePoint));storageIssues.delete('session')}
@@ -269,7 +273,7 @@
     const standalone=!current&&validQueueRecovery(recovery);
     deferredResume=false;
     const scopeOrder=playbackScopeOrder?.scope===playbackScope?playbackScopeOrder.ids:null;
-    resumePoint=id?{id,position,queue:current?checkpointQueue():null,scope:playbackScope,
+    resumePoint=id?{id,position,savedAt:Date.now(),queue:current?checkpointQueue():null,scope:playbackScope,
       ...(track?{track}:{}),...(Number.isFinite(clipStart)?{clipStart}:{}),...(scopeOrder?{scopeOrder}:{}),...(standalone?{recovery:standalone}:{})}:null;
     persistResumePoint();
   }
@@ -310,15 +314,19 @@
       return false;
     }).finally(()=>{savingCount--;updateStorageStatus()});
   }
+  function persistentLibraryTrack(track){
+    if(track.kind==='online')return globalThis.SonicOnlineMusic?.persistentTrack(track)||null;
+    return {id:track.id,kind:track.kind,name:track.name,artist:track.artist||'',album:track.album||'',
+      externalUrl:track.externalUrl||'',duration:track.kind==='soda'?0:track.duration,cover:track.cover||null,
+      size:track.blob?.size||track.savedSize||0,favorite:Boolean(track.favorite),sourcePath:track.sourcePath||'',
+      signature:track.signature||'',...(track.audioDigest?{audioDigest:track.audioDigest}:{}),
+      ...SonicFolderLibrary.folderMetadata(track),manualFields:SonicFolderLibrary.manualFields(track)};
+  }
   function persistLibrary(saveLyrics=false){
     if(!libraryReady||libraryReadFailed)return Promise.resolve(false);
-    const snapshot=tracks.slice();
-    const metadata=snapshot.map(t=>{
-      if(t.kind==='online'){
-        return globalThis.SonicOnlineMusic?.persistentTrack(t)||null;
-      }
-      return {id:t.id,kind:t.kind,name:t.name,artist:t.artist||'',album:t.album||'',externalUrl:t.externalUrl||'',duration:t.kind==='soda'?0:t.duration,cover:t.cover||null,size:t.blob?.size||0,favorite:Boolean(t.favorite),sourcePath:t.sourcePath||'',signature:t.signature||'',...SonicFolderLibrary.folderMetadata(t),manualFields:SonicFolderLibrary.manualFields(t)};
-    }).filter(Boolean);
+    if(fileRecoverySave)return fileRecoverySave.then(()=>persistLibrary(saveLyrics));
+    const snapshot=[...tracks,...missingResumeTracks.values()];
+    const metadata=snapshot.map(persistentLibraryTrack).filter(Boolean);
     const collections=playlists.map(p=>({id:p.id,name:p.name,trackIds:p.trackIds.slice()})),view=libraryView,scope=playbackScope;
     const lyricState=saveLyrics?JSON.parse(JSON.stringify(atelier)):null;
     const blobs=snapshot.filter(track=>track.kind==='file'&&!track.stored).map(track=>({track,blob:track.blob}));
@@ -383,17 +391,17 @@
           }
           if(meta.kind!=='demo'&&meta.kind!=='file')continue;
           const blob=meta.kind==='file'?media.get(meta.id):null;
+          seen.add(meta.id);
+          const track={id:meta.id,kind:meta.kind,name:String(meta.name||'未命名音乐'),artist:typeof meta.artist==='string'?meta.artist:'',album:typeof meta.album==='string'?meta.album:'',duration:Number.isFinite(meta.duration)&&meta.duration>0?meta.duration:96,cover:typeof meta.cover==='string'&&meta.cover.startsWith('data:image/')?meta.cover:null,blob,stored:true,savedSize:Number.isSafeInteger(meta.size)&&meta.size>0?meta.size:0,audioDigest:typeof meta.audioDigest==='string'&&/^[a-f0-9]{64}$/.test(meta.audioDigest)?meta.audioDigest:null,favorite:meta.favorite===true,sourcePath:typeof meta.sourcePath==='string'?meta.sourcePath:'',signature:typeof meta.signature==='string'?meta.signature:'',...SonicFolderLibrary.folderMetadata(meta),manualFields:SonicFolderLibrary.manualFields(meta)};
           if(meta.kind==='file'&&(!(blob instanceof Blob)||!blob.size)){
-            const unavailable=resumeFileMetadata(meta);
-            if(unavailable)missingResumeTracks.set(meta.id,unavailable);
+            if(resumeFileMetadata(meta))missingResumeTracks.set(meta.id,track);
             missing++;continue;
           }
-          seen.add(meta.id);
-          tracks.push({id:meta.id,kind:meta.kind,name:String(meta.name||'未命名音乐'),artist:typeof meta.artist==='string'?meta.artist:'',album:typeof meta.album==='string'?meta.album:'',duration:Number.isFinite(meta.duration)&&meta.duration>0?meta.duration:96,cover:typeof meta.cover==='string'&&meta.cover.startsWith('data:image/')?meta.cover:null,blob,stored:true,favorite:meta.favorite===true,sourcePath:typeof meta.sourcePath==='string'?meta.sourcePath:'',signature:typeof meta.signature==='string'?meta.signature:'',...SonicFolderLibrary.folderMetadata(meta),manualFields:SonicFolderLibrary.manualFields(meta)});
+          tracks.push(track);
         }
       }
       if(Array.isArray(saved?.playlists)){
-        const seen=new Set(),ids=new Set(tracks.map(t=>t.id));
+        const seen=new Set(),ids=new Set([...tracks.map(t=>t.id),...missingResumeTracks.keys()]);
         playlists=saved.playlists.filter(p=>p&&typeof p.id==='string'&&p.id.startsWith('playlist-')&&!seen.has(p.id)&&seen.add(p.id)&&typeof p.name==='string'&&Array.isArray(p.trackIds)).map(p=>({id:p.id,name:p.name.slice(0,32)||'未命名歌单',trackIds:[...new Set(p.trackIds.filter(id=>ids.has(id)))]}));
       }
       libraryView=validCollection(saved?.libraryView)?saved.libraryView:'all';playbackScope=validPlaybackScope(saved?.playbackScope)?saved.playbackScope:'all';resetShuffle();
@@ -420,7 +428,8 @@
       if(previous.kind==='online'&&session.track?.mediaId===previous.mediaId&&typeof session.track.preview==='boolean'){
         track.preview=session.track.preview;
       }
-      resumePoint={id:session.id,position,queue:session.queue,scope:validPlaybackScope(session.scope)?session.scope:playbackScope,
+      resumePoint={id:session.id,position,savedAt:Number.isFinite(session.savedAt)?session.savedAt:null,
+        queue:session.queue,scope:validPlaybackScope(session.scope)?session.scope:playbackScope,
         track,...(previous.kind==='online'&&Number.isFinite(session.clipStart)?{clipStart:clamp(session.clipStart,0,86400)}:{}),
         ...(playbackScopeOrder?{scopeOrder:playbackScopeOrder.ids}:{}),
         ...(recovery?{recovery}:{})};
@@ -727,7 +736,7 @@
     const locked=clipLocked(),external=Boolean(externalStream||externalPending),supported=clipSupported();
     $('clipDialog').dataset.state=clipPhase;app.dataset.clipState=clipPhase;if(instrumentReady){updateInstrumentControls();renderInstrumentLayers()}
     $('clipFields').disabled=locked;$('clipRecordBtn').hidden=clipPhase==='recording'||clipPhase==='stopping';
-    const perform=instrumentOpen&&(clipInstrumentMode||clipSession?.instrument),needsStory=!perform&&(!filmCurrentAnalysis()||filmAnalyzing);
+    const perform=instrumentOpen&&(clipInstrumentMode||clipSession?.instrument),needsStory=!perform&&!clipMoment&&(!filmCurrentAnalysis()||filmAnalyzing);
     $('clipRecordBtn').disabled=locked||external||!supported||!libraryReady||busy||Boolean(pendingFile)||needsStory||(!currentTrack()&&!clipInstrumentMode);
     $('clipRecordBtn').querySelector('span').textContent=clipPhase==='preparing'?'正在准备…':clipBlob?'重新录制':'开始录制';
     $('clipStopBtn').hidden=clipPhase!=='recording'&&clipPhase!=='stopping';$('clipStopBtn').disabled=clipPhase==='stopping';
@@ -749,14 +758,17 @@
     if(!clipBlob)return;$('clipVideo').hidden=false;$('clipCanvas').hidden=true;clipShowingResult=true;
     $('clipResult').textContent=clipMeta.song+' · '+formatTime(clipMeta.seconds)+' · '+clipMeta.width+' × '+clipMeta.height+' · '+(clipBlob.size/1048576).toFixed(1)+' MB · '+clipMeta.extension.toUpperCase();clipUpdateControls();
   }
+  let clipMoment=null;
   function openClip(){
     if(!clipLocked()){$('clipSong').value=clipInstrumentMode?instrumentProject.title:currentTrack()?.name||'';$('clipAuthor').value=clipAuthor||postcardAuthor;$('clipMood').value=clipMood;if(!clipBlob)clipShowLive();restoreFilmDraft()}
+    if(clipMoment){$('clipMood').value=clipMoment.lyric||'';clipShowLive();}
     clipUpdateControls();if(!$('clipDialog').open)$('clipDialog').showModal();renderClipFrame(true);
     if(externalStream||externalPending)clipSetStatus('外部联动中。请停止联动后录制本地音乐。');
     else if(!clipSupported())clipSetStatus('当前浏览器暂不支持录制。请在 Edge 或 Chrome 打开本机地址。',true);
     else if(!clipLocked()&&!clipBlob)clipSetStatus('正在准备这首歌的四章星空…');
     renderFilmAnalysis();
-    if(!clipLocked()&&!clipInstrumentMode&&!filmCurrentAnalysis())analyzeFilmStory();
+    if(clipMoment)clipSetStatus('短片从 '+formatTime(clipMoment.position)+' 开始。开始录制后才会定位。');
+    else if(!clipLocked()&&!clipInstrumentMode&&!filmCurrentAnalysis())analyzeFilmStory();
   }
   function clipTextLines(context,text,maxWidth,maxLines){
     const lines=[];let line='';
@@ -771,7 +783,11 @@
     const surface=$('clipCanvas'),shape=clipSession?.shape||clipShape,width=shape==='portrait'?720:1280,height=shape==='portrait'?1280:720;
     if(surface.width!==width||surface.height!==height){surface.width=width;surface.height=height;clipBackgroundKey=null}
     const g=surface.getContext('2d',{alpha:false}),saved={ctx,w,h,dpr,centerX,centerY,baseR,backgroundLayer};
-    try{
+    const moment=clipSession?.moment||clipMoment;
+    if(moment){
+      const image=moment.frame,scale=Math.max(width/image.width,height/image.height);
+      g.drawImage(image,(width-image.width*scale)/2,(height-image.height*scale)/2,image.width*scale,image.height*scale);
+    }else try{
       if(clipBackgroundKey!==backgroundImage||clipBackgroundDarkness!==space.darkness||clipBackground?.width!==width||clipBackground?.height!==height){
         clipBackgroundKey=backgroundImage;clipBackgroundDarkness=space.darkness;clipBackground=null;
         if(backgroundImage){const bg=document.createElement('canvas');bg.width=width;bg.height=height;const c=bg.getContext('2d'),scale=Math.max(width/backgroundImage.naturalWidth,height/backgroundImage.naturalHeight);c.drawImage(backgroundImage,(width-backgroundImage.naturalWidth*scale)/2,(height-backgroundImage.naturalHeight*scale)/2,backgroundImage.naturalWidth*scale,backgroundImage.naturalHeight*scale);c.fillStyle='rgba(8,9,17,'+(space.darkness/100)+')';c.fillRect(0,0,width,height);clipBackground=bg}
@@ -782,7 +798,10 @@
     const shade=g.createLinearGradient(0,height*.63,0,height);shade.addColorStop(0,'rgba(8,9,17,0)');shade.addColorStop(1,'rgba(8,9,17,.89)');g.fillStyle=shade;g.fillRect(0,height*.63,width,height*.37);
     g.textAlign='left';g.textBaseline='top';g.font='13px '+font;g.fillStyle=rgba(palette.core,.72);g.fillText('SONIC UNIVERSE  /  32',margin,portrait?58:42);
     const activeTimeline=clipSession?.storyTimeline||(filmCurrentAnalysis()?.timeline),filmFrame=activeTimeline&&!clipSession?.instrument?SonicFilmStory.chapterAt(activeTimeline,getLocalPosition(),true):null;
-    if(filmFrame){
+    if(moment){
+      g.font='600 15px '+font;g.fillStyle='#f0e8fc';
+      g.fillText(moment.mode+' · '+formatTime(clipSession?.startedAt?getLocalPosition():moment.position),margin,portrait?82:64);
+    }else if(filmFrame){
       g.font='600 12px '+font;g.fillStyle=rgba(palette.hot,.82);
       g.fillText(filmFrame.chapter.number+' / '+filmFrame.chapter.label,margin,portrait?82:64);
     }
@@ -850,13 +869,18 @@
   }
   async function startClip(){
     if(clipLocked()||filmAnalyzing||externalStream||externalPending||!clipSupported()||!libraryReady||busy||pendingFile||(!currentTrack()&&!clipInstrumentMode))return;
+    const moment=clipMoment;
+    const beforePlaying=playing;
+    if(moment&&(moment.trackId!==activeId||moment.position>=duration-.8)){
+      clipSetStatus('这段音乐已切换或临近结尾，请重新收藏一刻。',true);return;
+    }
     let pendingSegment=clipSegment?.id===activeId&&clipSegment.end>clipSegment.start?clipSegment:null;
-    if(!clipInstrumentMode&&!filmCurrentAnalysis()){
+    if(!moment&&!clipInstrumentMode&&!filmCurrentAnalysis()){
       clipSetStatus('正在分析歌曲，请稍候…');clipUpdateControls();
       await analyzeFilmStory();
       if(!filmCurrentAnalysis()){clipSetStatus('歌曲分析没有完成，请重新分析后再录制。',true);return}
     }
-    if(!clipInstrumentMode){
+    if(!moment&&!clipInstrumentMode){
       const analysis=filmCurrentAnalysis();
       if(pendingSegment){
         applyFilmEdit(pendingSegment.start,Math.min(analysis.sourceDuration,pendingSegment.end)-pendingSegment.start);
@@ -864,13 +888,34 @@
         applyFilmEdit(analysis.timeline.section.start);
       }
     }
-    if(!clipInstrumentMode)prepareSegmentFilm();clipSaveSettings();const sessionLength=clipInstrumentMode?clipLength:(clipLength?Math.min(clipLength,filmCurrentAnalysis()?.timeline.section.length||filmSourceLength()):0),session={instrument:clipInstrumentMode&&instrumentOpen,trackId:activeId,trackName:clipInstrumentMode?instrumentProject.title:currentTrack().name,shape:clipShape,width:clipShape==='portrait'?720:1280,height:clipShape==='portrait'?1280:720,length:sessionLength,song:$('clipSong').value.slice(0,80),author:$('clipAuthor').value.slice(0,24),mood:$('clipMood').value.slice(0,90),chunks:[],bytes:0,seconds:0,beforePlaying:playing,storyTimeline:clipInstrumentMode?null:filmCurrentAnalysis()?.timeline||null};
+    if(!moment&&!clipInstrumentMode)prepareSegmentFilm();
+    if(!moment)clipSaveSettings();
+    const sessionLength=moment?Math.min(15,duration-moment.position):clipInstrumentMode?clipLength:
+      (clipLength?Math.min(clipLength,filmCurrentAnalysis()?.timeline.section.length||filmSourceLength()):0);
+    const session={instrument:clipInstrumentMode&&instrumentOpen,trackId:activeId,
+      trackName:clipInstrumentMode?instrumentProject.title:currentTrack().name,shape:clipShape,
+      width:clipShape==='portrait'?720:1280,height:clipShape==='portrait'?1280:720,length:sessionLength,
+      song:$('clipSong').value.slice(0,80),author:$('clipAuthor').value.slice(0,24),mood:$('clipMood').value.slice(0,90),
+      chunks:[],bytes:0,seconds:0,beforePlaying,moment,storyTimeline:clipInstrumentMode?null:filmCurrentAnalysis()?.timeline||null};
     clipSession=session;clipPhase='preparing';clipShowLive();clipUpdateControls();clipSetStatus('正在准备音乐与画面…');
     try{
       initAudio();await audioContext.resume();if(clipSession!==session)return;
       if(session.instrument)initInstrumentAudio();else if(mode==='demo'&&!demoBuffers.has(activeId)){busy=true;try{await buildDemo(currentTrack())}finally{busy=false;renderActiveTrack()}}
       if(clipSession!==session)return;if(activeId!==session.trackId||externalStream)throw new Error('音乐来源已变化，请重新开始。');
-      if(!session.instrument&&getLocalPosition()>=duration-.05){if(mode==='demo')offset=0;else audio.currentTime=0}
+      if(moment){
+        if(Math.abs(getLocalPosition()-moment.position)>.03){
+          if(!seekTo(moment.position,{allowClip:true}))throw new Error('无法定位到收藏的位置。');
+          if(audio.seeking)await new Promise((resolve,reject)=>{
+            const complete=()=>{clearTimeout(timer);resolve();};
+            const timer=setTimeout(()=>{
+              audio.removeEventListener('seeked',complete);
+              reject(new Error('定位收藏位置超时。'));
+            },3000);
+            audio.addEventListener('seeked',complete,{once:true});
+          });
+        }
+        if(clipSession!==session)return;
+      }else if(!session.instrument&&getLocalPosition()>=duration-.05){if(mode==='demo')offset=0;else audio.currentTime=0}
       // Prefer VP8 for reliable startup across consecutive landscape/portrait recordings.
       const types=['video/webm;codecs=vp8,opus','video/webm;codecs=vp9,opus','video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/webm','video/mp4'];const mime=types.find(t=>MediaRecorder.isTypeSupported(t));if(!mime)throw new Error('浏览器没有可用的视频编码，请在新版 Edge 或 Chrome 重试。');
       session.destination=audioContext.createMediaStreamDestination();session.gain=audioContext.createGain();session.gain.gain.value=.9;analyser.connect(session.gain);session.gain.connect(session.destination);
@@ -881,7 +926,7 @@
       if(!session.instrument&&!playing){session.startedPlayback=true;await play(true)}
       if(clipSession!==session||clipPhase!=='preparing'){if(session.startedPlayback&&playing)pause();return}
       if(!session.instrument&&!playing)throw new Error('音乐未能播放，请先确认歌曲能正常播放后再录制。');
-      session.startedAt=performance.now();session.recorder.start(500);clipPhase='recording';session.timer=setInterval(()=>clipTick(session),100);clipShowLive();clipUpdateControls();
+      session.startedAt=performance.now();session.recorder.start(500);clipPhase='recording';session.timer=setInterval(()=>clipTick(session),100);clipShowLive();clipUpdateControls();startAnimation();
       if(session.instrument){beginInstrumentFilm();clipSetStatus("正在录制你的演奏，点音垫或用键盘开始。");updateInstrumentControls();renderInstrumentLayers();return}
       if(clipSession!==session)return;
       const remaining=Math.max(0,duration-getLocalPosition());clipSetStatus('正在录制'+(session.length?'，目标 '+session.length+' 秒':'，点「结束并预览」完成')+'。'+(session.length&&remaining<session.length?'歌曲会先结束，届时自动停止。':'请保持页面在前台。'));
@@ -893,7 +938,7 @@
     $('clipRecordBtn').addEventListener('click',startClip);$('clipStopBtn').addEventListener('click',()=>finishClip());$('clipViewBtn').addEventListener('click',clipShowResult);
     function close(){if(clipLocked())finishClip(clipPhase==='preparing'?'已取消准备':'录制已结束');$('clipDialog').close()}
     $('closeClipBtn').addEventListener('click',close);$('clipDialog').addEventListener('cancel',e=>{e.preventDefault();close()});
-    $('clipDialog').addEventListener('close',()=>{$('clipVideo').pause();wakeRoam();if(app.classList.contains('quiet'))$('roamSurface').focus({preventScroll:true})});
+    $('clipDialog').addEventListener('close',()=>{clipMoment=null;$('clipVideo').pause();wakeRoam();if(app.classList.contains('quiet'))$('roamSurface').focus({preventScroll:true})});
     document.querySelectorAll('[data-clip-shape]').forEach(b=>b.addEventListener('click',()=>{if(clipLocked())return;clipShape=b.dataset.clipShape;clipSaveSettings();clipShowLive();clipUpdateControls();renderClipFrame(true)}));
     document.querySelectorAll('[data-clip-length]').forEach(b=>b.addEventListener('click',async()=>{if(clipLocked())return;clipLength=Number(b.dataset.clipLength);clipSaveSettings();if(filmCurrentAnalysis()){applyFilmEdit(null);clipSetStatus('已按 '+clipLength+' 秒重新编排四章：'+formatTime(filmCurrentAnalysis().timeline.section.start)+' → '+formatTime(filmCurrentAnalysis().timeline.section.end)+'。');renderClipFrame(true)}else{clipUpdateControls();await analyzeFilmStory()}clipUpdateControls()}));
     $('filmStoryAnalyze').addEventListener('click',()=>analyzeFilmStory({force:true}));
@@ -1751,6 +1796,7 @@
     capturedMoment={date:new Date(),song:externalStream?'外部旋律 · 万籁成星':currentTrack()?.name||'无声的星海',position:getPosition(),phase:story.label,mode:visualModes[renderedMode].name,quiet,focusX:centerX/w,focusY:centerY/h,radius:baseR/w,zoom:cinema.zoom*(quiet?camera.zoom:1)};
     $('postcardSong').value=capturedMoment.song.slice(0,80);
     $('captureMoment').textContent=formatTime(capturedMoment.position)+' / '+capturedMoment.mode;
+    $('postcardClipBtn').hidden=true;
     $('postcardStatus').textContent='画面已定格，音乐继续流动。';
     renderPostcard();
   }
@@ -1806,6 +1852,23 @@
     surface.setAttribute('aria-label','星空明信片：'+song+'。'+mood+'。署名：'+author);
     document.querySelectorAll('[data-card-style]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.cardStyle===postcardStyle)));
   }
+  function capturePlaybackMoment(surface,{mode:scene,lyric}={}){
+    const track=currentTrack();
+    if(!track||!surface?.width||!surface.height||clipLocked())return false;
+    const frame=document.createElement('canvas');frame.width=surface.width;frame.height=surface.height;
+    frame.getContext('2d').drawImage(surface,0,0);
+    capturedScene=frame;
+    capturedMoment={date:new Date(),song:track.name,trackId:track.id,position:getLocalPosition(),lyric,
+      mode:scene||'正在播放',phase:scene||'正在播放',focusX:.5,focusY:.5,radius:.28,zoom:1,frame};
+    $('postcardSong').value=track.name.slice(0,80);
+    $('postcardMood').value=String(lyric||'').slice(0,80);
+    $('captureMoment').textContent=formatTime(capturedMoment.position)+' / '+capturedMoment.mode;
+    $('postcardClipBtn').hidden=track.kind!=='file';
+    $('postcardStatus').textContent='画面已定格，音乐保持当前状态。';
+    renderPostcard();
+    if(!$('postcardDialog').open)$('postcardDialog').showModal();
+    wakeRoam();return true;
+  }
   function openPostcard(){
     try{
       capturePostcard();
@@ -1834,6 +1897,13 @@
     $('postcardBtn').addEventListener('click',openPostcard);$('roamPostcardBtn').addEventListener('click',openPostcard);
     $('retakePostcardBtn').addEventListener('click',()=>{try{capturePostcard()}catch(error){$('postcardStatus').textContent=error.message}});
     $('savePostcardBtn').addEventListener('click',savePostcard);
+    $('postcardClipBtn').addEventListener('click',()=>{
+      if(!capturedMoment?.frame||capturedMoment.trackId!==activeId||currentTrack()?.kind!=='file'){
+        $('postcardStatus').textContent='当前曲目已变化，请重新收藏这一刻。';return;
+      }
+      clipMoment=capturedMoment;clipSegment=null;clipInstrumentMode=false;
+      $('postcardDialog').close();openClip();
+    });
     for(const id of ['postcardSong','postcardMood'])$(id).addEventListener('input',renderPostcard);
     $('postcardAuthor').addEventListener('input',()=>{postcardAuthor=$('postcardAuthor').value;savePreferences();renderPostcard()});
     document.querySelectorAll('[data-card-style]').forEach(button=>button.addEventListener('click',()=>{postcardStyle=button.dataset.cardStyle;savePreferences();renderPostcard()}));
@@ -2030,21 +2100,45 @@
   function resolveQueueItem(id,queue=sessionQueue){
     return queue?.items.find(item=>item.entryId===id)||queue?.items.find(item=>item.trackId===id);
   }
-  function addSessionTrack(trackId,placement){
+  let queueUndo=null;
+  function captureQueueUndo(){
+    return {queue:sessionQueue,items:sessionQueue?.items.slice(),id:activeId,scopeOrder:playbackScopeOrder,
+      shuffle:{bag:shuffleBag.slice(),history:shuffleHistory.slice(),cursor:shuffleCursor}};
+  }
+  function rememberQueueUndo(previous){queueUndo={...previous,revision:queueRevision+1};}
+  function canUndoQueue(){
+    return Boolean(queueUndo&&queueUndo.revision===queueRevision&&queueUndo.id===activeId&&!trackLoading&&!queueChartMatch);
+  }
+  function undoQueue(){
+    if(!canUndoQueue())return false;
+    const previous=queueUndo;queueUndo=null;
+    sessionQueue=previous.queue;
+    if(sessionQueue)sessionQueue.items=previous.items;
+    playbackScopeOrder=previous.scopeOrder;
+    shuffleBag=previous.shuffle.bag;shuffleHistory=previous.shuffle.history;shuffleCursor=previous.shuffle.cursor;
+    updatePlaybackMode();queueChanged();
+    return true;
+  }
+  function addSessionTrack(selection,placement){
+    const remote=typeof selection==='object'?SonicOnlineMusic.normalizeTrack(selection):null;
+    const chart=selection?.provider==='apple'?safeChartEntry({...selection,id:'chart:'+selection.mediaId}):null;
+    const trackId=remote?.id||chart?.id||selection;
     if(!libraryReady||externalStream||externalPending||!['next','end'].includes(placement))return false;
-    const track=tracks.find(item=>item.id===trackId);
-    if(!isPlayableTrack(track))return false;
+    const track=remote||chart||tracks.find(item=>item.id===trackId);
+    if(!chart&&!isPlayableTrack(track))return false;
+    const newEntry=()=>chart?{...queueItem(chart),chart}:queueItem(track,Boolean(remote));
     if(placement==='next'&&trackId===(resolveQueueItem(sessionQueue?.currentId)?.trackId??activeId))return 'current';
+    const previous=captureQueueUndo();
     const queue=prepareSessionQueue();
     if(placement==='end'){
-      const entry=queueItem(track);
+      const entry=newEntry();
       queue.items.push(entry);
       if(queue.mode==='shuffle')shuffleBag.push(entry.entryId);
     }else{
       const position=queue.items.findIndex(item=>item.entryId===queue.currentId)+1;
       const waiting=queue.items.findIndex((item,index)=>index>=position&&item.trackId===trackId);
       if(waiting===position&&queue.mode!=='shuffle')return true;
-      const entry=waiting<0?queueItem(track):queue.items.splice(waiting,1)[0];
+      const entry=waiting<0?newEntry():queue.items.splice(waiting,1)[0];
       queue.items.splice(position,0,entry);
       if(queue.mode==='shuffle'){
         const before=shuffleHistory.slice(0,shuffleCursor+1);
@@ -2052,24 +2146,27 @@
         shuffleBag=shuffleBag.filter(id=>id!==entry.entryId);
       }
     }
+    rememberQueueUndo(previous);
     queueChanged();
     return true;
   }
   function moveSessionEntry(id,beforeId){
     if(!sessionQueue&&!scopedPlaybackTracks().some(track=>track.id===id))return false;
+    const previous=captureQueueUndo();
     const queue=prepareSessionQueue(),entry=resolveQueueItem(id,queue),before=resolveQueueItem(beforeId,queue);
     if(!entry||(beforeId!==null&&!before)||entry===before)return false;
     queue.items.splice(queue.items.indexOf(entry),1);
     queue.items.splice(before?queue.items.indexOf(before):queue.items.length,0,entry);
-    resetShuffle();queueChanged();
+    resetShuffle();rememberQueueUndo(previous);queueChanged();
     return true;
   }
   function removeSessionEntry(id){
     if(!sessionQueue&&(!scopedPlaybackTracks().some(track=>track.id===id)||id===activeId))return false;
+    const previous=captureQueueUndo();
     const queue=prepareSessionQueue(),entry=resolveQueueItem(id,queue);
     if(!entry||entry.entryId===queue.currentId)return false;
     queue.items.splice(queue.items.indexOf(entry),1);
-    resetShuffle();queueChanged();
+    resetShuffle();rememberQueueUndo(previous);queueChanged();
     return true;
   }
   function shuffleIds(){return sessionQueue?sessionQueue.items.map(item=>item.entryId):scopedPlaybackTracks().map(track=>track.id)}
@@ -2083,7 +2180,7 @@
     return playlist.id;
   }
   function setPlaylistTracks(trackId,selectedIds) {
-    if(!libraryReady||libraryReadFailed||!tracks.some(track=>track.id===trackId))return;
+    if(!libraryReady||libraryReadFailed||!missingResumeTracks.has(trackId)&&!tracks.some(track=>track.id===trackId))return;
     const selected=new Set(selectedIds);
     let changed=false;
     for(const playlist of playlists) {
@@ -2107,8 +2204,8 @@
   function editPlaylistMembership(playlistId,trackIds,add) {
     const playlist=playlists.find(item=>item.id===playlistId);
     if(!libraryReady||libraryReadFailed||backupRestoring||!playlist)return {saved:false,changed:0};
-    const valid=new Set(tracks.map(track=>track.id));
-    const selected=new Set(trackIds.filter(id=>valid.has(id)));
+    const valid=add?new Set([...tracks.map(track=>track.id),...missingResumeTracks.keys()]):null;
+    const selected=new Set(valid?trackIds.filter(id=>valid.has(id)):trackIds);
     const before=playlist.trackIds;
     const existing=new Set(before);
     const order=add
@@ -2350,6 +2447,7 @@
 
   let onlineConnectAttempt=0,onlineConnection=null,onlineSearchGeneration=0,onlineProvider='qishui';
   const onlineResultAvailability=new Map();
+  let onlineAccountRevision=0,onlineLoginSessionId=null;
   let onlinePick=null,onlinePickTrack=null;
   let onlinePlaylistView=null,onlinePlaylistAbort=null;
   let onlineSearchView=null,onlineSearchAbort=null;
@@ -2427,7 +2525,7 @@
     $('onlineService').dataset.state=state;$('onlineServiceTitle').textContent=title;$('onlineServiceStatus').textContent=status;
     app.dataset.onlineMusic=state;syncOnlineControls();
   }
-  function isOnlineAuthError(error){return error?.status===401||error?.code==='auth-required';}
+  function isOnlineAuthError(error){return !isNavidromeFailure(null,error)&&(error?.status===401||error?.code==='auth-required');}
   function onlineRequestFailure(error,attempt=onlineConnectAttempt){
     const message=onlineErrorMessage(error);
     if(attempt!==onlineConnectAttempt)return message;
@@ -2447,7 +2545,9 @@
     $('onlineLoginCard').dataset.state=state;app.dataset.onlineLogin=state;
   }
   function setOnlineAccount(user=null){
-    if(!user){cancelNextOnlinePreparation();onlineResultAvailability.clear();window.SonicMusicDiscovery?.invalidateDaily();}
+    const changed=onlineLoggedIn!==Boolean(user);
+    if(!user||changed){cancelNextOnlinePreparation();onlineResultAvailability.clear();window.SonicMusicDiscovery?.invalidateDaily();}
+    if(changed)onlineAccountRevision++;
     onlineLoggedIn=Boolean(user);
     const account=$('onlineAccount'),avatar=$('onlineAvatar'),name=$('onlineUserName');
     account.hidden=!user;avatar.hidden=true;avatar.removeAttribute('src');
@@ -2457,13 +2557,19 @@
       if(safeAvatar){avatar.src=safeAvatar;avatar.referrerPolicy='no-referrer';avatar.hidden=false}
     }else name.textContent='';
     syncOnlineControls();
+    if(changed)window.dispatchEvent(new Event('sonic:online-account'));
   }
   function stopOnlineLoginPolling(){
     if(onlineLoginPoll)clearTimeout(onlineLoginPoll);
     onlineLoginPoll=0;onlineLoginGeneration++;
   }
+  function cancelOnlineLoginSession(){
+    const id=onlineLoginSessionId;
+    onlineLoginSessionId=null;
+    if(id)void onlineClient?.loginCancel(id).catch(()=>{});
+  }
   function hideOnlineLoginCard(){
-    stopOnlineLoginPolling();$('onlineLoginCard').hidden=true;$('onlineQrImage').removeAttribute('src');
+    stopOnlineLoginPolling();cancelOnlineLoginSession();$('onlineLoginCard').hidden=true;$('onlineQrImage').removeAttribute('src');
     $('onlineLoginBtn').removeAttribute('aria-busy');$('onlineLoginBtn').textContent='扫码登录';
   }
   async function refreshOnlineAccount(preferredUser=null){
@@ -2538,10 +2644,10 @@
   function onlineToolButton(label,action){
     const button=document.createElement('button');button.type='button';button.textContent=label;button.dataset.onlineAction=action;return button;
   }
-  function onlineResultBadge(title,kind){
+  function onlineResultBadge(title,kind,label=SonicOnlineMusic.playbackStatusLabel){
     const heading=document.createElement('div'),badge=document.createElement('span');
     heading.className='online-result-heading';badge.className='online-result-badge';
-    const update=value=>{badge.dataset.state=value;badge.textContent=SonicOnlineMusic.playbackStatusLabel(value);};
+    const update=value=>{badge.dataset.state=value;badge.textContent=label(value);};
     update(kind);heading.append(title,badge);return {heading,update};
   }
   function cancelOnlinePick(){
@@ -2556,6 +2662,21 @@
   function confirmsRecording(source,track){
     return Boolean(track&&(!source.duration||track.duration>0&&Math.abs(source.duration-track.duration)<=2)&&
       (!source.album||recordingKey(source.album)===recordingKey(track.album)));
+  }
+  async function searchNavidrome(query,{signal}={}){
+    const items=[];
+    if(signal?.aborted)return {status:'cancelled',items};
+    if(!window.sonicDesktop)return {status:'disconnected',items};
+    try{
+      const response=await fetch('/api/navidrome/search',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({query}),signal:AbortSignal.any([signal,AbortSignal.timeout(5500)].filter(Boolean))});
+      const result=await response.json();
+      if(response.ok)return {status:'ok',items:normalizeOnlineItems(result.items).filter(track=>track.provider==='navidrome')};
+      const disconnected=response.status===401||result.code==='navidrome-auth';
+      return {status:disconnected?'disconnected':'error',items};
+    }catch{
+      return {status:signal?.aborted?'cancelled':'error',items};
+    }
   }
   async function resolveChartRecording(source,signal){
     const sameTitle=track=>recordingKey(track.name)===recordingKey(source.name);
@@ -2636,7 +2757,14 @@
             try{await waitForMetadata(probe,url,10000,signal);}
             finally{probe.removeAttribute('src');probe.load();URL.revokeObjectURL(url);}
           }
-        }else onlineData=await requestOnlineAudio(track,{signal});
+        }else{
+          const prepared=nextOnlinePreparation;
+          const ticket=prepared?.result?.ticket;
+          const sameTrack=prepared?.result?.track?.id===track.id;
+          const mayReuse=prepared&&prepared.queue===sessionQueue&&sameTrack&&ticket?.validUntil>Date.now()&&
+            prepared.attempt===attempt&&prepared.accountRevision===onlineAccountRevision;
+          onlineData=mayReuse?ticket.data:await requestOnlineAudio(track,{signal});
+        }
         if(!isCurrent())return canceled;
         if(keepCurrent&&onlineData){
           const probe=new Audio();probe.preload='metadata';
@@ -2682,7 +2810,7 @@
       return {status:currentTrack()?.preview?'preview':'full',track:currentTrack()};
     }catch(error){
       if(!isCurrent())return canceled;
-      if(error?.code==='navidrome-auth')return {status:'unavailable',availability:'unknown',message:'请重新连接 Navidrome 后再播放。'};
+      if(isNavidromeFailure(null,error))return {status:'unavailable',availability:'unknown',message:navidromeFailureMessage(null,error)};
       const status=isOnlineAuthError(error)?'auth-required':error instanceof TypeError||error?.code==='unavailable'||
         preserveCurrent&&Boolean(playbackFailureReason(error))?'unavailable':'failed';
       return {status,candidates,officialOnly:error?.status===422||error?.code==='not-playable',message:heldFailure?onlineErrorMessage(error):onlineRequestFailure(error,attempt)};
@@ -2704,7 +2832,7 @@
       rememberOnlineAvailability(recording.mediaId,'unavailable');
       return {status:'unavailable',availability:'unavailable',message:'这首歌暂无法在应用内播放。'};
     }
-    rememberOnlineAvailability(recording.mediaId,'unknown');
+    rememberOnlineAvailability(recording.mediaId,outcome.status==='auth-required'?'auth-required':'unknown');
     const message={unavailable:'暂时无法连接汽水音乐，请重试。',
       'auth-required':'这首歌需要登录汽水音乐。',failed:'这首歌未能开始播放，请重试。'}[outcome.status];
     return {status:outcome.status,message};
@@ -2717,7 +2845,9 @@
   async function checkQishuiSearchTrack(track,{signal}={}){
     const recording=SonicOnlineMusic.normalizeTrack(track);
     if(!recording)return {message:'这条结果已失效，请重新搜索。'};
+    const revision=onlineAccountRevision;
     const result=await checkRecording(recording,{signal});
+    if(revision!==onlineAccountRevision||signal?.aborted)return {};
     if(result.availability&&result.availability!=='unknown')rememberOnlineAvailability(recording.mediaId,result.availability);
     return result;
   }
@@ -2857,8 +2987,13 @@
       }
       const copy=document.createElement('div');copy.className='online-result-copy';
       const title=document.createElement('div');title.className='online-result-title';title.textContent=track.name;title.title=track.name;
-      const meta=document.createElement('div');meta.className='online-result-meta';meta.textContent=[track.artist||'歌手未知',track.album||'专辑未知',track.duration?formatTime(track.duration):'时长未知',SonicOnlineMusic.recordingVersion(track)].join(' · ');meta.title=meta.textContent;
-      const badge=onlineResultBadge(title,onlineResultAvailability.get(track.mediaId)||(track.preview?'preview':'unknown'));copy.append(badge.heading,meta);
+      const meta=document.createElement('div');meta.className='online-result-meta';
+      meta.textContent=[track.artist||'歌手未知',track.album||'专辑未知',track.duration?formatTime(track.duration):'时长未知',
+        playlistContext?SonicOnlineMusic.recordingVersion(track):SonicOnlineMusic.searchRecordingVersion(track)].filter(Boolean).join(' · ');
+      meta.title=meta.textContent;
+      const badge=onlineResultBadge(title,onlineResultAvailability.get(track.mediaId)||(track.preview?'preview':'unknown'),
+        playlistContext?SonicOnlineMusic.playbackStatusLabel:SonicOnlineMusic.searchPlaybackStatusLabel);
+      copy.append(badge.heading,meta);
       const tools=document.createElement('div');tools.className='online-result-tools';
       const play=onlineToolButton('在星空中播放','play'),add=onlineToolButton('加入本机曲库','add'),playlist=onlineToolButton('加入本机歌单','local-playlist'),like=onlineToolButton(track.liked?'取消汽水收藏':'汽水收藏','like'),open=onlineToolButton('打开汽水 ↗','open');
       like.setAttribute('aria-pressed',String(Boolean(track.liked)));
@@ -2880,12 +3015,12 @@
             if(onlinePlaylistView!==playlistContext)return;
             started=await playOnlinePlaylist(playlistContext,track.mediaId);
           }else{
-            const outcome=await playRecording(track,{singleQueue:false,holdOnFailure:true});
+            const outcome=await playRecording(track,{singleQueue:false,preserveCurrent:true,holdOnFailure:true});
             if(outcome.status==='cancelled')return;
             started=outcome.status==='full'||outcome.status==='preview';
             if(!started&&play.isConnected&&attempt===onlineConnectAttempt){
               onlineResultAvailability.delete(track.mediaId);
-              badge.update(outcome.officialOnly?'official':'unknown');
+              badge.update(outcome.officialOnly?'official':outcome.status==='auth-required'?'auth-required':'failed');
               setOnlineResultStatus(outcome.message,true);
             }
           }
@@ -2983,6 +3118,16 @@
     setSessionQueue(items,first.entryId,String(label||'Navidrome').slice(0,80),{fullOnly:true});
     return playQueueFrom(first.entryId,{holdOnFailure:true,position});
   }
+  const navidromeDevice=(()=>{
+    const storageKey='sonic-navidrome-device-v1';
+    let id=newId('device').slice(-6).toUpperCase();
+    try{
+      const stored=localStorage.getItem(storageKey);
+      if(/^[A-Z0-9]{6}$/.test(stored))id=stored;
+      else localStorage.setItem(storageKey,id);
+    }catch{}
+    return 'SonicUniverse Windows '+id;
+  })();
   function navidromeCheckpoint(){
     const track=currentTrack(),position=getLocalPosition();
     if(track?.provider!=='navidrome'||externalStream||preparedTrackId!==track.id||deferredResume||!playing&&position<=0)return null;
@@ -3002,16 +3147,40 @@
     }
     return {items,index,position};
   }
-  async function syncNavidromeResume(timeout=4000){
-    const checkpoint=navidromeCheckpoint();
+  function navidromeProgress(){
+    const live=navidromeCheckpoint();
+    if(live)return {...live,name:currentTrack().name,updatedAt:new Date().toISOString(),device:navidromeDevice};
+    if(resumePoint?.track?.provider!=='navidrome')return null;
+    const saved=resumePoint.queue;
+    const tracks=(saved?.entries||[]).map(entry=>findNavidromeResumeTrack(entry.remote)).filter(Boolean);
+    const mediaId=resumePoint.track.mediaId;
+    const candidate=tracks.findIndex(item=>item.mediaId===mediaId);
+    const items=candidate<0?[mediaId]:tracks.map(item=>item.mediaId);
+    return {items,index:Math.max(0,candidate),position:resumePoint.position,name:resumePoint.track.name,device:navidromeDevice,
+      updatedAt:Number.isFinite(resumePoint.savedAt)?new Date(resumePoint.savedAt).toISOString():null};
+  }
+  function findNavidromeResumeTrack(track){
+    return track?.provider==='navidrome'?SonicOnlineMusic.normalizeTrack(track):null;
+  }
+  async function syncNavidromeResume(options=4000){
+    const checkpoint=options?.checkpoint||(typeof options==='number'?navidromeCheckpoint():navidromeProgress());
     if(!checkpoint)return false;
-    const response=await fetch('/api/navidrome/resume-save',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(checkpoint),signal:AbortSignal.timeout(timeout)});
-    if(!response.ok){
-      const value=await response.json().catch(()=>null);
-      throw new Error(value?.error||'无法同步续播。');
+    const signal=AbortSignal.timeout(typeof options==='number'?options:8500);
+    const headers={'Content-Type':'application/json'};
+    let revision=options?.revision;
+    if(typeof revision!=='string'){
+      const response=await fetch('/api/navidrome/resume',{method:'POST',headers,body:'{}',signal});
+      if(!response.ok)return false;
+      const remote=await response.json();
+      if(remote.index>=0&&remote.device!==navidromeDevice)return false;
+      revision=remote.revision||'';
     }
-    return true;
+    const response=await fetch('/api/navidrome/resume-save',{method:'POST',headers,
+      body:JSON.stringify({...checkpoint,revision,device:navidromeDevice}),signal});
+    const value=await response.json().catch(()=>null);
+    if(!response.ok)throw new Error(value?.error||'无法同步续播。');
+    if(value?.conflict)throw new Error('服务器续播点刚刚变了，请重新比较后再选。');
+    return value?.saved===true;
   }
   async function playChartList(songs,label,{fullOnly=false}={}){
     if(instrumentOpen||clipLocked())return false;
@@ -3178,21 +3347,23 @@
     if(recovery)$('onlineLoginCancelBtn').focus();
     try{
       const data=await onlineClient.loginStart();
-      if(generation!==onlineLoginGeneration)return;
       const sessionId=String(data?.sessionId||''),qr=String(data?.qrImage||'');
+      if(generation!==onlineLoginGeneration){if(sessionId)void onlineClient.loginCancel(sessionId).catch(()=>{});return;}
+      onlineLoginSessionId=sessionId;
       if(!sessionId||!qr)throw new Error('登录二维码没有生成，请重试。');
       const expiresAt=Date.now()+120000;
-      $('onlineQrImage').hidden=false;$('onlineQrImage').onerror=()=>{if(generation!==onlineLoginGeneration)return;stopOnlineLoginPolling();$('onlineQrImage').hidden=true;setOnlineLoginStatus('二维码加载失败','点「扫码登录」重新生成二维码。','error')};
+      $('onlineQrImage').hidden=false;$('onlineQrImage').onerror=()=>{if(generation!==onlineLoginGeneration)return;stopOnlineLoginPolling();cancelOnlineLoginSession();$('onlineQrImage').hidden=true;setOnlineLoginStatus('二维码加载失败','点「扫码登录」重新生成二维码。','error')};
       $('onlineQrImage').src=qr;setOnlineLoginStatus('用汽水音乐 App 扫码','二维码已生成。请打开汽水音乐 App 扫描，并在手机上确认。');
       const poll=async()=>{
         if(generation!==onlineLoginGeneration)return;
-        if(Date.now()>=expiresAt){setOnlineLoginStatus(...onlineLoginStateCopy('expired'),'expired');stopOnlineLoginPolling();return}
+        if(Date.now()>=expiresAt){setOnlineLoginStatus(...onlineLoginStateCopy('expired'),'expired');stopOnlineLoginPolling();cancelOnlineLoginSession();return}
         try{
           const result=await onlineClient.loginCheck(sessionId);
           if(generation!==onlineLoginGeneration)return;
           const state=String(result?.state||'waiting'),[title,status]=onlineLoginStateCopy(state);setOnlineLoginStatus(title,status,state);
           if(state==='confirmed'){
-            onlineResultAvailability.clear();onlineLoggedIn=true;const authorizedGeneration=++onlineLoginGeneration;
+            onlineLoginSessionId=null;
+            const authorizedGeneration=++onlineLoginGeneration;
             if(onlineLoginPoll)clearTimeout(onlineLoginPoll);onlineLoginPoll=0;
             await refreshOnlineAccount(result?.user||null);
             if(authorizedGeneration!==onlineLoginGeneration)return;
@@ -3207,16 +3378,17 @@
             setTimeout(()=>{if(authorizedGeneration===onlineLoginGeneration&&onlineLoggedIn)$('onlineLoginCard').hidden=true},1200);
             showToast('汽水音乐登录成功，收藏和歌单已经可用。');return;
           }
-          if(state==='expired'||state==='error'){stopOnlineLoginPolling();return}
+          if(state==='expired'||state==='error'){stopOnlineLoginPolling();cancelOnlineLoginSession();return}
         }catch(error){
           if(generation!==onlineLoginGeneration)return;
-          setOnlineLoginStatus('登录连接已中断',onlineRequestFailure(error),'error');stopOnlineLoginPolling();return;
+          setOnlineLoginStatus('登录连接已中断',onlineRequestFailure(error),'error');stopOnlineLoginPolling();cancelOnlineLoginSession();return;
         }
         if(generation===onlineLoginGeneration)onlineLoginPoll=setTimeout(poll,1800);
       };
       onlineLoginPoll=setTimeout(poll,1800);
     }catch(error){
       if(generation===onlineLoginGeneration){
+        cancelOnlineLoginSession();
         setOnlineLoginStatus('二维码生成失败',onlineRequestFailure(error),'error');
         if(!onlineReady)showOnlineUnavailable('登录请求没有完成，本机音乐入口可能已经断开。');
       }
@@ -3318,7 +3490,7 @@
     try{
       const data=await onlineClient.searchByProvider(provider,query,{signal});
       if(!current())return;
-      const items=provider==='qishui'?normalizeOnlineItems(data?.items):externalOnlineItems(data?.items,provider);
+      const items=provider==='qishui'?SonicOnlineMusic.rankSearchTracks(normalizeOnlineItems(data?.items),query):externalOnlineItems(data?.items,provider);
       onlineSearchView={provider,query,items};
       if(provider==='qishui')renderOnlineResults(items,'没有找到相关歌曲，换一个歌名或歌手试试。');
       else renderExternalOnlineResults(items,provider);
@@ -3418,7 +3590,8 @@
       onlineSearchOpener=null;
       setOnlineSearchPresentation(false);
       clearSearch();
-      if(playbackRetryAttempt?.phase==='login'){clearPlaybackRetry(playbackRetryAttempt);hideOnlineLoginCard();}
+      if(playbackRetryAttempt?.phase==='login')clearPlaybackRetry(playbackRetryAttempt);
+      if(!$('onlineLoginCard').hidden)hideOnlineLoginCard();
     });
     document.querySelectorAll('button[data-library-view]').forEach(button=>{
       if(button.dataset.libraryView!=='soda')button.addEventListener('click',clearSearch);
@@ -3886,11 +4059,11 @@
   }
   const audioQualityLevels=['standard','high','lossless','hires'];
   let actualOnlineQuality=null,activeOnlineTicket=null;
-  async function requestOnlineAudio(track,{signal,retry=true,quality}={}){
+  async function requestOnlineAudio(track,{signal,retry=true,quality,verify=false}={}){
     if(!quality&&track.id===activeId&&actualOnlineQuality)quality=actualOnlineQuality;
     if(track.provider==='navidrome'){
       const response=await fetch('/api/navidrome/audio',{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({mediaId:track.mediaId,quality}),signal:AbortSignal.any([signal,AbortSignal.timeout(10000)].filter(Boolean))});
+        body:JSON.stringify({mediaId:track.mediaId,quality,verify}),signal:AbortSignal.any([signal,AbortSignal.timeout(10000)].filter(Boolean))});
       const data=await response.json();
       if(!response.ok)throw Object.assign(new Error(data.error||'Navidrome 请求失败。'),{code:data.code,status:response.status});
       const stream=new URL(data.streamPath,location.origin);
@@ -4160,8 +4333,8 @@
     if(sessionQueue&&!preserveQueueIntent)sessionQueue.autoplay=false;
     generation++;if(mode==='demo'){offset=getPosition();stopDemo()}else audio.pause();playing=false;updatePlaying();updateTimeline();saveSession();
   }
-  function seekTo(position){
-    if(!Number.isFinite(position)||clipLocked()||externalStream||pendingFile||onlinePending||busy||trackLoading||
+  function seekTo(position,{allowClip=false}={}){
+    if(!Number.isFinite(position)||!allowClip&&clipLocked()||externalStream||pendingFile||onlinePending||busy||trackLoading||
       sessionQueue?.recovery||standaloneRecovery?.id===activeId||deferredResume&&activeId===resumePoint?.id)return false;
     const pos=clamp(position,0,localDuration());
     if(mode!=='demo'){
@@ -4216,18 +4389,21 @@
     window.dispatchEvent(new Event('sonic:transport-state'));
   }
   function holdStandaloneOnline(recovery,error){
-    const reason=error?.code==='resume-source'?'resume-source':playbackFailureReason(error)||recovery.reason;
+    const track=currentTrack();
+    const reason=error?.code==='resume-source'?'resume-source':playbackFailureReason(error,track)||recovery.reason;
     standaloneRecovery={...recovery,reason,manual:true};
     pause();
-    if(error)onlineRequestFailure(error);
-    showToast(reason==='resume-source'?error.message:'在线音频暂时中断，已保留播放进度。点击播放可重试。',true);
+    if(error&&!isNavidromeFailure(track,error))onlineRequestFailure(error);
+    showToast(reason==='resume-source'?error.message:navidromeFailureMessage(track,error,reason)||'在线音频暂时中断，已保留播放进度。点击播放可重试。',true);
   }
   async function retryStandaloneOnline(recovery,recoveringStream=false){
     const token=loadGeneration;
     if(trackLoading||activeId!==recovery.id||mode!=='online')return false;
-    if(!onlineReady)await connectOnlineMusic();
-    if(token!==loadGeneration||activeId!==recovery.id)return false;
-    if(!onlineReady){holdStandaloneOnline(recovery);return false;}
+    if(currentTrack()?.provider!=='navidrome'){
+      if(!onlineReady)await connectOnlineMusic();
+      if(token!==loadGeneration||activeId!==recovery.id)return false;
+      if(!onlineReady){holdStandaloneOnline(recovery);return false;}
+    }
     const outcome=await selectTrack(recovery.id,true,recovery.position,true,{retry:true,reportFailure:true,recoveringStream});
     if(outcome&&!outcome.ok&&loadGeneration===token+1&&activeId===recovery.id)holdStandaloneOnline(recovery,outcome.error);
     return Boolean(outcome?.ok);
@@ -4304,7 +4480,7 @@
   });
   updateVolume();
   function trackCoverSources(track){
-    const direct=track?.cover||null;
+    const direct=track?.cover||(track?.id===bundledSample.id?bundledSample.cover:null);
     const proxied=track?.provider==='qishui'&&onlineReady&&onlineClient
       ?onlineClient.coverUrl?.(track.mediaId)
       :'';
@@ -4533,7 +4709,7 @@
         try{
           if(requested.provider!=='navidrome'&&selection.reconnectOnline&&!onlineReady&&onlineClient)await connectOnlineMusic();
           if(signal.aborted||token!==loadGeneration)return;
-          onlineData=await requestOnlineAudio(requested,{signal});
+          onlineData=await requestOnlineAudio(requested,{signal,verify:position>0||selection.retry});
         }
         catch(error){
           if(signal.aborted||token!==loadGeneration)return;
@@ -4541,7 +4717,7 @@
           if(selection.queue||selection.holdFailure)selectionError=error;
           else{
             if(selection.reportFailure)return {ok:false,error};
-            showToast(onlineRequestFailure(error),true);return;
+            showToast(navidromeFailureMessage(requested,error)||onlineRequestFailure(error),true);return;
           }
         }
       }
@@ -4608,7 +4784,7 @@
         pendingFile=null;onlinePending=null;playing=false;renderActiveTrack();updatePlaying();
         if(signal.aborted)return;
         if(selection.queue||selection.reportFailure){audio.pause();return {ok:false,error}}
-        showToast(mode==='online'?onlineErrorMessage(error):error.message||'音乐读取失败，请重新导入。',true);
+        showToast(mode==='online'?(navidromeFailureMessage(track,error)||onlineErrorMessage(error)):error.message||'音乐读取失败，请重新导入。',true);
       }
     }finally{
       if(token===loadGeneration){
@@ -4656,8 +4832,12 @@
     const candidate=entry.remote||tracks.find(item=>item.id===entry.trackId);
     const track=candidate?.kind==='online'?candidate:null;
     if(!entry.chart&&!track)return;
-    const preparation={queue,entry,attempt:onlineConnectAttempt,loggedIn:onlineLoggedIn,controller:new AbortController()};
-    preparation.promise=prepareNextOnlineEntry(entry,track,preparation);
+    const preparation={queue,entry,attempt:onlineConnectAttempt,loggedIn:onlineLoggedIn,
+      accountRevision:onlineAccountRevision,controller:new AbortController(),result:null};
+    preparation.promise=prepareNextOnlineEntry(entry,track,preparation).then(result=>{
+      preparation.result=result;
+      return result;
+    });
     nextOnlinePreparation=preparation;
   }
   function showSkippedTracks(skipped,finished,previews=0,unverified=0){
@@ -4668,12 +4848,22 @@
     showToast((reasons.length?'已跳过':'已跳过无法播放的')+label+(reasons.length?'（其中'+reasons.join('、')+'）':'')+
       (finished?'，队列里已没有可继续播放的歌曲。':'。'),finished);
   }
-  function playbackFailureReason(error){
-    if(isOnlineAuthError(error))return 'auth';
+  function isNavidromeFailure(track,error){
+    return track?.provider==='navidrome'||typeof error?.code==='string'&&error.code.startsWith('navidrome-');
+  }
+  function playbackFailureReason(error,track){
+    if(isNavidromeFailure(track,error)&&[401,403].includes(error?.status))return 'auth';
+    if(error?.code==='navidrome-auth'||error?.code==='navidrome-library'||isOnlineAuthError(error))return 'auth';
     if(error instanceof TypeError||error?.code==='unavailable'||error?.code==='network')return 'connection';
-    if(error?.code==='timeout'||error?.status===429||error?.status===503)return 'timeout';
+    if(error?.code==='timeout'||error?.name==='TimeoutError'||error?.status===429||error?.status===503)return 'timeout';
     if(error?.status>=500)return 'connection';
     return null;
+  }
+  function navidromeFailureMessage(track,error,reason=playbackFailureReason(error,track)){
+    if(!isNavidromeFailure(track,error))return null;
+    if(reason==='auth')return '请连接这首歌所属的 Navidrome 曲库。';
+    if(reason==='connection'||reason==='timeout')return '请检查 Navidrome 服务器后重试。';
+    return error?.message||'Navidrome 暂时无法播放这首歌。';
   }
   function isTrackPlaybackFailure(reason){return reason==='file'||reason==='unplayable'||reason==='resume-source';}
   function trackFailureReason(track,error){return error?.code==='resume-source'?'resume-source':track?.kind==='file'?'file':'unplayable';}
@@ -4684,19 +4874,25 @@
     queueChanged();updatePlaying();
   }
   function recoverableQueueFailure(queue,error,position,manual=false){
-    const reason=playbackFailureReason(error);
+    const track=queueTrackDetails(resolveQueueItem(queue.currentId,queue));
+    const reason=playbackFailureReason(error,track);
     if(!reason)return false;
-    onlineRequestFailure(error);
+    const navidromeMessage=navidromeFailureMessage(track,error,reason);
+    if(!navidromeMessage)onlineRequestFailure(error);
     holdQueueFailure(queue,reason,position,manual);
-    const text=reason==='auth'?'汽水登录已失效。当前歌曲和队列已保留，重新登录后可重试。'
+    const text=navidromeMessage?navidromeMessage+'当前歌曲和队列已保留。':reason==='auth'?'汽水登录已失效。当前歌曲和队列已保留，重新登录后可重试。'
       :'音乐入口暂时不可用。当前歌曲和队列已保留，可在播放器重试。';
     showToast(text,true);
     return true;
   }
+  function retryTargetTrack(target){
+    if(target.queue)return queueTrackDetails(resolveQueueItem(target.id,target.queue));
+    return target.checkpoint?resumeTrack(target.checkpoint):currentTrack();
+  }
   function holdResumeFailure(target,error){
-    const track=target.queue?queueTrackDetails(resolveQueueItem(target.id,target.queue)):resumeTrack(target.checkpoint);
+    const track=retryTargetTrack(target);
     const online=track?.kind==='online'||track?.kind==='chart';
-    const reason=(online&&playbackFailureReason(error))||trackFailureReason(track,error);
+    const reason=(online&&playbackFailureReason(error,track))||trackFailureReason(track,error);
     if(target.queue){
       if(online&&recoverableQueueFailure(target.queue,error,target.recovery.position,true))return;
       holdQueueFailure(target.queue,reason,target.recovery.position,true);
@@ -4704,7 +4900,7 @@
     }
     target.checkpoint.recovery={reason,position:target.recovery.position,manual:true};
     persistResumePoint();
-    if(online&&error)onlineRequestFailure(error);
+    if(online&&error&&!isNavidromeFailure(track,error))onlineRequestFailure(error);
     updatePlaying();
   }
   function currentPlaybackRecovery(){
@@ -4745,7 +4941,7 @@
     const pending=playbackRetryIsCurrent(attempt,attempt?.phase==='resuming');
     const target=currentPlaybackRecovery()||(pending?attempt.target:null);
     if(!target||externalStream||externalPending)return null;
-    return {name:target.name,trackId:target.trackId,reason:target.recovery.reason,position:target.recovery.position,
+    return {name:target.name,trackId:target.trackId,provider:retryTargetTrack(target)?.provider,reason:target.recovery.reason,position:target.recovery.position,
       phase:pending?attempt.phase:null,canSkip:!pending&&canSkipRecovery(target),exhausted:target.recovery.exhausted===true};
   }
   function recoveryTrack(){
@@ -4791,8 +4987,7 @@
     const attempt={target,generation:loadGeneration,phase:'connecting'};
     playbackRetryAttempt=attempt;window.dispatchEvent(new Event('sonic:transport-state'));
     try{
-      const track=target.queue?queueTrackDetails(resolveQueueItem(target.id,target.queue)):
-        target.checkpoint?resumeTrack(target.checkpoint):currentTrack();
+      const track=retryTargetTrack(target);
       const needsOnline=track?.kind==='chart'||track?.kind==='online'&&track.provider!=='navidrome';
       if(needsOnline&&!onlineReady)await connectOnlineMusic();
       if(!playbackRetryIsCurrent(attempt))return false;
@@ -4800,7 +4995,7 @@
         if(target.checkpoint&&!target.recovery.reason)holdResumeFailure(target,{code:'unavailable'});
         return false;
       }
-      if(track?.provider!=='navidrome'&&target.recovery.reason==='auth'&&!onlineLoggedIn){
+      if(needsOnline&&target.recovery.reason==='auth'&&!onlineLoggedIn){
         const dialog=$('queueDialog');
         if(!dialog.open)$('queueBtn').click();
         document.querySelector('[data-library-view="soda"]')?.click();
@@ -4843,10 +5038,11 @@
     function holdOnlineFailure(error,at,manual){
       if(skipFrom)return false;
       if(!automatic)return recoverableQueueFailure(queue,error,at,manual);
-      const reason=playbackFailureReason(error);
+      const track=queueTrackDetails(resolveQueueItem(next,queue));
+      const reason=playbackFailureReason(error,track);
       if(reason&&!automaticFailure){
         automaticFailure={id:next,reason,position:at};
-        onlineRequestFailure(error);
+        if(!isNavidromeFailure(track,error))onlineRequestFailure(error);
       }
       return false;
     }
@@ -4944,8 +5140,8 @@
     return songs[next]?.id||(songs.length&&wrap?songs[(next+songs.length)%songs.length].id:null);
   }
   function holdScopedFailure(track,error,position,{manual=false,exhausted=false}={}){
-    const globalReason=track.kind==='online'?playbackFailureReason(error):null;
-    if(globalReason)onlineRequestFailure(error);
+    const globalReason=track.kind==='online'?playbackFailureReason(error,track):null;
+    if(globalReason&&!isNavidromeFailure(track,error))onlineRequestFailure(error);
     standaloneRecovery={id:track.id,position,reason:globalReason||trackFailureReason(track,error),manual,exhausted};
     if(playing||!audio.paused)pause();
     updatePlaying();
@@ -5074,18 +5270,31 @@
     libraryImportReport={message,busy,completed,total,error,added:addedIds.length,details:details.slice(0,50),detailCount:details.length};
     window.dispatchEvent(new Event('sonic:import-progress'));
   }
-  function probeImportedAudio(file){
+  function probeImportedAudio(file,position=null){
     return new Promise((resolve,reject)=>{
       const probe=new Audio();let url=null,settled=false;
       const timer=setTimeout(()=>finish(new Error('音频读取超时（12 秒），请检查文件是否能在本机播放后重试。')),12000);
       function finish(error){
         if(settled)return;settled=true;clearTimeout(timer);
-        const length=probe.duration;probe.onloadedmetadata=null;probe.onerror=null;probe.removeAttribute('src');probe.load();
+        const length=probe.duration;
+        probe.onloadedmetadata=probe.onloadeddata=probe.oncanplay=probe.onseeked=probe.onerror=null;
+        probe.removeAttribute('src');probe.load();
         if(url)URL.revokeObjectURL(url);
         if(error)reject(error);else resolve(length);
       }
-      probe.preload='metadata';
-      probe.onloadedmetadata=()=>finish(Number.isFinite(probe.duration)&&probe.duration>0?null:new Error('音频没有有效时长，可能已损坏或不是完整的音频文件。'));
+      function readyAtPosition(){
+        if(!probe.seeking&&probe.readyState>=HTMLMediaElement.HAVE_CURRENT_DATA&&Math.abs(probe.currentTime-position)<.1)finish();
+      }
+      probe.preload=position===null?'metadata':'auto';
+      probe.onloadedmetadata=()=>{
+        if(!Number.isFinite(probe.duration)||probe.duration<=0){
+          finish(new Error('音频没有有效时长，可能已损坏或不是完整的音频文件。'));
+        }else if(position===null)finish();
+        else if(probe.duration<=position)finish(new Error('这份音频无法跳到上次的进度，请选择原曲文件。'));
+        else if(position>0)probe.currentTime=position;
+        else readyAtPosition();
+      };
+      if(position!==null)probe.onloadeddata=probe.oncanplay=probe.onseeked=readyAtPosition;
       probe.onerror=()=>{
         const code=probe.error?.code;
         const reasons={1:'音频读取被中断，请重新导入。',2:'无法读取音频数据，请检查文件访问权限后重试。',3:'音频解码失败，文件可能已损坏。',4:'无法解码：文件可能已损坏，或当前浏览器不支持其音频编码。'};
@@ -5098,6 +5307,27 @@
     const ids=lastImportedIds.filter(id=>tracks.some(track=>track.id===id&&isPlayableTrack(track)));
     if(!ids.length){showToast('这次导入的歌曲已不在曲库。');return;}
     return window.SonicPlayback.playFromLibrary(ids[0],'imported',true,ids);
+  }
+  function confirmFolderChanges(summary,details){
+    const dialog=document.createElement('dialog');
+    dialog.className='lr-dialog';dialog.setAttribute('aria-labelledby','folderReviewTitle');
+    dialog.innerHTML='<h2 id="folderReviewTitle">确认文件夹扫描结果</h2><p role="status"></p><ul></ul>'+
+      '<form method="dialog" class="lr-choice-row"><button type="submit" class="lr-choice" value="cancel">取消</button>'+
+      '<button type="submit" class="lr-primary" value="apply">应用扫描结果</button></form>';
+    dialog.querySelector('[role=status]').textContent=summary;
+    const list=dialog.querySelector('ul');
+    for(const detail of details.slice(0,200)){
+      const entry=document.createElement('li');entry.textContent=[detail.path,detail.reason].filter(Boolean).join(' · ');
+      list.append(entry);
+    }
+    if(details.length>200){
+      const extra=document.createElement('li');extra.textContent='另有 '+(details.length-200)+' 条，可在应用后查看导入记录。';list.append(extra);
+    }
+    (document.getElementById('listeningRoom')||app).append(dialog);
+    return new Promise(resolve=>{
+      dialog.addEventListener('close',()=>{const accepted=dialog.returnValue==='apply';dialog.remove();resolve(accepted);},{once:true});
+      dialog.showModal();
+    });
   }
   async function importFiles(selection,scanErrors=[],fromScan=false,managedFolder=false,folderKey=null){
     const blocked=importBlockedReason(fromScan);
@@ -5121,7 +5351,11 @@
       await atelierPromise;
       const anchor=selected.find(file=>importFilePath(file).includes('/'));
       const sourceFolder=folderKey||(managedFolder&&anchor?await window.sonicDesktop?.folderImportKey?.(anchor,importFilePath(anchor)).catch(()=>null):null);
-      const scan=SonicFolderLibrary.reconcile(tracks,sourceFolder,files,importFilePath);
+      const review=Boolean(folderKey&&tracks.some(track=>track.sourceFolder));
+      const originals=review?new Map(tracks.map(track=>[track.id,track])):null;
+      const staged=review?tracks.map(track=>({...track})):tracks;
+      const scan=SonicFolderLibrary.reconcile(staged,sourceFolder,files,importFilePath);
+      const draftEdits=new Set(),pendingLyrics=[];
       const tagReader=files.length?await loadFeatureScript('local-file-tags.js','SonicFileTags').catch(()=>null):null;
       const targetPlaylist=playlists.find(p=>p.id===libraryView);
       const refreshed=new Set();
@@ -5137,6 +5371,11 @@
           const match=verified||await scan.match(file,filePath);
           if(verified)unchangedScan++;
           if(match.ambiguous)throw new Error('有多个旧条目与此文件匹配，已跳过以保留原有记录。');
+          if(match.duplicateCopy){
+            duplicates++;
+            details.push({path:filePath,reason:'内容与仍在原位置的文件相同，跳过副本'});
+            continue;
+          }
           let track=match.track;
           let embeddedLyrics='';
           if(match.unchanged){
@@ -5148,7 +5387,10 @@
               track.sourceMissing=false;
               restored++;
               details.push({path:filePath,reason:'已找回原文件。'});
-            }else duplicates++;
+            }else{
+              duplicates++;
+              if(review&&details.length<200)details.push({path:filePath,reason:'已存在或原文件未改'});
+            }
             if(sourceFolder&&(track.signature!==signature||track.sourcePath!==filePath)){
               Object.assign(track,{signature,sourcePath:filePath});
               scanMetadataChanged=true;
@@ -5156,6 +5398,7 @@
           }
           else {
             const length=await probeImportedAudio(file);
+            const audioDigest=await SonicFolderLibrary.audioDigest(file);
             const tags=await tagReader?.read(file).catch(()=>null);
             const labels={name:tags?.title||file.name.replace(/\.[^.]+$/,'')||file.name,artist:tags?.artist||'',album:tags?.album||'',cover:tags?.cover||null};
             embeddedLyrics=tags?.lyrics||'';
@@ -5166,15 +5409,18 @@
             }else{
               track={id:newId('track'),kind:'file',favorite:false,sourceFolder};
               added.push(track);
+              details.push({path:filePath,reason:'新增音频'});
             }
-            Object.assign(track,labels,{duration:length,blob:file,stored:false,signature,sourcePath:filePath,sourceMissing:false});
+            Object.assign(track,labels,{duration:length,blob:file,stored:false,signature,audioDigest,sourcePath:filePath,sourceMissing:false});
           }
           scan.remember(track);
           importedIds.add(track.id);
           const sidecar=sidecars.get(importStem(source));
           const stamp=folderKey?JSON.stringify(Object.entries(sidecar||{}).sort().map(([format,file])=>[format,SonicFolderLibrary.fingerprint(file)])):null;
           const readLyrics=!folderKey||!match.unchanged||track.sidecarStamp!==stamp;
-          const lyricResult=readLyrics&&await refreshFolderLyrics(track,sidecar,embeddedLyrics,Boolean(sourceFolder));
+          if(review&&readLyrics)pendingLyrics.push({track,sidecar,embeddedLyrics});
+          const lyricResult=!review&&readLyrics&&await refreshFolderLyrics(track,sidecar,embeddedLyrics,Boolean(sourceFolder));
+          if(review&&originals.has(track.id))draftEdits.add(track);
           if(folderKey&&stamp.length<=500&&track.sidecarStamp!==stamp){
             track.sidecarStamp=stamp;
             scanMetadataChanged=true;
@@ -5192,7 +5438,32 @@
       const missing=scanErrors.length?[]:scan.removed();
       for(const track of missing){
         track.sourceMissing=true;
+        if(review)draftEdits.add(track);
         details.push({path:track.sourcePath,reason:'原文件已移走，本机副本仍可播放。'});
+      }
+      if(review){
+        const summary=['新增 '+added.length+' 首','重新关联 '+relinked+' 首','重复或未改 '+duplicates+' 首',
+          '更新 '+refreshed.size+' 首','原文件移走 '+missing.length+' 首','读取失败 '+failed.length+' 项'].join(' · ');
+        const changed=added.length||relinked||refreshed.size||missing.length||restored||scanMetadataChanged;
+        if(changed||failed.length){
+          if(!await confirmFolderChanges(summary,[...details,...failed,...skippedFiles])){
+            reportImport('已取消应用扫描结果，曲库和歌单未修改。');
+            return false;
+          }
+        }
+        for(const draft of draftEdits){
+          const original=originals.get(draft.id);
+          if(!tracks.includes(original))continue;
+          const {favorite,...metadata}=draft;
+          Object.assign(original,metadata);
+        }
+        for(const {track,sidecar,embeddedLyrics} of pendingLyrics){
+          if(originals.has(track.id)&&!tracks.includes(originals.get(track.id)))continue;
+          const result=await refreshFolderLyrics(track,sidecar,embeddedLyrics,Boolean(sourceFolder));
+          if(result?.matched)lyricMatches++;
+          if(result?.translation)translationMatches++;
+          if(result?.changed)lyricChanges++;
+        }
       }
       // Keep the implicit playback list and shuffle history independent of library writes.
       const scopedIds=!sessionQueue&&scopedPlaybackTracks().map(track=>track.id);
@@ -5382,6 +5653,89 @@
 
   $('uploadBtn').addEventListener('click',()=>$('fileInput').click());
   $('fileInput').addEventListener('change',()=>{const files=Array.from($('fileInput').files);$('fileInput').value='';importFiles(files)});
+  const resumeFileInput=$('resumeFileInput');
+  let locatingResumeFile=null;
+  function locatePlaybackFile(confirmFile){
+    const target=currentPlaybackRecovery();
+    if(target?.recovery.reason!=='file'||locatingResumeFile||fileRecoverySave)return;
+    const blocked=importBlockedReason();
+    if(blocked){showToast(blocked,true);return;}
+    locatingResumeFile={target,generation:loadGeneration,confirmFile};
+    resumeFileInput.click();
+  }
+  function saveRecoveredAudio(id,file,duration,audioDigest,original,stillCurrent){
+    let committed=false;
+    const save=queueStorage('library',async db=>{
+      if(!stillCurrent())return;
+      const tx=db.transaction(['state','media'],'readwrite'),done=transactionDone(tx);
+      const state=tx.objectStore('state');
+      let replacement,stored;
+      try{
+        const library=await requestValue(state.get('library'));
+        if(!stillCurrent()){await done;return;}
+        if(library!==undefined&&!Array.isArray(library?.tracks))throw new Error(libraryReadError);
+        stored=tracks.find(track=>track.id===id);
+        replacement={...(stored||missingResumeTracks.get(id)||original),duration,blob:file,stored:true,
+          savedSize:file.size,audioDigest,sourcePath:file.name,signature:SonicFolderLibrary.fingerprint(file),
+          sourceFolder:null,sourceMissing:false,sidecarStamp:null};
+        const metadata=persistentLibraryTrack(replacement);
+        const entries=library?library.tracks.slice():tracks.map(persistentLibraryTrack).filter(Boolean);
+        const index=entries.findIndex(track=>track.id===id);
+        if(index<0)entries.push(metadata);
+        else entries[index]=metadata;
+        const next=library?{...library,tracks:entries}:{version:7,tracks:entries,playlists,libraryView,playbackScope};
+        state.put(next,'library');
+        tx.objectStore('media').put(file,id);
+      }catch(error){
+        try{tx.abort()}catch{}
+        await done.catch(()=>{});
+        throw error;
+      }
+      await done;
+      // Publish the replacement only after both the library entry and its audio have committed.
+      try{
+        const copy=await requestValue(db.transaction('media').objectStore('media').get(id));
+        if(copy instanceof Blob)replacement.blob=copy;
+      }catch{}
+      if(stored)Object.assign(stored,replacement);
+      else tracks.push(replacement);
+      missingResumeTracks.delete(id);
+      committed=true;
+    });
+    fileRecoverySave=save.finally(()=>{fileRecoverySave=null;});
+    return fileRecoverySave.then(saved=>saved&&committed);
+  }
+  resumeFileInput.addEventListener('cancel',()=>{locatingResumeFile=null;});
+  resumeFileInput.addEventListener('change',async()=>{
+    const file=resumeFileInput.files[0],request=locatingResumeFile;
+    resumeFileInput.value='';
+    if(!file||!request){locatingResumeFile=null;return;}
+    const {target,generation,confirmFile}=request,id=target.trackId;
+    const stillCurrent=()=>locatingResumeFile===request&&!backupRestoring&&generation===loadGeneration&&
+      currentPlaybackRecovery()?.recovery===target.recovery;
+    try{
+      if(!stillCurrent())return;
+      if(!file.size||!isImportAudio(file))throw new Error('请选择原曲的音频文件。');
+      const original=tracks.find(track=>track.id===id)||missingResumeTracks.get(id)||retryTargetTrack(target);
+      if(original?.kind!=='file')return;
+      const audioDigest=await SonicFolderLibrary.audioDigest(file);
+      if(!stillCurrent())return;
+      const canCompare=original.audioDigest&&audioDigest;
+      if(canCompare&&original.audioDigest!==audioDigest)throw new Error('所选文件与原文件不一致，请重新选择。');
+      const duration=await probeImportedAudio(file,target.recovery.position);
+      if(!stillCurrent())return;
+      if(!canCompare&&!await confirmFile?.(original,file,duration))return;
+      if(!stillCurrent())return;
+      if(!await saveRecoveredAudio(id,file,duration,audioDigest,original,stillCurrent)){
+        if(stillCurrent())showToast('未能保存音频，已保留原曲与上次进度。',true);
+        return;
+      }
+      renderLibraryControls();
+      window.dispatchEvent(new Event('sonic:library-change'));
+      if(stillCurrent())await retryPlayback();
+    }catch(error){if(stillCurrent())showToast(error.message||'无法读取选中的音频，已保留上次进度。',true);}
+    finally{if(locatingResumeFile===request)locatingResumeFile=null;}
+  });
   const folderPaths=new WeakMap();
   let folderScanning=false;
   async function openMusicFolder(){
@@ -6418,13 +6772,31 @@
       }
       return recent;
     },
-    smartMusic(){
+    smartMusic(mode='familiar'){
       const recent=new Map(recentTrackIds.map((id,index)=>[id,index]));
-      const excluded=new Set(smartExcluded);
-      const items=tracks.filter(track=>track.kind==='file'&&!excluded.has(track.id)&&(track.favorite||smartCounts.has(track.id)||recent.has(track.id)));
-      const score=track=>(track.favorite?12:0)+(smartCounts.get(track.id)||0)*3+(recent.has(track.id)?4/(recent.get(track.id)+1):0);
+      const excluded=new Set(smartExcluded),current=currentTrack();
+      const familiar=track=>track.favorite||smartCounts.has(track.id)||recent.has(track.id);
+      const similar=track=>Number(Boolean(current?.artist)&&recordingKey(track.artist)===recordingKey(current.artist))*2+
+        Number(Boolean(current?.album)&&recordingKey(track.album)===recordingKey(current.album));
+      const skipPenalty=track=>Math.min(21,(smartSkips.get(track.id)||0)*7);
+      const score=track=>(mode==='similar'?similar(track)*16:0)+(track.favorite?12:0)+(smartCounts.get(track.id)||0)*3+
+        (recent.has(track.id)?4/(recent.get(track.id)+1):0)-skipPenalty(track);
+      const items=tracks.filter(track=>track.kind==='file'&&track.blob&&!excluded.has(track.id)&&
+        (mode==='new'?!familiar(track):mode==='similar'?track.id!==activeId&&similar(track)>0:familiar(track)));
       return {items:items.sort((first,second)=>score(second)-score(first)).slice(0,6),
+        available:tracks.some(track=>track.kind==='file'&&track.blob),
         excluded:smartExcluded.map(id=>tracks.find(track=>track.id===id)).find(Boolean)||null};
+    },
+    skipFromPlayer(){
+      const track=currentTrack(),position=getLocalPosition();
+      if(playing&&track?.kind==='file'&&position<Math.min(15,track.duration/3)){
+        const previous=smartSkips.get(track.id)||0;
+        smartSkips.delete(track.id);smartSkips.set(track.id,Math.min(previous+1,99));
+        if(smartSkips.size>500)smartSkips.delete(smartSkips.keys().next().value);
+        saveSmartMusic();
+        window.dispatchEvent(new Event('sonic:library-change'));
+      }
+      return navigateTrack(1);
     },
     setSmartInterest(id,interested){
       if(!tracks.some(track=>track.kind==='file'&&track.id===id))return;
@@ -6536,6 +6908,8 @@
         onlineReady, onlineLoggedIn,
         audioQuality:!heldTrack&&!externalStream&&mode==='online'&&preparedTrackId===activeId?actualOnlineQuality:null,
         audioPreview:!heldTrack&&!externalStream&&mode==='online'&&preparedTrackId===activeId?Boolean(track?.preview):null,
+        navidromeAudio:!heldTrack&&!externalStream&&track?.provider==='navidrome'&&preparedTrackId===activeId&&activeOnlineTicket?.delivery?
+          {source:activeOnlineTicket.sourceFormat,delivery:activeOnlineTicket.delivery}:null,
       };
     },
     sample(seconds) {
@@ -6573,6 +6947,12 @@
         position:resumePoint.position,remaining,retry:Boolean(recovery),recovery,phase,
         canSkip:target===track.id&&canSkipRecovery(activeRecovery),exhausted:target===track.id&&activeRecovery.recovery.exhausted===true};
     },
+    async localAudioFormat(id){
+      const track=currentTrack();
+      if(track?.kind!=='file'||track.id!==id||!track.blob)return null;
+      const reader=await loadFeatureScript('local-file-tags.js','SonicFileTags');
+      return await reader.readAudioFormat(track.blob);
+    },
     async audioQualities(){
       const track=currentTrack(),generation=loadGeneration;
       if(track?.kind!=='online'||trackLoading||!actualOnlineQuality)return [];
@@ -6602,21 +6982,21 @@
       }
       return false;
     },
-    nudgeLyrics,retryOnlineLyrics,
+    nudgeLyrics,retryOnlineLyrics,capturePlaybackMoment,
     toggle: () => {cancelOnlinePick();return play();}, previous: () => navigateTrack(-1), next: () => navigateTrack(1),
     select: id => {cancelOnlinePick();usePlaybackScope(playbackScope);return playScopedFrom(id);}, seek: position => seekTo(Number(position)),
-    openDiscovery: root=>window.SonicMusicDiscovery.open(root,onlineClient,window.SonicPlayback),
-    playNavidromeList,syncNavidromeResume,searchQishui,checkQishuiSearchTrack,playQishuiSearchTrack,saveQishuiSearchTrack,playOnlineList,playChartList,playRecording,checkRecording,refreshSyncedPlaylist:refreshQishuiMirror,
+    openDiscovery: (root,options)=>window.SonicMusicDiscovery.open(root,onlineClient,window.SonicPlayback,options),
+    playNavidromeList,navidromeProgress,syncNavidromeResume,searchNavidrome,searchQishui,checkQishuiSearchTrack,playQishuiSearchTrack,saveQishuiSearchTrack,playOnlineList,playChartList,playRecording,checkRecording,refreshSyncedPlaylist:refreshQishuiMirror,
     retryQueue,retryPlayback,skipPlayback,
     selectQueueEntry: id => {cancelOnlinePick();return sessionQueue?playQueueFrom(id,{holdOnFailure:true}):playScopedFrom(id);},
-    moveQueueEntry:moveSessionEntry,removeQueueEntry:removeSessionEntry,queueTrack:addSessionTrack,
+    moveQueueEntry:moveSessionEntry,removeQueueEntry:removeSessionEntry,queueTrack:addSessionTrack,canUndoQueue,undoQueue,
     toggleMute,
     setVolume(value) { volume=clamp(Number(value),0,1);if(volume>0)lastVolume=volume;updateVolume();savePreferences(); },
     audioOutputs,setAudioOutput,setPlaybackRate,setSleepTimer,
     playbackSettings(){return {rate:playbackRate,sleepDeadline,output:typeof audioContext?.sinkId==='string'?audioContext.sinkId:''};},
     favorite() { toggleTrackFavorite(activeId); },
     cyclePlayback() { $('repeatBtn').click(); },
-    importMusic() { $('fileInput').click(); }, importFolder:openMusicFolder,
+    importMusic() { $('fileInput').click(); }, importFolder:openMusicFolder, locatePlaybackFile,
     openLibrary() { $('queueBtn').click(); },
     openOnline(query,{searchOnly=false,opener=document.activeElement}={}) {
       onlineSearchOpener=opener;

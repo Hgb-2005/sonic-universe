@@ -2,11 +2,22 @@
 
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
-const { reconcile } = require('../outputs/folder-library.js');
+const { audioDigest, reconcile } = require('../outputs/folder-library.js');
 
 function track(sourcePath, contents, sourceFolder = 'original') {
   return { kind: 'file', sourcePath, sourceFolder, blob: new Blob([contents]) };
 }
+
+test('audio content hashes survive a rename and detect equal-sized changes beyond the first chunk', async () => {
+  const prefix = new Uint8Array(4 * 1024 * 1024);
+  const original = new File([prefix, 'a'], 'original.wav');
+  const renamed = new File([prefix, 'a'], 'renamed.wav', {lastModified:42});
+  const wrong = new File([prefix, 'b'], original.name, {lastModified:original.lastModified});
+  const [expected, renamedHash, wrongHash] = await Promise.all([original,renamed,wrong].map(audioDigest));
+  assert.match(expected, /^[a-f0-9]{64}$/);
+  assert.equal(renamedHash, expected);
+  assert.notEqual(wrongHash, expected);
+});
 
 test('folder relocation matches the original relative path and verifies the complete audio', async () => {
   const prefix = new Uint8Array(1024 * 1024);
@@ -33,6 +44,15 @@ test('a known path keeps its record for changed audio and keeps same-named subfo
   assert.deepEqual(await scan.match(changed, path), { track: original, unchanged: false });
   assert.deepEqual(await scan.match(same, 'Root/Disc 2/Song.wav'), { track: null, unchanged: false });
   assert.deepEqual(scan.removed(), [removed]);
+});
+
+test('a copied file does not relink or duplicate a recording whose original path still exists', async () => {
+  const original=track('Root/Original.wav','same recording');
+  const copy=new Blob(['same recording']);
+  const paths=new Map([[original.blob,'Root/Original.wav'],[copy,'Root/Copy.wav']]);
+  const scan=reconcile([original],'original',[original.blob,copy],file=>paths.get(file));
+  assert.deepEqual(await scan.match(copy,paths.get(copy)),{duplicateCopy:true});
+  assert.equal(original.sourcePath,'Root/Original.wav');
 });
 
 test('folder import leaves ambiguous matches and individual import deduplicates by bytes', async () => {

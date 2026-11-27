@@ -3,6 +3,106 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const online = require('../outputs/online-music.js');
+const searchEditionCases = require('./fixtures/search-editions.cjs');
+
+for(const {query,unqualified,tracks} of searchEditionCases) {
+  test('search preserves literal words with an edition in '+query,()=>{
+    const [distractor,plain,live]=tracks;
+    for(const candidates of [tracks,[...tracks].reverse(),[plain,distractor,live]]) {
+      const ranked=online.rankSearchTracks(candidates,query);
+      assert.deepEqual(ranked,[live,plain,distractor]);
+      assert.deepEqual(new Set(online.rankSearchTracks(candidates,unqualified).slice(0,2)),new Set([plain,live]));
+    }
+    assert.deepEqual(online.rankSearchTracks([distractor,plain],query),[plain,distractor]);
+    assert.equal(online.rankSearchTracks([distractor,live],query)[0],live);
+  });
+}
+
+test('search only treats edition words outside the matched song and artist as editions',()=>{
+  const plain={name:'DJ Set',artist:'Live Signal',album:'DJ Set'};
+  const dj={...plain,name:'DJ Set (DJ)',album:'Variants'};
+  const remix={...plain,name:'DJ Set (Remix)',album:'Variants'};
+  for(const query of ['DJ Set Live Signal DJ','Live Signal / DJ Set / DJ','DJ Set DJ Live Signal','DJ DJ Set Live Signal']) {
+    assert.equal(online.rankSearchTracks([plain,remix,dj],query)[0],dj);
+  }
+  assert.equal(online.rankSearchTracks([plain,dj,remix],'DJ Set Live Signal Remix')[0],remix);
+  assert.equal(online.rankSearchTracks([{...plain,artist:'Signal'},plain],'DJ Set Live Signal')[0],plain);
+  assert.equal(online.rankSearchTracks([remix,dj,plain],'DJ Set DJ')[0],dj);
+});
+
+test('cached search metadata follows edited song titles and artists',()=>{
+  const recording={kind:'file',name:'Original Title',artist:'Original Artist'};
+  const onlyMatches={keepUnmatched:false};
+  assert.deepEqual(online.rankSearchTracks([recording],'Original Title',onlyMatches),[recording]);
+  recording.name='Renamed Recording';recording.artist='Updated Artist';
+  assert.deepEqual(online.rankSearchTracks([recording],'Original Title',onlyMatches),[]);
+  assert.deepEqual(online.rankSearchTracks([recording],'Renamed Recording Updated Artist',onlyMatches),[recording]);
+});
+
+test('search source labels identify remote result metadata without a stored track type',()=>{
+  assert.equal(online.playbackSourceLabel({provider:'qishui'}),'汽水音乐');
+  assert.equal(online.playbackSourceLabel({provider:'navidrome'}),'Navidrome');
+});
+
+test('search recognizes named editions while keeping the title and artist ahead of the requested version',()=>{
+  const otherLive={name:'Skyline - Live From the Hall',artist:'Other Artist'};
+  const remix={name:'Skyline - Guest Producer Remix',artist:'Lead Singer、Guest Producer'};
+  const live={name:'Skyline - Live From the Hall',artist:'Lead Singer'};
+  const query='Skyline Lead Singer Live';
+  assert.deepEqual(online.rankSearchTracks([otherLive,remix],query),[remix,otherLive]);
+  assert.deepEqual(online.rankSearchTracks([otherLive,remix,live],query),[live,remix,otherLive]);
+});
+
+test('search ranks the exact title and artist ahead of same titles and other artist songs', () => {
+  const wang={name:'当你',artist:'王心凌',album:'爱你'};
+  const jiangnan={name:'江南',artist:'林俊杰'};
+  const jj={name:'当你',artist:'林俊杰',album:'她说 概念自选辑',availability:'preview'};
+  const another={name:'当你',artist:'陈布灵',availability:'full'};
+  const recordings=[wang,jiangnan,another,jj];
+  for(const query of ['当你 林俊杰','当你-林俊杰','当你 ／ 林俊杰','当你，林俊杰']){
+    assert.deepEqual(online.rankSearchTracks(recordings,query),[jj,wang,another,jiangnan]);
+  }
+  assert.equal(online.rankSearchTracks(recordings,'当你 王心凌')[0],wang);
+  assert.deepEqual(online.rankSearchTracks(recordings,'当你',{keepUnmatched:false}),[wang,another,jj]);
+});
+
+test('search retains English titles with spaces and treats ordinary titles and artist names literally', () => {
+  const intended={name:'Always Online',artist:'林俊杰'};
+  const other={name:'Always Online',artist:'其他歌手'};
+  const offline={name:'Always Offline',artist:'林俊杰'};
+  const literal={name:'Live Forever',artist:'Oasis'};
+  const live={name:'Forever (Live)',artist:'Oasis'};
+  const djArtist={name:'Let Me Love You',artist:'DJ Snake'};
+  assert.deepEqual(online.rankSearchTracks([offline,other,intended],'Always Online 林俊杰'),[intended,other,offline]);
+  assert.equal(online.rankSearchTracks([live,literal],'Live Forever Oasis')[0],literal);
+  assert.equal(online.rankSearchTracks([other,djArtist],'Let Me Love You DJ Snake')[0],djArtist);
+});
+
+test('search favors requested editions and only confirmed studio evidence affects an unspecified edition', () => {
+  const studio={name:'当你 (Studio Version)',artist:'林俊杰',album:'Studio Recording',duration:251};
+  const live={name:'当你（现场版）',artist:'林俊杰',album:'现场版',duration:242};
+  const dj={name:'当你（DJ 版）',artist:'林俊杰',album:'舞曲合集',duration:219};
+  const remix={name:'当你 (Remix)',artist:'林俊杰',duration:210};
+  const plain={name:'当你',artist:'林俊杰',duration:251};
+  const jiangnan={name:'江南（Live）',artist:'林俊杰'};
+  const list=[plain,dj,remix,live,jiangnan,studio];
+  for(const [term,expected] of [['Live',live],['现场',live],['DJ',dj],['Remix',remix]]){
+    assert.equal(online.rankSearchTracks(list,'当你 林俊杰 '+term)[0],expected);
+  }
+  assert.equal(online.rankSearchTracks(list,'当你 林俊杰')[0],studio);
+  assert.deepEqual(online.rankSearchTracks([live,plain],'当你 林俊杰'),[live,plain]);
+});
+
+test('search distinguishes a pending playback status from missing version evidence', () => {
+  assert.equal(online.searchPlaybackStatusLabel('unknown'),'可播状态待确认');
+  assert.equal(online.searchPlaybackStatusLabel('full-source'),'可播整曲');
+  assert.equal(online.searchPlaybackStatusLabel('preview-source'),'仅试听');
+  assert.equal(online.searchPlaybackStatusLabel('auth-required'),'需登录');
+  assert.equal(online.searchPlaybackStatusLabel('failed'),'播放失败');
+  assert.equal(online.searchRecordingVersion({name:'夜曲（原唱）',artist:'本机艺人',album:'原唱合集',duration:25}),'');
+  assert.equal(online.searchRecordingVersion({name:'夜曲（现场版）',artist:'本机艺人',album:'Live at the Test Hall',duration:25}),'');
+  assert.equal(online.searchRecordingVersion({name:'夜曲（Live）',artist:'本机艺人',album:'Live at the Test Hall',duration:25}),'现场版');
+});
 
 test('owned recordings require an exact artist and available recording metadata', () => {
   const reference = { name:'晴天', artist:'周杰伦', album:'叶惠美', duration:269.747 };

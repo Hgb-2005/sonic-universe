@@ -34,6 +34,20 @@
     return true;
   }
 
+  async function audioDigest(blob) {
+    if (!globalThis.crypto?.subtle) return null;
+    // Hash every byte without loading the whole file. Keep the chunk size stable for saved digests.
+    const chunkSize = 4 * 1024 * 1024;
+    const digests = new Uint8Array(Math.ceil(blob.size / chunkSize) * 32);
+    for (let offset = 0, chunk = 0; offset < blob.size; offset += chunkSize, chunk++) {
+      const bytes = await blob.slice(offset, offset + chunkSize).arrayBuffer();
+      const digest = await crypto.subtle.digest('SHA-256', bytes);
+      digests.set(new Uint8Array(digest), chunk * 32);
+    }
+    const digest = await crypto.subtle.digest('SHA-256', digests);
+    return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+  }
+
   function fingerprint(file) {
     return `${file.name}|${file.size}|${file.lastModified}`;
   }
@@ -58,7 +72,12 @@
         incoming.set(key, (incoming.get(key) || 0) + 1);
       }
     }
-    const claimed = new Set();
+    const claimed = new Set(),digestCache=new WeakMap();
+    function hash(track){
+      if(track.audioDigest)return Promise.resolve(track.audioDigest);
+      if(!digestCache.has(track.blob))digestCache.set(track.blob,audioDigest(track.blob));
+      return digestCache.get(track.blob);
+    }
     function index(track) {
       if (track.kind !== 'file' || !track.blob) return;
       const path = trackPath(track);
@@ -109,6 +128,18 @@
         }
         if (ambiguous) return { ambiguous: true };
         if (sourceFolder && match) return { track: match, unchanged: true, relinked: true };
+        const parent=path.slice(0,path.lastIndexOf('/'));
+        const visibleCopies=sourceFolder&&[...(bySize.get(file.size)||[])].filter(track=>{
+          const previous=trackPath(track);
+          return present.has(previous)&&previous.slice(0,previous.lastIndexOf('/'))===parent;
+        });
+        if(visibleCopies?.length){
+          const digest=await audioDigest(file);
+          for(const track of visibleCopies){
+            const known=digest&&await hash(track);
+            if(known?digest===known:await sameAudio(track.blob,file))return {duplicateCopy:true};
+          }
+        }
         return { track: match, unchanged: Boolean(match) };
       },
       remember(track) { index(track); claimed.add(track); },
@@ -137,5 +168,5 @@
     return { files, sidecars, other };
   }
 
-  return { fingerprint, folderMetadata, manualFields, reconcile, groupFiles };
+  return { fingerprint, audioDigest, folderMetadata, manualFields, reconcile, groupFiles };
 });

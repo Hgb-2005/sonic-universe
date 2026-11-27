@@ -496,9 +496,10 @@ async function verifyNowPlaying(page, folder, app) {
     console.log('PASS changed disk lyrics appear on rescan with the original audio track ID');
     await setMode('work');
     await page.evaluate(()=>SonicPlayback.seek(5.2));
-    const opened=app.waitForEvent('window',{predicate:other=>other!==page});
-    await room.locator('[data-action="desktop-lyrics-window"]').click();
-    const caption=await opened;
+    const [caption]=await Promise.all([
+      app.waitForEvent('window',{predicate:other=>other!==page}),
+      room.locator('.lr-footer [data-action="desktop-lyrics-window"]').click(),
+    ]);
     await caption.getByText('测试翻译',{exact:true}).waitFor();
     await caption.locator('#layout').click();
     assert.equal(await caption.locator('body').getAttribute('data-layout'),'scroll');

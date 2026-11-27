@@ -12,7 +12,9 @@ function createNavidrome(){
   function song(item,state) {
     if(!id(item?.id)||!text(item.title))return null;
     if(state.formats.size>=2048&&!state.formats.has(item.id))state.formats.delete(state.formats.keys().next().value);
-    state.formats.set(item.id,text(item.suffix).toLowerCase());
+    const number=value=>Number.isFinite(Number(value))&&Number(value)>0?Number(value):null;
+    state.formats.set(item.id,{codec:text(item.suffix).toLowerCase(),sampleRate:number(item.samplingRate),
+      bits:number(item.bitDepth),bitrate:number(item.bitRate)?Number(item.bitRate)*1000:null,channels:number(item.channelCount)});
     const duration=Number(item.duration);
     return {provider:'navidrome',mediaId:state.key+'_'+item.id,name:text(item.title),artist:text(item.artist),
       album:/^\[?unknown album\]?$/i.test(text(item.album))?'':text(item.album),
@@ -33,19 +35,19 @@ function createNavidrome(){
     const mediaRoot=createHash('sha256').update(root+'\0'+user).digest('hex').slice(0,20);
     return {root,user,password,key:mediaRoot,formats:new Map()};
   }
-  function endpoint(state,name,params={}){
+  function endpoint(state,name,params={},client='SonicUniverse'){
     const salt=randomBytes(12).toString('hex');
     const token=createHash('md5').update(state.password+salt).digest('hex');
     const url=new URL(state.root+'/rest/'+name+'.view');
-    const query=new URLSearchParams({u:state.user,t:token,s:salt,c:'SonicUniverse',v:'1.16.1',f:'json'});
+    const query=new URLSearchParams({u:state.user,t:token,s:salt,c:client,v:'1.16.1',f:'json'});
     for(const [name,values] of Object.entries(params)){
       for(const value of [values].flat())query.append(name,value);
     }
     url.search=query;
     return url;
   }
-  async function json(state,name,params,write=false){
-    const url=endpoint(state,name,params);
+  async function json(state,name,params,write=false,client){
+    const url=endpoint(state,name,params,client);
     const options={redirect:'error',signal:AbortSignal.timeout(8500)};
     if(write&&state.formPost){
       options.method='POST';
@@ -56,7 +58,9 @@ function createNavidrome(){
     let response,result;
     try{
       response=await fetch(url,options);
-      if(name!=='getLyricsBySongId'||response.status!==404)result=(await response.json())['subsonic-response'];
+      if(response.status!==401&&response.status!==403&&(name!=='getLyricsBySongId'||response.status!==404)){
+        result=(await response.json())['subsonic-response'];
+      }
     }catch{throw invalid('Navidrome 未响应，请检查服务器地址和网络。',502,'connection');}
     if(result?.status==='ok'&&response.ok)return result;
     if([40,41,50].includes(result?.error?.code)||response.status===401||response.status===403)throw invalid('Navidrome 登录失败，请核对账号和权限。',401,'navidrome-auth');
@@ -71,7 +75,7 @@ function createNavidrome(){
     return account;
   }
   function songId(state,value){
-    if(typeof value!=='string'||!value.startsWith(state.key+'_')||!id(value.slice(21)))throw invalid('请连接这首歌所属的 Navidrome 曲库。',404,'not-found');
+    if(typeof value!=='string'||!value.startsWith(state.key+'_')||!id(value.slice(21)))throw invalid('请连接这首歌所属的 Navidrome 曲库。',404,'navidrome-library');
     return value.slice(21);
   }
   async function playlist(state,key){
@@ -119,8 +123,11 @@ function createNavidrome(){
     const items=entries.map(item=>song(item,state)).filter(Boolean);
     const index=entries.slice(0,current).filter(item=>song(item,state)).length;
     if(!song(selected,state)||!items.length)return {items:[],index:-1,position:0};
-    const ms=Number(queue.position);
-    return {items,index,position:Number.isFinite(ms)?Math.max(0,Math.min(ms/1000,86400)):0};
+    const ms=Number(queue.position),changed=Date.parse(queue.changed);
+    const updatedAt=Number.isFinite(changed)?new Date(changed).toISOString():null;
+    const device=text(queue.changedBy).slice(0,64);
+    const revision=createHash('sha256').update(JSON.stringify([items.map(item=>item.mediaId),index,ms,queue.changed,device])).digest('hex');
+    return {items,index,position:Number.isFinite(ms)?Math.max(0,Math.min(ms/1000,86400)):0,updatedAt,device,revision};
   }
   async function saveResume(state,body){
     const ids=orderedIds(state,body.items);
@@ -131,7 +138,13 @@ function createNavidrome(){
     const params={id:ids,position};
     if(state.indexQueue)params.currentIndex=body.index;
     else params.current=ids[body.index];
-    await json(state,state.indexQueue?'savePlayQueueByIndex':'savePlayQueue',params,true);
+    const device=/^SonicUniverse Windows [A-Z0-9]{6}$/.test(body.device)?body.device:'SonicUniverse';
+    if(Object.hasOwn(body,'revision')){
+      const latest=await resume(state);
+      if((latest.revision||'')!==body.revision)return {saved:false,conflict:true};
+      if(account!==state)throw invalid('Navidrome 连接已改变，请重新比较进度。',409,'navidrome-library');
+    }
+    await json(state,state.indexQueue?'savePlayQueueByIndex':'savePlayQueue',params,true,device);
     return {saved:true};
   }
   async function songLyrics(state,mediaId){
@@ -176,6 +189,11 @@ function createNavidrome(){
       return {items:array(albums.albumList2?.album).filter(item=>id(item.id)).map(item=>({id:item.id,name:text(item.name||item.title),artist:text(item.artist)})),
         playlists:array(lists.playlists?.playlist).filter(item=>id(item.id)).slice(0,150).map(item=>({id:item.id,name:text(item.name)}))};
     }
+    if(name==='artists'){
+      const {artists}=await json(state,'getArtists');
+      return {items:array(artists?.index).flatMap(group=>array(group.artist))
+        .filter(item=>id(item.id)).map(item=>({id:item.id,name:text(item.name)}))};
+    }
     if(name==='starred'){
       const result=await json(state,'getStarred2');
       return {name:'Navidrome 收藏',items:array(result.starred2?.song).map(item=>song(item,state)).filter(Boolean)};
@@ -197,6 +215,11 @@ function createNavidrome(){
     const key=id(body.id);
     if(key&&name==='playlist')return playlistView(await playlist(state,key));
     if(key&&name==='playlist-save')return savePlaylist(state,key,body);
+    if(key&&name==='artist'){
+      const {artist}=await json(state,'getArtist',{id:key});
+      return {name:text(artist?.name),items:array(artist?.album).filter(item=>id(item.id))
+        .map(item=>({id:item.id,name:text(item.name||item.title),artist:text(item.artist)}))};
+    }
     if(key&&name==='album'){
       const {album}=await json(state,'getAlbum',{id:key});
       return {name:text(album?.name||album?.title),items:array(album?.song).map(item=>song(item,state)).filter(Boolean)};
@@ -224,14 +247,20 @@ function createNavidrome(){
       return seekable;
     }catch{return false;}
   }
-  async function audio(mediaId,requested){
+  async function audio(mediaId,requested,{verify=false}={}){
     const state=requireAccount(),key=songId(state,mediaId);
-    const originalFlac=state.formats.get(key)==='flac';
+    if(verify){
+      await json(state,'getSong',{id:key});
+      if(account!==state)throw invalid('请连接这首歌所属的 Navidrome 曲库。',401,'navidrome-auth');
+    }
+    const sourceFormat=state.formats.get(key)||null;
+    const originalFlac=sourceFormat?.codec==='flac';
     const source={mediaUrl:endpoint(state,'stream',{id:key,format:'raw'}).href,preview:false,
-      quality:originalFlac?'lossless':undefined,valid:()=>account===state,audioOnly:true};
+      quality:originalFlac?'lossless':undefined,sourceFormat,delivery:{kind:'raw',format:sourceFormat},valid:()=>account===state,audioOnly:true};
     if(requested==='standard'&&originalFlac&&state.transcoding){
       const mp3=endpoint(state,'stream',{id:key,format:'mp3',maxBitRate:128});
-      if(await canStreamMp3(mp3))return {...source,mediaUrl:mp3.href,quality:'standard'};
+      if(await canStreamMp3(mp3))return {...source,mediaUrl:mp3.href,quality:'standard',
+        delivery:{kind:'transcoded',format:{codec:'mp3',maxBitrate:128000}}};
     }
     return source;
   }

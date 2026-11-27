@@ -23,4 +23,11 @@ async function read(file) {
   };
 }
 
-globalThis.SonicFileTags=Object.freeze({read});
+async function readAudioFormat(file) {
+  const {format}=await parseBlob(file,{duration:false,skipCovers:true});
+  const number=value=>Number.isFinite(value)&&value>0?value:null;
+  return {codec:clean(format.codec||format.container),sampleRate:number(format.sampleRate),
+    bits:number(format.bitsPerSample),bitrate:number(format.bitrate),channels:number(format.numberOfChannels)};
+}
+
+globalThis.SonicFileTags=Object.freeze({read,readAudioFormat});

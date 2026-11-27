@@ -31,6 +31,11 @@
     return matches.length === 1 ? matches[0][0] : '版本待确认';
   }
 
+  function searchRecordingVersion(track) {
+    const version=recordingVersion(track);
+    return version==='版本待确认'||[track.name,track.album].some(value=>text(value).includes(version))?'':version;
+  }
+
   function recordingKey(value) {
     return text(value).normalize('NFKC').replace(/\s+/g, ' ').trim().toLowerCase();
   }
@@ -43,6 +48,158 @@
   function recordingVersions(track) {
     return versionMarkers.filter(([,marker])=>[track.name,track.album,track.version].some(value=>marker.test(text(value))))
       .map(([label])=>label);
+  }
+
+  const searchVersionTerms = new Map([
+    ['live','现场版'],['现场','现场版'],['現場','现场版'],['现场版','现场版'],['現場版','现场版'],
+    ['dj','DJ 版'],['dj版','DJ 版'],['remix','混音版'],['混音','混音版'],['混音版','混音版'],
+  ]);
+  const djMarker = /\bdj(?:\s*版|\b)/i;
+  const artistSeparator = /[、,;\/&]+/;
+
+  function searchPhrase(value) {
+    return recordingKey(value)
+      .replace(/[\s,、;|/\\·()[\]【】]+/g,' ')
+      .replace(/\s+[-–—]+\s*|[-–—]+\s+|(?<=\p{Script=Han})[-–—]+|[-–—]+(?=\p{Script=Han})/gu,' ')
+      .replace(/\s+/g,' ').trim();
+  }
+
+  function searchVersionAnnotation(value) {
+    return versionMarkers.some(([,marker])=>marker.test(value))||
+      /\bdj\s*(?:版|mix\b|version\b)/i.test(value)||searchVersionTerms.has(value.trim());
+  }
+
+  function searchTitle(name) {
+    const title = recordingKey(name);
+    const bracket = /[\[（(【]([^\])）】]+)[\])）】]$/.exec(title);
+    if(bracket&&searchVersionAnnotation(bracket[1]))return searchPhrase(title.slice(0,bracket.index));
+    const dash=[...title.matchAll(/\s+[-–—]+\s+/g)].at(-1);
+    if(dash&&searchVersionAnnotation(title.slice(dash.index+dash[0].length)))return searchPhrase(title.slice(0,dash.index));
+    return searchPhrase(title.replace(/(?:[\s\-–—]+(?:live|dj(?:\s+mix)?|remix|studio (?:version|recording)|cover)|(?:现场版|現場版|录音室版|翻唱版|混音版|dj版))$/i,''));
+  }
+
+  function searchVersions(entry,title) {
+    const {track}=entry;
+    // A word inside the matched song title is not evidence of an edition.
+    const name=entry.base===title&&entry.title.startsWith(title+' ')?entry.title.slice(title.length+1):
+      entry.title===title?'':track.name;
+    const album=searchPhrase(track.album)===title?'':track.album;
+    const labels=recordingVersions({name,album,version:track.version});
+    if([name,album,track.version].some(value=>djMarker.test(recordingKey(value))))labels.push('DJ 版');
+    return labels;
+  }
+
+  const trackSearchEntries=new WeakMap();
+  function searchEntry(track) {
+    const cached=trackSearchEntries.get(track);
+    if(cached&&cached.name===track.name&&cached.artist===track.artist)return cached.entry;
+    const title=searchPhrase(track.name),artist=recordingKey(track.artist);
+    const entry={
+      track,title,base:searchTitle(track.name),
+      artists:new Set([searchPhrase(artist),...artist.split(artistSeparator).map(searchPhrase)].filter(Boolean)),
+    };
+    trackSearchEntries.set(track,{name:track.name,artist:track.artist,entry});
+    return entry;
+  }
+
+  function searchIndex(entries) {
+    const titles=new Set(),artists=new Set(),pairs=new Set();
+    for(const entry of entries) {
+      for(const title of [entry.title,entry.base]) {
+        if(!title)continue;
+        titles.add(title);
+        for(const artist of entry.artists)pairs.add(title+'\0'+artist);
+      }
+      for(const artist of entry.artists)artists.add(artist);
+    }
+    return {titles,artists,pairs};
+  }
+
+  function songArtistQuery(phrase,{titles,artists,pairs}) {
+    const words=phrase.split(' ');
+    const literal=titles.has(phrase)||artists.has(phrase);
+    let best=null, bestScore=0;
+    for(let split=1;split<words.length;split++) {
+      const first=words.slice(0,split).join(' '),last=words.slice(split).join(' ');
+      for(const [title,artist] of [[first,last],[last,first]]) {
+        const exact=pairs.has(title+'\0'+artist);
+        if(literal&&!exact)continue;
+        const score=(exact?4:0)+(titles.has(title)?2:0)+(artists.has(artist)?1:0);
+        if(score>bestScore){best={title,artist,exact};bestScore=score;}
+      }
+    }
+    return best;
+  }
+
+  function searchQuery(phrase,index) {
+    const literal={term:phrase,pair:songArtistQuery(phrase,index),versions:[]};
+    if(literal.pair?.exact||index.titles.has(phrase)||index.artists.has(phrase))return literal;
+
+    const words=phrase.split(' '), versions=words.map(word=>searchVersionTerms.get(word));
+    if(!versions.some(Boolean))return literal;
+    const onlyVersions=(start,end)=>versions.slice(start,end).every(Boolean);
+    const spans=[];
+    for(let start=0;start<words.length;start++) {
+      for(let end=start+1;end<=words.length;end++) {
+        const value=words.slice(start,end).join(' ');
+        const title=index.titles.has(value),artist=index.artists.has(value);
+        if(title||artist)spans.push({start,end,value,title,artist});
+      }
+    }
+
+    let best;
+    function consider(first,second,pair,priority) {
+      const length=first.end-first.start+(second?second.end-second.start:0);
+      if(best&&(priority<best.priority||priority===best.priority&&length<=best.length))return;
+      const extra=versions.slice(0,first.start);
+      if(second)extra.push(...versions.slice(first.end,second.start));
+      extra.push(...versions.slice((second||first).end));
+      best={priority,length,term:second?first.value+' '+second.value:first.value,pair,versions:extra};
+    }
+    for(const first of spans) {
+      if(!onlyVersions(0,first.start))continue;
+      if(onlyVersions(first.end,words.length))consider(first,null,null,2);
+      for(const second of spans) {
+        if(second.start<first.end||!onlyVersions(first.end,second.start)||!onlyVersions(second.end,words.length))continue;
+        for(const [title,artist] of [[first,second],[second,first]]) {
+          if(!title.title||!artist.artist)continue;
+          const exact=index.pairs.has(title.value+'\0'+artist.value);
+          consider(first,second,{title:title.value,artist:artist.value},exact?3:1);
+        }
+      }
+    }
+    return best||literal;
+  }
+
+  function searchMatch(entry,phrase,pair) {
+    if(!phrase)return 0;
+    const title=pair?.title||phrase;
+    const exactTitle=entry.title===title||entry.base===title;
+    const partialTitle=entry.title.includes(title);
+    const exactArtist=entry.artists.has(pair?.artist||phrase);
+    if(pair) {
+      if(exactTitle)return exactArtist?6:5;
+      if(partialTitle)return exactArtist?4:3;
+      return exactArtist?2:0;
+    }
+    if(exactTitle)return 6;
+    if(exactArtist)return 5;
+    if(partialTitle)return 4;
+    return [...entry.artists].some(artist=>artist.includes(phrase))?3:0;
+  }
+
+  function rankSearchTracks(tracks,query,{keepUnmatched=true,fallback=()=>false}={}) {
+    const phrase=searchPhrase(query);
+    if(!phrase)return tracks.slice();
+    const entries=tracks.map(searchEntry);
+    const {term,pair,versions}=searchQuery(phrase,searchIndex(entries));
+    return entries.map(entry=>{
+      const match=searchMatch(entry,term,pair);
+      if(!match)return {track:entry.track,score:Number(Boolean(fallback(entry.track)))};
+      const version=versions.length?Number(searchVersions(entry,pair?.title||term).some(value=>versions.includes(value))):
+        Number(Boolean(pair)&&recordingVersion(entry.track)==='录音室版');
+      return {track:entry.track,score:2+match*2+version};
+    }).filter(item=>keepUnmatched||item.score>0).sort((a,b)=>b.score-a.score).map(item=>item.track);
   }
 
   function findOwnedRecording(reference, tracks) {
@@ -64,6 +221,7 @@
 
   function playbackSourceLabel(track) {
     if(track?.provider==='navidrome')return 'Navidrome';
+    if(track?.provider==='qishui')return '汽水音乐';
     return ({online:'汽水音乐',file:'本地音乐',demo:'内置示例',chart:'在线榜单',soda:'汽水分享'})[track?.kind]||'';
   }
 
@@ -73,6 +231,12 @@
       preview:'仅试听', 'preview-source':'仅试听',
       'auth-required':'需登录', unavailable:'打开原平台', official:'打开原平台',
     })[state] || '待确认';
+  }
+
+  function searchPlaybackStatusLabel(state) {
+    if(!state||state==='unknown')return '可播状态待确认';
+    if(state==='failed')return '播放失败';
+    return playbackStatusLabel(state);
   }
 
   function officialTrackUrl(provider, value) {
@@ -483,6 +647,7 @@
       loginStatus: () => request('/api/qishui/login-status', undefined, 7000),
       loginStart: () => request('/api/qishui/login/start', {}, 15000),
       loginCheck: sessionId => request('/api/qishui/login/check', { sessionId }, 7000),
+      loginCancel: sessionId => request('/api/qishui/login/cancel', { sessionId }, 7000),
       logout: () => request('/api/qishui/logout', {}, 7000),
       search: query => request('/api/qishui/search', { query, limit: 30, offset: 0 }, 12000),
       discovery({ limit = 24, preference = 'familiar', signal } = {}) {
@@ -554,9 +719,12 @@
     EXTERNAL_PROVIDERS,
     officialTrackUrl,
     recordingVersion,
+    searchRecordingVersion,
+    rankSearchTracks,
     findOwnedRecording,
     playbackSourceLabel,
     playbackStatusLabel,
+    searchPlaybackStatusLabel,
     normalizeExternalTrack,
     normalizeTrack,
     migrateLegacyLink,

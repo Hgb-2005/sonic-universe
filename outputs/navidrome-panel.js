@@ -1,6 +1,6 @@
 (function(){
   'use strict';
-  function mount(root,launcher,api,openPlayer){
+  function mount(root,launcher,api,openPlayer,onConnect){
     if(!window.sonicDesktop){launcher.hidden=true;return;}
     const dialog=document.createElement('dialog');
     dialog.className='lr-dialog';
@@ -10,7 +10,7 @@
       '<label>用户名 <input name="user" autocomplete="username" required></label> '+
       '<label>密码 <input name="password" type="password" autocomplete="current-password" required></label> '+
       '<button class="sl-button">连接</button></form>'+
-      '<div class="lr-choice-row" data-nav-actions hidden><button data-nav-action="browse">专辑与歌单</button>'+
+      '<div class="lr-choice-row" data-nav-actions hidden><button data-nav-action="artists">艺人</button><button data-nav-action="browse">专辑与歌单</button>'+
       '<button data-nav-action="starred">服务器收藏</button><button data-nav-action="resume">从服务器继续听</button>'+
       '<button data-nav-action="sync">同步当前进度</button><button data-nav-action="back" hidden>上一页</button>'+
       '<button data-nav-action="next" hidden>下一页</button><button data-nav-action="disconnect">断开</button></div>'+
@@ -65,6 +65,20 @@
       results.replaceChildren(list('专辑',data.items,groups(data.items,'album')),list('服务器歌单',data.playlists,groups(data.playlists,'playlist')));
       pages(offset>0,data.items.length===30);
       status.textContent='专辑第 '+(offset/30+1)+' 页';
+    }
+    async function artists(){
+      const {items}=await request('artists');
+      results.replaceChildren(list('艺人',items,artist=>[button(artist.name,()=>run(()=>artistAlbums(artist.id)))]));
+      connectionView={kind:'artists'};
+      pages(false,false);
+      status.textContent=items.length?'已连接 · '+items.length+' 位艺人':'服务器曲库还没有艺人。';
+    }
+    async function artistAlbums(id){
+      const artist=await request('artist',{id});
+      results.replaceChildren(list(artist.name,artist.items,album=>[button(album.name,()=>run(()=>songs('album',{id:album.id})))]));
+      connectionView={kind:'artist',body:{id}};
+      pages(false,false);
+      status.textContent='已连接 · '+artist.items.length+' 张专辑';
     }
     async function songs(kind,body){
       const data=await request(kind,body);
@@ -191,11 +205,69 @@
         (buttons.find(node=>!node.disabled&&node.textContent===focus[1])||buttons.find(node=>!node.disabled))?.focus();
       }
     }
+    function timestamp(value){
+      const time=value?new Date(value):null;
+      return time&&!Number.isNaN(time.valueOf())?time.toLocaleString():'时间未知';
+    }
+    function checkpointLabel(record){
+      const position=window.SonicListeningCore.formatTime(record.position);
+      return [record.name,position,record.device||'设备未知',timestamp(record.updatedAt)].join(' · ');
+    }
+    async function openServerProgress(remote){
+      const item=remote.items[remote.index];
+      const played=await api.playNavidromeList(remote.items,'Navidrome 续播',item.mediaId,{index:remote.index,position:remote.position});
+      if(!played)throw new Error('暂时无法继续播放，请检查服务器后重试。');
+      dialog.close();openPlayer();
+    }
+    async function chooseProgress(action){
+      const remote=await request('resume');
+      const stored=remote.items[remote.index];
+      const local=api.navidromeProgress();
+      const corresponding=local&&(!stored||local.items[local.index].slice(0,21)===stored.mediaId.slice(0,21));
+      const upload=async()=>{
+        if(!await api.syncNavidromeResume({revision:remote.revision||'',checkpoint:local})){
+          status.textContent='请先播放这份 Navidrome 曲库里的歌曲。';return;
+        }
+        status.textContent='进度已同步到服务器 · '+checkpointLabel(local);
+      };
+      if(action==='sync'&&!corresponding){status.textContent='请先播放这份 Navidrome 曲库里的歌曲。';return;}
+      if(!stored){
+        if(action==='sync')await upload();
+        else status.textContent='服务器上还没有续播位置。';
+        return;
+      }
+      const distinct=corresponding&&(local.items[local.index]!==stored.mediaId||Math.abs(local.position-remote.position)>2||
+        local.items.join()!==remote.items.map(item=>item.mediaId).join());
+      if(!distinct){
+        if(action==='sync')await upload();
+        else await openServerProgress(remote);
+        return;
+      }
+      const controls=document.createElement('div');controls.className='lr-choice-row';
+      const details=document.createElement('ul');
+      for(const [label,record] of [['本机',local],['服务器',{...remote,name:stored.name}]]){
+        const row=document.createElement('li');row.textContent=label+' · '+checkpointLabel(record);details.append(row);
+      }
+      controls.append(button('继续用本机记录',()=>run(async()=>{
+        if(action==='sync')await upload();
+        else if(!api.snapshot().playing){
+          const played=await api.continueListening();
+          if(played===false)throw new Error('暂时无法从本机续播，请检查 Navidrome 连接。');
+          if(api.snapshot().playing){dialog.close();openPlayer();return;}
+          status.textContent='已保留本机续播点。';
+        }else status.textContent='已保留本机续播点。';
+        controls.remove();details.remove();
+      })),button('使用服务器记录',()=>run(()=>openServerProgress(remote))));
+      results.replaceChildren(details,controls);
+      status.textContent='本机和服务器的续播记录不同，请选择。';
+    }
     form.addEventListener('submit',event=>{
       event.preventDefault();
       const values=Object.fromEntries(new FormData(form));
       void run(async()=>{
         account(await request('connect',values));form.elements.password.value='';
+        onConnect();
+        window.dispatchEvent(new Event('sonic:navidrome-connection'));
         connectionView=null;await browse();
       });
     });
@@ -204,35 +276,40 @@
       if(action==='close'){dialog.close();return;}
       if(!action||!connected||draft)return;
       void run(async()=>{
-        if(action==='disconnect'){account(await request('disconnect'));return;}
-        if(action==='starred'){await songs('starred',{});return;}
-        if(action==='sync'){
-          status.textContent=await api.syncNavidromeResume()?'进度已同步到服务器。':'请先播放这份 Navidrome 曲库里的歌曲。';
+        if(action==='disconnect'){
+          account(await request('disconnect'));
+          window.dispatchEvent(new Event('sonic:navidrome-connection'));
           return;
         }
-        if(action==='resume'){
-          const {items,index,position}=await request('resume');
-          if(index<0||!items[index]){status.textContent='服务器上还没有续播位置。';return;}
-          const played=await api.playNavidromeList(items,'Navidrome 续播',items[index].mediaId,{index,position});
-          if(!played)throw new Error('暂时无法继续播放，请检查服务器后重试。');
-          dialog.close();openPlayer();return;
-        }
+        if(action==='starred'){await songs('starred',{});return;}
+        if(action==='artists'){await artists();return;}
+        if(action==='sync'||action==='resume'){await chooseProgress(action);return;}
         if(action==='browse')offset=0;
         if(action==='back')offset=Math.max(0,offset-30);
         if(action==='next')offset+=30;
         connectionView=null;await browse();
       });
     });
-    launcher.addEventListener('click',()=>{
+    function open({reconnect=false}={}){
       dialog.showModal();
+      if(reconnect){
+        account({connected:false});
+        status.textContent='请连接这首歌所属的 Navidrome 曲库。';
+        form.elements.url.focus();
+        return;
+      }
       void run(async()=>{
         account(await request('status'));
         if(!connected)return;
         if(draft){renderEditor();return;}
-        if(connectionView)await songs(connectionView.kind,connectionView.body);
+        if(connectionView?.kind==='artists')await artists();
+        else if(connectionView?.kind==='artist')await artistAlbums(connectionView.body.id);
+        else if(connectionView)await songs(connectionView.kind,connectionView.body);
         else await browse();
       });
-    });
+    }
+    launcher.addEventListener('click',()=>open());
+    return {open};
   }
   window.SonicNavidrome=Object.freeze({mount});
 })();

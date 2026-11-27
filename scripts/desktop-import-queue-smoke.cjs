@@ -135,7 +135,7 @@ async function run() {
     before=await session(page);
     const row=library.locator('[data-sl-id="'+d+'"]');
     await row.locator('[data-sl-command=queue]').click();
-    await library.locator('[data-sl-command=queue-next]').click();
+    await room.locator('[data-sl-command=queue-next]').click();
     const moved=await session(page);
     assert.deepEqual(moved.queue.map(item=>item.id),[a,b,d,c]);
     assert.equal(moved.queue[2].entryId,before.queue[3].entryId);

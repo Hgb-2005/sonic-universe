@@ -289,6 +289,10 @@ async function createQishuiProvider(options = {}) {
       if (result?.state === 'confirmed') clearLikedSnapshot();
       return result;
     },
+    async loginCancel(sessionId) {
+      await request('login_qr_cancel', { key: String(sessionId || '') });
+      return { ok: true };
+    },
     async logout() {
       clearLikedSnapshot();
       await request('logout');

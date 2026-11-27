@@ -8,9 +8,9 @@
 <title>声波宇宙 · 让音乐，陪你一会儿</title>
 <link rel="icon" type="image/svg+xml" href="./assets/sonic-mark.svg">
 <meta name="sonic-project-pack-revision" content="bed720a09029">
-<meta name="sonic-file-tags-revision" content="9ac4d4eafaf4">
-<link rel="stylesheet" href="./listening-room.css?v=056acbd131bc">
-<link rel="stylesheet" href="./music-library.css?v=df014e5ce874">
+<meta name="sonic-file-tags-revision" content="481db58eee75">
+<link rel="stylesheet" href="./listening-room.css?v=8e67bc080ce2">
+<link rel="stylesheet" href="./music-library.css?v=ec4c3a57e1df">
 <link rel="stylesheet" href="./music-discovery.css?v=95b9d9b6e23e">
 <link rel="stylesheet" href="./equalizer.css?v=7f372d94c3af">
 <link rel="stylesheet" href="./reactive-scenes.css?v=4d0da87042bc">
@@ -356,6 +356,7 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
   </div></div>
 </div>
 <input type="file" id="fileInput" multiple accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac,.opus,.webm,.lrc,.yrc,.krc,.ttml,.vtt,.qrc" hidden>
+<input type="file" id="resumeFileInput" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac,.opus,.webm,.aif,.aiff,.mp4" hidden>
 <audio id="audio" preload="metadata"></audio>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="drop-overlay" id="dropOverlay"><div class="drop-content"><svg viewBox="0 0 48 48"><path d="M24 32V6M14 16 24 6l10 10M8 30v12h32V30"/></svg><p>把音乐，放进宇宙</p><small>可拖入整个文件夹（含子文件夹）或多首音乐 · 仅在本机播放与保存</small></div></div>
@@ -473,7 +474,7 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
       <p class="postcard-note">只保存星空与文字，音乐继续播放。图片在本机生成。</p>
     </div>
   </div>
-  <div class="postcard-footer"><button class="secondary-btn" id="retakePostcardBtn">重新定格</button><p id="postcardStatus" role="status" aria-live="polite">准备好，把这片星光带走。</p><button class="primary-btn" id="savePostcardBtn">保存 PNG 图片 ↓</button></div>
+  <div class="postcard-footer"><button class="secondary-btn" id="retakePostcardBtn">重新定格</button><p id="postcardStatus" role="status" aria-live="polite">准备好，把这片星光带走。</p><button type="button" class="secondary-btn" id="postcardClipBtn" hidden>制作有声短片</button><button class="primary-btn" id="savePostcardBtn">保存 PNG 图片 ↓</button></div>
 </dialog>
 
 <input type="file" id="folderInput" webkitdirectory multiple hidden>
@@ -594,29 +595,29 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
   <script defer src="./visual-presets.js?v=79d1f9962f19"></script>
   <script defer src="./visual-system.js?v=cd3086ca4807"></script>
   <script defer src="./soda-library.js?v=51f77f62c8a0"></script>
-  <script defer src="./online-music.js?v=2c9d6fd1d514"></script>
+  <script defer src="./online-music.js?v=e9493b6bf299"></script>
 <script defer src="./listening-core.js?v=4fa3e15a72cd"></script>
 <script defer src="./playback-queue-state.js?v=6f6b999bfc28"></script>
 <script defer src="./album-audio.js?v=e77983924abe"></script>
-<script defer src="./now-playing.js?v=f63e7aec885d"></script>
+<script defer src="./now-playing.js?v=fe6d7e1f5f45"></script>
 <script defer src="./track-details.js?v=445b8b761242"></script>
 <script defer src="./track-enrichment.js?v=f0137ad7fa25"></script>
-<script defer src="./folder-library.js?v=34b2d6587eaf"></script>
+<script defer src="./folder-library.js?v=ef89b2a61b03"></script>
 <script defer src="./lyric-style-mods.js?v=8aadd0292e03"></script>
 <script defer src="./lyric-effects.js?v=17738f7908d9"></script>
 <script defer src="./lyric-gpu.js?v=1d3464bc9498"></script>
 <script defer src="./lyric-renderer.js?v=8ec8a015cbb2"></script>
 <script defer src="./equalizer.js?v=b70a9b6984ae"></script>
-<script defer src="./music-discovery.js?v=f760ec4f58d4"></script>
+<script defer src="./music-discovery.js?v=b3cca6ed9060"></script>
 <script defer src="./external-now-playing.js?v=4707f602ab4d"></script>
 <script src="./audio-tuning.js?v=f92f0e44aa4f"></script>
 <script src="./audio-loudness.js?v=7de1fa6d948e"></script>
 <script src="./lyric-structure.js?v=f89bb4e66893"></script>
 <script src="./lyric-ink.js?v=01d2a75776bb"></script>
-<script defer src="./universe-main.js?v=28963374a8fc"></script>
+<script defer src="./universe-main.js?v=6bd4c142f5c7"></script>
 <script defer src="./playlist-transfer.js?v=f9d65c68d392"></script>
-<script defer src="./navidrome-panel.js?v=f9a5378ab494"></script>
-<script defer src="./music-library.js?v=d2888ea6530c"></script>
+<script defer src="./navidrome-panel.js?v=584433cf0b6e"></script>
+<script defer src="./music-library.js?v=e959acfabe97"></script>
 <script defer src="./reactive-scene-landscapes.js?v=3de31478b4e9"></script>
 <script defer src="./reactive-scene-neon.js?v=42a4617fe172"></script>
 <script defer src="./reactive-scene-bloom.js?v=d9accfa8d886"></script>
@@ -625,6 +626,6 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
 <script id="playbackBackgroundPainters" type="application/json" data-href="./playback-background-painters.js?v=e265afa58a67"></script>
 <script defer src="./playback-backgrounds.js?v=4bd22f3bef1d"></script>
 <script defer src="./appearance-preview.js?v=04a41999ecb6"></script>
-<script defer src="./listening-room.js?v=5efed8cdc128"></script>
+<script defer src="./listening-room.js?v=de9d2ed7ba77"></script>
 </body>
 </html>

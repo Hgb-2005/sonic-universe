@@ -59,6 +59,37 @@ test('loads synced Navidrome lyrics by recording ID, applying only that track’
   await assert.rejects(read(0),{code:'navidrome-auth'});
 });
 
+test('verifies saved Navidrome recordings and distinguishes revoked credentials, missing recordings, and server outage', async t => {
+  const http = require('node:http');
+  let available = 'ok';
+  const server = http.createServer((request, response) => {
+    const method = new URL(request.url, 'http://127.0.0.1').pathname;
+    if (method === '/rest/getSong.view' && available === 'auth') {
+      response.writeHead(401).end('Unauthorized');
+      return;
+    }
+    const result = method === '/rest/getSong.view' && available === 'missing'
+      ? {status:'failed',error:{code:70}} : {status:'ok'};
+    if (method === '/rest/search3.view') result.searchResult3 = {song:[{id:'recording',title:'验收曲目'}]};
+    response.end(JSON.stringify({'subsonic-response':result}));
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const url = 'http://127.0.0.1:' + server.address().port;
+  const close = () => new Promise(resolve => { server.close(resolve); server.closeAllConnections(); });
+  t.after(() => server.listening ? close() : undefined);
+  const provider = createNavidrome();
+  await provider.operation('connect', {url,user:'fixture',password:'fixture'});
+  const {items} = await provider.operation('search', {query:'验收曲目'});
+  const request = () => provider.audio(items[0].mediaId, undefined, {verify:true});
+  assert.ok((await request()).mediaUrl.startsWith(url));
+  available = 'auth';
+  await assert.rejects(request(), {code:'navidrome-auth'});
+  available = 'missing';
+  await assert.rejects(request(), {code:'not-found'});
+  await close();
+  await assert.rejects(request(), {code:'connection'});
+});
+
 test('converts KRC character timing to ordinary LRC', () => {
   const output = krcToLrc('[14690,6530]<0,210,0>故<210,200,0>事');
   assert.equal(krcToLrc('[14690,6530]<0,210,0>故<210,200,0>事', true), '[00:14.690]<00:14.690>故<00:14.900>事');
@@ -112,6 +143,20 @@ test('normalizes playlist fields and parses range headers', () => {
   assert.deepEqual(parseRange('bytes=2-9', 20), { start: 2, end: 9 });
   assert.deepEqual(parseRange('bytes=-5', 20), { start: 15, end: 19 });
   assert.deepEqual(parseRange('bytes=20-30', 20), { invalid: true });
+});
+
+test('Qishui cancelling a pending QR prevents another upstream poll', sdkTest, async t => {
+  const fs=require('node:fs/promises'),os=require('node:os'),path=require('node:path');
+  const directory=await fs.mkdtemp(path.join(os.tmpdir(),'sonic-qishui-qr-'));
+  t.after(()=>fs.rm(directory,{recursive:true,force:true}));
+  const provider=await createQishuiProvider({dataDirectory:directory,fetch:async url=>{
+    assert.equal(new URL(url).pathname,'/oauth/get_qrcode/');
+    return Response.json({data:{token:'fixture-only',qrcode:'fixture-only'}});
+  }});
+  const {sessionId}=await provider.loginStart();
+  assert.deepEqual(await provider.loginCancel(sessionId),{ok:true});
+  assert.deepEqual(await provider.loginCheck(sessionId),{state:'expired'});
+  assert.deepEqual(await provider.authStatus(),{authenticated:false});
 });
 
 test('Qishui playlist pages pass the owner and resume at the SDK cursor after 100 songs', sdkTest, async t => {

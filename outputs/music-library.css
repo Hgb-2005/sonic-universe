@@ -157,7 +157,8 @@
 #listeningRoom .sl-song-copy strong { color: #f0ebf6; font-size: 13px; font-weight: 600; }
 #listeningRoom .sl-song-copy small { margin-top: 4px; color: var(--room-muted); font-size: 11px; }
 #listeningRoom .sl-song-copy .sl-playback-status { color: var(--room-accent); }
-#listeningRoom .sl-search-album { display: none; }
+#listeningRoom :is(.sl-search-album, .sl-search-source) { display: none; }
+#listeningRoom .sl-suggestion-track { min-width: 0; max-width: 100%; text-align: left; white-space: normal; overflow-wrap: anywhere; }
 #listeningRoom .sl-active { display: none; color: var(--room-accent); }
 #listeningRoom .sl-active svg { width: 14px; height: 14px; }
 #listeningRoom .sl-track[data-active=true] .sl-active { display: inline-flex; }
@@ -265,8 +266,8 @@
   font-size: 10px;
   overflow-wrap: anywhere;
 }
-#listeningRoom .sl-qishui-badge[data-kind=preview] { border-color: #dfba8057; color: #e6cca6; }
-#listeningRoom .sl-qishui-badge[data-kind=direct] { border-color: #8bd5bc4f; color: #b3decf; }
+#listeningRoom .sl-qishui-badge:is([data-kind=preview], [data-kind=preview-source], [data-kind=auth-required]) { border-color: #dfba8057; color: #e6cca6; }
+#listeningRoom .sl-qishui-badge:is([data-kind=direct], [data-kind=full-source]) { border-color: #8bd5bc4f; color: #b3decf; }
 #listeningRoom .sl-qishui-badge:is([data-kind=failed], [data-kind=unavailable]) { border-color: #ef9a9860; color: #f2b6b5; }
 #listeningRoom .sl-qishui-actions { display: flex; align-self: center; align-items: center; gap: 5px; padding-inline-end: 8px; }
 #listeningRoom .sl-qishui-actions .sl-qishui-check { min-height: 34px; min-width: 68px; padding-inline: 6px; white-space: nowrap; }
@@ -323,6 +324,7 @@
 @media (max-width: 440px) {
   #listeningRoom .sl-library { --sl-table: minmax(0, 1fr) 39px 97px; }
   #listeningRoom .sl-source, #listeningRoom .sl-table-head > :nth-child(3) { display: none; }
+  #listeningRoom .sl-search-source { display: inline; }
   #listeningRoom .sl-heading { flex-wrap: wrap; }
   #listeningRoom .sl-library[data-search-page=true]:has(.sl-qishui-results:not([hidden])) .sl-heading-actions { display: none; }
   #listeningRoom .sl-track-actions button { width: 29px; }
