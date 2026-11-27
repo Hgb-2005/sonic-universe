@@ -52,12 +52,18 @@ function normalizeVideo(value) {
   return { provider: 'apple', mediaId, name, artist: text(value.artistName), externalUrl, linkedOnly: true };
 }
 
+function recordingDetails(song) {
+  const duration=Number(song.trackTimeMillis)/1000;
+  return {name:text(song.trackName),artist:text(song.artistName),album:text(song.collectionName),
+    duration:duration>0&&duration<=86400?duration:0};
+}
+
 function createDiscoveryProvider(options = {}) {
   const fetchImpl = options.fetch || globalThis.fetch;
   const timeoutMs = options.timeoutMs || 8000;
 
-  async function readJson(url) {
-    const signal = AbortSignal.timeout(timeoutMs);
+  async function readJson(url, deadline = timeoutMs) {
+    const signal = AbortSignal.timeout(deadline);
     try {
       const response = await fetchImpl(url, { signal, redirect: 'error', headers: { Accept: 'application/json' } });
       if (!response.ok) throw failure('Apple Music 暂时无法返回结果，请稍后重试。', 'upstream-unavailable', 502);
@@ -81,6 +87,14 @@ function createDiscoveryProvider(options = {}) {
     }
   }
 
+  async function chartRecordings(country,ids,deadline) {
+    const lookup=new URL('https://itunes.apple.com/lookup');
+    lookup.search=new URLSearchParams({country,id:ids.join(',')});
+    const details=await readJson(lookup.href,deadline);
+    return new Map((Array.isArray(details?.results)?details.results:[]).filter(song=>song?.kind==='song')
+      .map(song=>[String(song.trackId),recordingDetails(song)]));
+  }
+
   return {
     async charts(input = {}) {
       const country = countryCode(input.country);
@@ -90,7 +104,23 @@ function createDiscoveryProvider(options = {}) {
       const data = await readJson(url);
       if (!Array.isArray(data?.feed?.results)) throw failure('Apple Music 榜单的数据格式有误。', 'upstream-invalid-response', 502);
       const items = data.feed.results.map(normalizeChartEntry).filter(Boolean).slice(0, limit);
+      if (items.length) {
+        const songs=await chartRecordings(country,items.map(item=>item.mediaId),Math.min(timeoutMs,3200)).catch(()=>new Map());
+        for (const item of items) {
+          if(country!=='cn')item.country=country;
+          const song = songs.get(item.mediaId);
+          if (!song) continue;
+          if(song.album)item.album=song.album;
+          if(song.duration)item.duration=song.duration;
+        }
+      }
       return { provider: 'apple', title: text(data.feed.title) || 'Apple Music 热门歌曲', country, items };
+    },
+    async chartRecording(input={}) {
+      const country=countryCode(input.country),id=input.id;
+      if(!/^\d{1,30}$/.test(id||''))throw failure('榜单歌曲 ID 无效。','invalid-chart-song',400);
+      const songs=await chartRecordings(country,[id],Math.min(timeoutMs,4200));
+      return {item:songs.get(id)||null};
     },
     async musicVideos(input = {}) {
       const country = countryCode(input.country);

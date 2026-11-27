@@ -15,10 +15,10 @@
   });
 
   const versionMarkers=[
-    ['现场版',/现场版|现场录音|演唱会版|\blive (?:at|from|version|recording)\b|(?:^|[-–—(\[（【]\s*|\s)live(?:\s*[)\]）】]|$)/i],
+    ['现场版',/现场版|現場版|现场录音|現場錄音|演唱[会會]|\blive (?:at|from|version|recording|album)\b|(?:^|[-–—(\[（【]\s*|\s)live(?:\s*[)\]）】]|$)/i],
     ['翻唱版',/翻唱|\bcover\b/i],
     ['录音室版',/录音室版|\bstudio (?:version|recording)\b/i],
-    ['伴奏版',/伴奏版|纯伴奏|\binstrumental\b|\bkaraoke version\b/i],
+    ['伴奏版',/伴奏版|纯伴奏|[（(\s]伴奏(?:[)）\s]|$)|\binstrumental\b|\bkaraoke\b/i],
     ['重制版',/重制版|\bremaster(?:ed)?\b/i],
     ['混音版',/混音版|\bremix\b/i],
   ];
@@ -29,6 +29,50 @@
     // Require the album to corroborate a version indicated by the title.
     const matches = versionMarkers.filter(([, marker]) => marker.test(name) && marker.test(album));
     return matches.length === 1 ? matches[0][0] : '版本待确认';
+  }
+
+  function recordingKey(value) {
+    return text(value).normalize('NFKC').replace(/\s+/g, ' ').trim().toLowerCase();
+  }
+
+  function recordingAlbum(value) {
+    const album=recordingKey(value);
+    return /^\[?(?:unknown album|未知专辑|未知專輯)\]?$/.test(album)?'':album;
+  }
+
+  function recordingVersions(track) {
+    return versionMarkers.filter(([,marker])=>[track.name,track.album,track.version].some(value=>marker.test(text(value))))
+      .map(([label])=>label);
+  }
+
+  function findOwnedRecording(reference, tracks) {
+    const title = recordingKey(reference?.name), artist = recordingKey(reference?.artist);
+    if (!title || !artist) return null;
+    const album = recordingAlbum(reference.album), duration = reference.duration;
+    const versions=recordingVersions(reference);
+    const matches = tracks.filter(track => {
+      if (recordingKey(track.name) !== title || recordingKey(track.artist) !== artist || !(track.duration > 0)) return false;
+      const candidateAlbum = recordingAlbum(track.album);
+      if (album && candidateAlbum && candidateAlbum !== album || duration > 0 && Math.abs(track.duration - duration) > 2) return false;
+      const candidateVersions=recordingVersions(track);
+      if(versions.some(version=>!candidateVersions.includes(version))||
+        candidateVersions.some(version=>version!=='录音室版'&&!versions.includes(version)))return false;
+      return duration>0||Boolean(album&&candidateAlbum);
+    });
+    return matches.length === 1 ? matches[0] : null;
+  }
+
+  function playbackSourceLabel(track) {
+    if(track?.provider==='navidrome')return 'Navidrome';
+    return ({online:'汽水音乐',file:'本地音乐',demo:'内置示例',chart:'在线榜单',soda:'汽水分享'})[track?.kind]||'';
+  }
+
+  function playbackStatusLabel(state) {
+    return ({
+      direct:'可播整曲', 'full-source':'可播整曲', full:'可播整曲',
+      preview:'仅试听', 'preview-source':'仅试听',
+      'auth-required':'需登录', unavailable:'打开原平台', official:'打开原平台',
+    })[state] || '待确认';
   }
 
   function officialTrackUrl(provider, value) {
@@ -107,6 +151,7 @@
       name,
       artist: text(input.artist),
       album: text(input.album),
+      ...(navidrome&&text(input.version)?{version:text(input.version)}:{}),
       duration: Number.isFinite(duration) && duration > 0 ? duration : 0,
       cover: safeHttpsUrl(input.cover),
       externalUrl: navidrome?null:safeHttpsUrl(input.externalUrl) || `https://qishui.douyin.com/song/${encodeURIComponent(mediaId)}`,
@@ -455,8 +500,8 @@
         const params = new URLSearchParams({ country, limit: String(limit) });
         const origin = baseUrl;
         try {
-          // Allow the server's 8-second Apple deadline to reach the client.
-          return await requestFrom(origin, '/api/discovery/charts?' + params, undefined, 10000, signal, 10000);
+          // Allow the feed and optional metadata lookup to reach the client.
+          return await requestFrom(origin, '/api/discovery/charts?' + params, undefined, 12500, signal, 12500);
         } catch (error) {
           if (error.code !== 'timeout') throw error;
           const health = await requestFrom(origin, '/health', undefined, 1500, signal).catch(() => null);
@@ -472,6 +517,10 @@
         if (albumName) payload.album = albumName;
         if (includeCandidates === true) payload.includeCandidates = true;
         return requestFrom(baseUrl, '/api/discovery/charts/match', payload, 10000, signal);
+      },
+      chartRecording(mediaId,{country='cn',signal}={}) {
+        const params=new URLSearchParams({id:mediaId,country});
+        return requestFrom(baseUrl,'/api/discovery/charts/recording?'+params,undefined,5000,signal);
       },
       musicVideos(query, { country = 'cn', limit = 20, signal } = {}) {
         const params = new URLSearchParams({ query, country, limit: String(limit) });
@@ -505,6 +554,9 @@
     EXTERNAL_PROVIDERS,
     officialTrackUrl,
     recordingVersion,
+    findOwnedRecording,
+    playbackSourceLabel,
+    playbackStatusLabel,
     normalizeExternalTrack,
     normalizeTrack,
     migrateLegacyLink,

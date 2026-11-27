@@ -9,7 +9,6 @@
     const rows=Array.from(preview.querySelectorAll('[data-preview-line]'));
     const previewButtons=Array.from(preview.querySelectorAll('[data-preview-row]'));
     const previewTranslation=preview.querySelector('[data-preview-translation]');
-    // 「全文歌词」已收进「更多」菜单，不再和预览行同处一个容器。
     const fullEntry=root.querySelector('[data-now-lyrics]');
     const importEntry=preview.querySelector('[data-import-current-lyrics]');
     const seekPreview=root.querySelector('[data-seek-lyrics]');
@@ -28,13 +27,6 @@
     let scrollMode='smooth', lineTracks=[];
     let immersionMotion=[];
     const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)');
-    const immersionLines=preview.querySelector('.lr-now-lines');
-    const immersionSizes=typeof ResizeObserver==='function'?new ResizeObserver(entries=>{
-      for(const {target,contentRect} of entries){
-        const property=target===rows[1]?'--lr-immersion-body-height':'--lr-immersion-caption-height';
-        immersionLines.style.setProperty(property,contentRect.height+'px');
-      }
-    }):null;
 
     function stopImmersionMotion() {
       for(const animation of immersionMotion)animation.cancel();
@@ -245,7 +237,6 @@
       }
       const canImport=!nextLines.length&&state.track?.kind==='file'&&!state.external;
       importEntry.hidden=!canImport;
-      // 菜单里的「全文歌词」常驻显示，没有歌词时置灰，避免整个入口忽隐忽现。
       fullEntry.hidden=false;
       fullEntry.disabled=!nextLines.length;
       if(canImport)importEntry.setAttribute('aria-label','为《'+state.track.name+'》导入歌词');
@@ -293,6 +284,7 @@
         previewTranslation.textContent=line?.translation||'';
         previewTranslation.hidden=!line?.translation;
         currentNode=rows[1];
+        currentNode.dataset.length=(line?.text.replace(/[^\x00-\x7f]/g,'xx').length||0)>105?'long':'normal';
         groups=line?makeHighlight(currentNode,line,end):[];
         if(natural)animateImmersionLine(end-position);
       }
@@ -372,15 +364,10 @@
       setView(nextView) {
         if(view===nextView)return;
         stopImmersionMotion();
-        immersionSizes?.disconnect();
         stopScroll();
         rememberReading();
         view=nextView;
         preview.hidden=view!=='preview'&&view!=='immersive';scroll.hidden=view!=='full';fullTools.hidden=scroll.hidden;
-        if(view==='immersive'){
-          immersionSizes?.observe(rows[1]);
-          immersionSizes?.observe(previewTranslation);
-        }
         showFollowButton(false);lines=null;
         clearTimeout(returnTimer);
       },

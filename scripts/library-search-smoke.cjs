@@ -644,7 +644,6 @@ async function verifySampleLyrics(page, room) {
   const preview=room.locator('[data-lyric-preview]');
   await room.locator(':scope > .lr-player-wrap [data-action="now-playing"]').click();
   await preview.waitFor();
-  await room.locator('.lr-more-lyrics > summary').click();
   await room.locator('[data-now-lyrics]').click();
   const full=room.locator('[data-full-lyrics]');
   await full.waitFor();
@@ -739,7 +738,7 @@ async function verifyFirstRun(page,{electron=false}={}) {
   }else await page.goto(origin);
   const room=page.locator('#listeningRoom');
   const homeCard=room.locator('.lr-home-card');
-  const demo=homeCard.getByRole('button',{name:'试听示例',exact:true});
+  const demo=homeCard.getByRole('button',{name:'播放内置示例',exact:true});
   const importMusic=homeCard.getByRole('button',{name:'导入音乐',exact:true});
   const homeLyrics=homeCard.locator('[data-demo-lyrics]');
   const home=room.getByRole('button',{name:'声波宇宙首页',exact:true});
@@ -775,6 +774,8 @@ async function verifyFirstRun(page,{electron=false}={}) {
   },sample.id);
   assert.ok(audioResponses.some(response=>response.ok()),
     'Decoded sample came from its local shipped M4A recording');
+  const sampleQueue=await page.evaluate(()=>SonicPlayback.snapshot({queue:true}).queue.map(track=>[track.id,track.kind]));
+  assert.deepEqual(sampleQueue,[[sample.id,'demo'],['demo','demo']]);
   let navigations=0;
   page.on('framenavigated',frame=>{if(frame===page.mainFrame())navigations++;});
   const state=()=>page.evaluate(()=>{

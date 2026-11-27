@@ -114,6 +114,7 @@
           </div>
           <div class="lr-now-actions">
             <div class="lr-view-links" role="group" aria-label="切换播放视图">
+              <button type="button" class="lr-view-link" data-now-lyrics data-action="full-lyrics" aria-controls="lrLyricReading" aria-expanded="false">${icon('lyrics')}全文歌词</button>
               <button type="button" class="lr-view-link lr-view-link-primary lr-immersion-entry" data-action="enter-immersion" aria-controls="lrListenView">${icon('expand')}沉浸播放</button>
               <button type="button" class="lr-view-link lr-view-link-primary" data-import-current-lyrics data-action="import-current-lyrics" hidden>${icon('upload')}导入歌词</button>
             </div>
@@ -150,7 +151,6 @@
           <details class="lr-more-lyrics">
             <summary>更多</summary>
             <div class="lr-lyric-options">
-              <button type="button" class="lr-lyrics-entry" data-now-lyrics data-action="full-lyrics" aria-controls="lrLyricReading" aria-expanded="false">${icon('lyrics')}全文歌词</button>
               <button type="button" class="lr-lyrics-entry" data-action="lyric-effects" aria-haspopup="dialog">歌词样式</button>
               <button class="lr-lyrics-entry" data-action="lyric-mods" data-desktop-only hidden>样式模组</button>
               <details class="lr-lyric-timing" data-lyric-timing hidden>
@@ -186,10 +186,15 @@
           <button type="button" class="lr-choice" data-action="queue-skip" data-resume-skip hidden>跳过这首</button>
           <button type="button" class="lr-now-from-work" data-home-now-playing data-action="now-playing">打开正在播放 ${icon('arrow')}</button>
           <div class="lr-demo-actions" data-demo-actions hidden>
-            <button type="button" class="lr-primary" data-action="demo-play"><span class="lr-play-icon" data-demo-icon>${icon('play')}</span><span data-sample-label>试听示例</span></button>
+            <button type="button" class="lr-primary" data-action="demo-play"><span class="lr-play-icon" data-demo-icon>${icon('play')}</span><span data-sample-label>播放内置示例</span></button>
             <button type="button" class="lr-choice lr-start-import" data-action="import" data-start-import>${icon('folder')}导入音乐</button>
             <button type="button" class="lr-choice lr-demo-lyrics" data-demo-lyrics data-action="expand-lyrics" aria-controls="lrLyricReading" aria-expanded="false" hidden>${icon('lyrics')}同步歌词</button>
             <button type="button" class="lr-choice" data-demo-caption data-action="desktop-lyrics-window" aria-pressed="false" hidden>桌面歌词</button>
+          </div>
+          <div class="lr-home-mixes" data-home-mixes role="group" aria-label="从本地曲库连续播放" hidden>
+            <button type="button" class="lr-choice" data-home-mix="focus">${icon('play')}专注<small>长曲优先</small></button>
+            <button type="button" class="lr-choice" data-home-mix="relax">${icon('play')}放松<small>收藏优先</small></button>
+            <button type="button" class="lr-choice" data-home-mix="night">${icon('play')}夜听<small>最近播放优先</small></button>
           </div>
         </div>
         <div class="lr-signal">
@@ -246,7 +251,13 @@
           <button type="button" class="lr-play" data-action="play" aria-label="播放音乐"><span class="lr-play-icon" data-play-icon>${icon('play')}</span></button>
           <button type="button" class="lr-icon" data-action="next" aria-label="下一首">${icon('next')}</button>
         </div>
-        <div class="lr-player-right"><button type="button" class="lr-icon" data-action="favorite" aria-label="收藏歌曲" aria-pressed="false">${icon('heart')}</button><button type="button" class="lr-icon lr-mute" data-action="mute" aria-label="静音" title="静音" aria-pressed="false">${icon('volume')}</button><div class="lr-volume"><input class="lr-range" data-volume type="range" min="0" max="100" value="65" aria-label="音量"></div><button type="button" class="lr-icon" data-action="queue" aria-label="打开当前播放队列" aria-haspopup="dialog" title="播放队列">${icon('queue')}</button></div>
+        <div class="lr-player-right">
+          <button type="button" class="lr-icon" data-action="favorite" aria-label="收藏歌曲" aria-pressed="false">${icon('heart')}</button>
+          <button type="button" class="lr-icon lr-mute" data-action="mute" aria-label="静音" title="静音" aria-pressed="false">${icon('volume')}</button>
+          <div class="lr-volume"><input class="lr-range" data-volume type="range" min="0" max="100" value="65" aria-label="音量"></div>
+          <button type="button" class="lr-icon lr-caption-toggle" data-action="desktop-lyrics-window" data-dock-caption data-desktop-only aria-label="桌面歌词" title="桌面歌词" aria-pressed="false" hidden>${icon('lyrics')}<span>桌面歌词</span></button>
+          <button type="button" class="lr-icon" data-action="queue" aria-label="打开当前播放队列" aria-haspopup="dialog" title="播放队列">${icon('queue')}</button>
+        </div>
         <p class="lr-transport-status" data-transport-status role="status" hidden></p>
         <div class="lr-playback-recovery" data-playback-recovery hidden>
           <p id="lrPlaybackRecoveryStatus" data-playback-recovery-status role="status"></p>
@@ -661,8 +672,8 @@
     const style=readingFullLyrics?'list':preferences.lyricStyle,full=expanded&&style==='list',effectActive=expanded&&style==='effects';
     const view=mode!=='listen'?'hidden':listenImmersive?'immersive':full?'full':expanded?'stage':'preview';
     const previousView=root.dataset.nowView;
-    const movingBetweenLyrics=view!==previousView&&!['hidden','stage',undefined].includes(previousView)&&
-      view!=='hidden'&&view!=='stage'&&!reducedMotion.matches&&onScreen();
+    const movingBetweenLyrics=view!==previousView&&['preview','full'].includes(previousView)&&
+      ['preview','full'].includes(view)&&!reducedMotion.matches&&onScreen();
     const previousCover=movingBetweenLyrics?listenCover.getBoundingClientRect():null;
     if(view!==previousView){coverMotion?.cancel();lyricViewMotion?.cancel();}
     root.dataset.nowView=view;
@@ -1936,7 +1947,7 @@
     const message=$('[data-external-metadata-status]');
     if(message.textContent!==text)message.textContent=text;
   }
-  const musicSourceNames={file:'本地音乐',online:'汽水音乐',demo:'内置示例',chart:'在线榜单'};
+  const musicSourceLabel=track=>window.SonicOnlineMusic.playbackSourceLabel(track);
   const recoveryDetails={auth:'汽水登录已失效',connection:'音乐连接已中断',timeout:'播放连接超时',file:'本地音频读取失败',unplayable:'没有可播放的音源','resume-source':'当前音源不包含上次的播放进度'};
   function updateHomeResume(){
     const saved=snapshot.ready&&!snapshot.playing&&!snapshot.external?api.resumeInfo():null;
@@ -1963,7 +1974,7 @@
       (resume.exhausted?'队列里没有可接播的歌曲':detail)+'，已保留上次进度。';
     const fields={
       '[data-resume-title]':resume.name,
-      '[data-resume-source]':musicSourceNames[resume.kind]||'音乐',
+      '[data-resume-source]':musicSourceLabel(resume)||'音乐',
       '[data-resume-position]':'上次听到 '+core.formatTime(resume.position),
       '[data-resume-label]':label,
       '[data-resume-status]':message
@@ -1986,6 +1997,7 @@
     shelf.hidden=!recentTracks.length&&!smartTracks.length&&!smartUndo;
     if(!recentShelfDirty)return;
     recentShelfDirty=false;
+    $('[data-home-mixes]').hidden=!api.homeMixes().length;
     const items=api.recentTracks(4),smart=api.smartMusic();
     smartTracks=smart.items;
     smartUndo=smart.excluded;
@@ -2028,7 +2040,7 @@
       copy.className='lr-recent-copy';
       const title=document.createElement('span'),source=document.createElement('span');
       title.className='lr-recent-title';title.textContent=track.name;
-      source.className='lr-recent-source';source.textContent=musicSourceNames[track.kind]||'音乐';
+      source.className='lr-recent-source';source.textContent=musicSourceLabel(track)||'音乐';
       button.title=[track.name,track.artist,source.textContent].filter(Boolean).join(' · ');
       copy.append(title,source);button.append(copy);
       return button;
@@ -2141,8 +2153,8 @@
     if($('[data-artist]').textContent!==artist){
       $('[data-artist]').textContent=artist;$('[data-home-artist]').textContent=artist;$('[data-now-artist]').textContent=artist;
     }
-    if(force||trackChanged||['name','artist','album','kind'].some(key=>snapshot.track?.[key]!==previous.track?.[key])){
-      const album=snapshot.track?.album, source={file:'本地音乐',online:'汽水音乐',demo:'内置示例'}[snapshot.track?.kind];
+    if(force||trackChanged||['name','artist','album','kind','provider'].some(key=>snapshot.track?.[key]!==previous.track?.[key])){
+      const album=snapshot.track?.album, source=musicSourceLabel(snapshot.track);
       const recording=[album&&album!==title&&album!==artist?album:'',source].filter(Boolean).join(' · ');
       const element=$('[data-now-recording]');
       if(element.textContent!==recording)element.textContent=recording;
@@ -2154,7 +2166,8 @@
     const trackState=$('[data-track-state]');
     if(trackState.textContent!==statusLabel)trackState.textContent=statusLabel;
     const source=$('[data-track-source]');
-    const label=snapshot.external?(snapshot.externalMetadata?.sourceApp||'外部声音'):{online:'汽水音乐',demo:isBundledSample?'内置示例':'原创音景',file:'本地音乐'}[snapshot.track?.kind]||'';
+    const label=snapshot.external?(snapshot.externalMetadata?.sourceApp||'外部声音'):
+      snapshot.track?.kind==='demo'&&!isBundledSample?'原创音景':musicSourceLabel(snapshot.track);
     if(source.textContent!==label){source.textContent=label;source.hidden=!label;}
     $('[data-source-status]').hidden=!snapshot.external;
     $('[data-external-header]').hidden=!snapshot.external;
@@ -2170,7 +2183,7 @@
     }
     const demoControls=preferences.mode==='work'&&!resume&&snapshot.demoOnly&&snapshot.track?.kind==='demo'&&!snapshot.external;
     root.dataset.demoControls=String(demoControls);
-    const sampleLabel=$('[data-sample-label]'),sampleText=playing?'暂停试听':'试听示例';
+    const sampleLabel=$('[data-sample-label]'),sampleText=playing?'暂停示例':'播放内置示例';
     if(sampleLabel.textContent!==sampleText)sampleLabel.textContent=sampleText;
     $('[data-demo-actions]').hidden=!demoControls;
     $('[data-demo-lyrics]').hidden=!isBundledSample;
@@ -2725,7 +2738,7 @@
     queueOpener=null;
   });
   const actions={
-    continue:()=>api.continueListening(),play:()=>api.toggle(),'demo-play':()=>api.toggle(),previous:()=>api.previous(),next:()=>api.next(),favorite:()=>api.favorite(),repeat:()=>api.cyclePlayback(),
+    continue:()=>api.continueListening(),play:()=>api.toggle(),'demo-play':()=>api.playHomeDemos(),previous:()=>api.previous(),next:()=>api.next(),favorite:()=>api.favorite(),repeat:()=>api.cyclePlayback(),
     'playback-retry':()=>api.retryPlayback(),
     'playback-skip':()=>api.skipPlayback(),
     import:()=>api.importMusic(),folder:()=>api.importFolder(),
@@ -2799,6 +2812,11 @@
   root.addEventListener('click',event=>{
     const button=event.target.closest('button');if(!button||button.disabled||button.matches('.lr-recovery-actions [aria-disabled=true]'))return;
     if(button.hasAttribute('data-home-resume')&&button.getAttribute('aria-disabled')==='true')return;
+    if(button.dataset.homeMix){
+      const mix=api.homeMixes().find(item=>item.id===button.dataset.homeMix);
+      if(mix)runQueueAction(()=>api.playFromLibrary(mix.trackIds[0],'local',true,mix.trackIds,mix.name));
+      return;
+    }
     if(button.dataset.smartTrack){
       runQueueAction(()=>api.playFromLibrary(button.dataset.smartTrack,'smart',true,smartTracks.map(track=>track.id)));
       return;

@@ -20,15 +20,7 @@
     }
     return true;
   }
-  const qishuiAvailabilityLabels={
-    unknown:'待确认',
-    'full-source':'全曲',
-    'preview-source':'仅试听',
-    direct:'全曲',
-    preview:'仅试听',
-    unavailable:'去原平台听',
-    failed:'待确认',
-  };
+  const playbackStatusLabel=state=>window.SonicOnlineMusic.playbackStatusLabel(state);
 
   function mount(root,{api,icon,formatTime,openNowPlaying}) {
     root.innerHTML=`
@@ -303,9 +295,16 @@
         album.className='sl-search-album';album.textContent=' · '+track.album;
         caption.append(album);
       }
+      if(searchPage){
+        const state=track.kind==='soda'?'official':track.kind==='online'?'unknown':'full';
+        const badge=document.createElement('span');
+        badge.className='sl-playback-status';badge.textContent=playbackStatusLabel(state);
+        caption.prepend(badge,' · ');
+      }
       row.querySelector('.sl-album').textContent=track.album||'—';
       const source=row.querySelector('.sl-source');
-      source.textContent=track.sourceMissing?'本机副本':track.kind==='demo'&&track.id!=='demo'?'内置示例':sourceNames[track.kind]||'';
+      source.textContent=track.sourceMissing?'本机副本':track.provider==='navidrome'?'Navidrome':
+        track.kind==='demo'&&track.id!=='demo'?'内置示例':sourceNames[track.kind]||'';
       if(track.sourceMissing)source.title='原文件已移出导入的文件夹，已保存的副本仍可播放。';
       row.querySelector('.sl-duration').textContent=track.duration>0?formatTime(track.duration):'—';
       const play=row.querySelector('[data-sl-command="play"]');
@@ -530,7 +529,7 @@
       const availability=track.availability||'unknown';
       const badges=button.querySelector('.sl-qishui-badges');
       for(const [kind,label] of [['source','汽水音乐'],['version',version],
-        [availability,qishuiAvailabilityLabels[availability]]]){
+        [availability,playbackStatusLabel(availability)]]){
         const badge=document.createElement('span');
         badge.className='sl-qishui-badge';badge.dataset.kind=kind;badge.textContent=label;
         badges.append(badge);
@@ -678,7 +677,7 @@
       qishuiCheckJob=null;
       if(result.availability)qishui.items=qishui.items.map(item=>item===track?{...item,availability:result.availability}:item);
       qishuiMessage=result.message||'《'+track.name+'》'+
-        (qishuiAvailabilityLabels[result.availability]||'未能确认可播状态')+'。';
+        playbackStatusLabel(result.availability)+'。';
       renderSearchSources();
     }
 
@@ -686,6 +685,12 @@
       rememberSearch(sharedQuery());
       const track=qishui.items.find(item=>item.mediaId===id);
       if(searchSource!=='qishui'||!searchPage||!track||qishuiPlayJob?.id===id)return;
+      if(track.availability==='unavailable'){
+        const url=window.SonicOnlineMusic.normalizeTrack(track)?.externalUrl;
+        if(url)window.open(url,'_blank','noopener,noreferrer');
+        return;
+      }
+      if(track.availability==='auth-required'&&!api.snapshot().onlineLoggedIn){api.openOnline(sharedQuery());return;}
       if(playback?.playing&&playback.track?.id===track.id){openNowPlaying();return;}
       cancelQishuiPlay();
       cancelQishuiCheck();
@@ -702,7 +707,7 @@
       if(qishuiPlayJob!==job)return;
       qishuiPlayJob=null;
       const failed=!['full','preview','cancelled'].includes(result.status);
-      const availability={full:'direct',preview:'preview'}[result.status]||result.availability||(failed?'failed':null);
+      const availability={full:'direct',preview:'preview','auth-required':'auth-required'}[result.status]||result.availability||(failed?'failed':null);
       if(availability&&availability!==track.availability)qishui.items=qishui.items.map(item=>item===track?{...item,availability}:item);
       if(failed)qishuiFailure=id;
       qishuiMessage=result.status==='preview'?'正在试听《'+track.name+'》。':

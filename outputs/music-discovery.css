@@ -9,6 +9,7 @@
 #listeningRoom .sd-items { display: grid; padding: 0; margin: 14px 0 0; list-style: none; gap: 3px; }
 #listeningRoom .sd-items li { display: flex; align-items: center; gap: 10px; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #ffffff16; }
 #listeningRoom .sd-row-info { min-width: 0; }
+#listeningRoom .sd-row-info .sd-playback-status { display: block; margin-top: 4px; color: var(--room-muted); font-size: 11px; }
 #listeningRoom .sd-items strong, #listeningRoom .sd-items small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #listeningRoom .sd-items small { color: var(--room-muted); margin-top: 4px; }
 #listeningRoom .sd-items button { flex-shrink: 0; }

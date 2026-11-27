@@ -383,6 +383,11 @@ function createAppServer(options = {}) {
         const result = await matchChartSong(input => qishui.search(input), await readJson(request));
         return sendJson(response, 200, result, cors);
       }
+      if(url.pathname==='/api/discovery/charts/recording'){
+        if(request.method!=='GET')return sendJson(response,405,{error:'Method not allowed'},cors);
+        const item=await discovery.chartRecording({id:url.searchParams.get('id'),country:url.searchParams.get('country')});
+        return sendJson(response,200,item,cors);
+      }
       if (url.pathname === '/api/discovery/playable-videos') {
         if (request.method !== 'GET') return sendJson(response, 405, { error: 'Method not allowed' }, cors);
         const { searchParams } = url;

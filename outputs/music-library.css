@@ -156,6 +156,7 @@
 #listeningRoom .sl-song-copy :is(strong, small), #listeningRoom .sl-album { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #listeningRoom .sl-song-copy strong { color: #f0ebf6; font-size: 13px; font-weight: 600; }
 #listeningRoom .sl-song-copy small { margin-top: 4px; color: var(--room-muted); font-size: 11px; }
+#listeningRoom .sl-song-copy .sl-playback-status { color: var(--room-accent); }
 #listeningRoom .sl-search-album { display: none; }
 #listeningRoom .sl-active { display: none; color: var(--room-accent); }
 #listeningRoom .sl-active svg { width: 14px; height: 14px; }

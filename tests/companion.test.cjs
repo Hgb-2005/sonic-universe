@@ -20,6 +20,44 @@ const {
 const { parseRange, corsHeaders, isTrustedCoverUrl } = require('../companion/server.cjs');
 const { createPublicSearchProvider, normalizeNeteaseTrack, normalizeQqTrack, normalizeKugouTrack, searchParams } = require('../companion/providers/public-search.cjs');
 const { createDiscoveryProvider } = require('../companion/providers/discovery.cjs');
+const { createNavidrome } = require('../companion/providers/navidrome.cjs');
+
+test('loads synced Navidrome lyrics by recording ID, applying only that track’s offset',async t=>{
+  const http=require('node:http');
+  const requested=[];
+  const upstream=http.createServer((request,response)=>{
+    const url=new URL(request.url,'http://127.0.0.1'),key=url.searchParams.get('id');
+    let result={status:'ok'};
+    if(url.pathname==='/rest/search3.view'){
+      result.searchResult3={song:['with-lyrics','plain','legacy'].map(id=>({id,title:id,duration:55}))};
+    }else if(url.pathname==='/rest/getLyricsBySongId.view'){
+      requested.push(key);
+      if(key==='legacy'){response.writeHead(404).end();return;}
+      const structuredLyrics=[{synced:false,line:[{value:'无时间的歌词'}]}];
+      if(key==='with-lyrics')structuredLyrics.push({synced:true,offset:250,line:[
+        {start:6200,value:'第一颗星'},{start:100,value:' 开场 '},{start:14200,value:'第二颗星'},
+        {start:null,value:'无效时间'},{start:8000,value:{replace:1}},
+      ]});
+      result.lyricsList={structuredLyrics};
+    }
+    response.setHeader('Content-Type','application/json');
+    response.end(JSON.stringify({'subsonic-response':result}));
+  });
+  await new Promise(resolve=>upstream.listen(0,'127.0.0.1',resolve));
+  t.after(()=>new Promise(resolve=>{upstream.close(resolve);upstream.closeAllConnections();}));
+  const provider=createNavidrome();
+  await provider.operation('connect',{url:'http://127.0.0.1:'+upstream.address().port,user:'fixture',password:'fixture'});
+  const {items}=await provider.operation('search',{query:'fixture'});
+  const read=index=>provider.operation('lyrics',{mediaId:items[index].mediaId});
+  assert.deepEqual(await read(0),{lines:[
+    {time:0,text:'开场'},{time:5.95,text:'第一颗星'},{time:13.95,text:'第二颗星'},
+  ]});
+  assert.deepEqual(await read(1),{lines:[]});
+  assert.deepEqual(await read(2),{lines:[]});
+  assert.deepEqual(requested,['with-lyrics','plain','legacy']);
+  await provider.operation('disconnect',{});
+  await assert.rejects(read(0),{code:'navidrome-auth'});
+});
 
 test('converts KRC character timing to ordinary LRC', () => {
   const output = krcToLrc('[14690,6530]<0,210,0>故<210,200,0>事');
@@ -227,6 +265,11 @@ test('Apple charts and MV discovery use official links and do not expose promoti
       { id: '456', name: '无效链接', url: 'https://music.apple.com.bad.test/cn/album/test/2' },
     ] } });
     assert.equal(parsed.origin, 'https://itunes.apple.com');
+    if (parsed.pathname === '/lookup') {
+      assert.equal(parsed.searchParams.get('id'), '123');
+      assert.equal(parsed.searchParams.get('country'), 'cn');
+      return Response.json({ results: [{ kind:'song', trackId:123, collectionName:'原专辑', trackTimeMillis:210400 }] });
+    }
     assert.equal(parsed.searchParams.get('term'), '星光 & 夜晚');
     assert.equal(parsed.searchParams.get('media'), 'musicVideo');
     return Response.json({ results: [
@@ -240,6 +283,11 @@ test('Apple charts and MV discovery use official links and do not expose promoti
   assert.equal(calls[0], 'https://rss.marketingtools.apple.com/api/v2/cn/music/most-played/25/songs.json');
   assert.equal(charts.title, '热门歌曲');
   assert.deepEqual(charts.items.map(item => [item.mediaId, item.linkedOnly]), [['123', true]]);
+  assert.equal(charts.items[0].album, '原专辑');
+  assert.equal(charts.items[0].duration, 210.4);
+  assert.deepEqual(await provider.chartRecording({id:'123',country:'cn'}),
+    {item:{name:'',artist:'',album:'原专辑',duration:210.4}});
+  await assert.rejects(provider.chartRecording({id:'123,456',country:'cn'}),{status:400});
   const videos = await provider.musicVideos({ query: '星光 & 夜晚' });
   assert.deepEqual(videos.items, [{ provider: 'apple', mediaId: '1', name: '夜晚', artist: '作者', externalUrl: 'https://music.apple.com/cn/music-video/night/1', linkedOnly: true }]);
 });

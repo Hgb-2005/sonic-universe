@@ -119,6 +119,16 @@ test('detailed chart matching caps deduplicated manual candidates and reports in
   assert.deepEqual(incomplete, { item: null, reason: 'incomplete', candidates: candidates.slice(0, 15) });
 });
 
+test('a complete reference can identify a recording on an incomplete catalogue page', async () => {
+  const reference = { name:'晴天', artist:'周杰伦', album:'叶惠美', duration:269.747, includeCandidates:true };
+  const original = { ...track('1', '晴天', '周杰伦'), album:'叶惠美', duration:270 };
+  const other = { ...original, mediaId:'2', album:'演唱会版' };
+  const cover = { ...original, mediaId:'3', artist:'其他歌手' };
+  const search = async items => matchChartSong(async ({ offset, limit }) => ({ items, hasMore:true, nextOffset:offset + limit }), reference);
+  assert.deepEqual(await search([cover, other, original]), { item:original, reason:'matched', candidates:[original, other] });
+  assert.equal((await search([original, { ...original, mediaId:'4' }])).reason, 'ambiguous');
+});
+
 test('chart matching rejects malformed input before any search and reports invalid service responses', async () => {
   const shouldNotRun = () => assert.fail('Invalid text reached the catalogue');
   for (const input of [null, { name: '歌曲' }, { name: '歌\n曲', artist: '歌手' }, { name: '啊'.repeat(241), artist: '歌手' }]) {

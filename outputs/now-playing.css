@@ -552,108 +552,90 @@
   padding: var(--lr-immersion-clearance) var(--lr-immersion-inline);
 }
 
+#listeningRoom[data-mode=listen][data-listen-immersive=true] > .lr-toasts {
+  inset: var(--lr-immersion-top) auto auto var(--lr-immersion-inline);
+  max-width: min(24vw, 320px);
+  transform: none;
+  overflow-wrap: anywhere;
+}
+
 #listeningRoom[data-listen-immersive=true] .lr-listen-view { position: static; outline: none; }
 
 #listeningRoom[data-listen-immersive=true] .lr-now-composition {
-  width: min(1040px, 100%);
+  width: min(1120px, 100%);
   margin-inline: auto;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 0;
+  grid-template-columns: minmax(132px, .72fr) minmax(0, 1.65fr);
+  gap: clamp(22px, 4vw, 64px);
+  --lr-immersion-surface: rgb(20 23 34 / 88%);
+  --lr-immersion-border: rgb(229 218 250 / 17%);
+  --lr-immersion-ink: #faf7ff;
+  --lr-immersion-sung: #ffe8f4;
+  --lr-immersion-unsung: #dbd4e5;
+  --lr-immersion-context: #aeb2c5;
+  --lr-immersion-translation: #e7deef;
 }
 
-#listeningRoom[data-mode=listen][data-listen-immersive=true][data-active-scene=prism-bloom] .lr-now-content::before {
+#listeningRoom[data-listen-immersive=true][data-lyric-tone=light] .lr-now-composition {
+  --lr-immersion-surface: rgb(250 247 240 / 92%);
+  --lr-immersion-border: rgb(34 54 67 / 18%);
+  --lr-immersion-ink: #17232a;
+  --lr-immersion-sung: #602848;
+  --lr-immersion-unsung: #34414a;
+  --lr-immersion-context: #52616d;
+  --lr-immersion-translation: #31404d;
+}
+
+#listeningRoom[data-mode=listen][data-listen-immersive=true] .lr-now-content::before {
   display: none;
 }
 
 #listeningRoom[data-listen-immersive=true] .lr-now-artwork {
-  position: absolute;
-  inset: var(--lr-immersion-top) auto auto var(--lr-immersion-inline);
-  width: min(365px, 53vw);
-  grid-template-columns: auto minmax(0, 1fr);
-  grid-template-areas: "cover title" "cover artist";
-  align-items: center;
+  align-content: center;
   justify-items: start;
-  gap: 2px 11px;
-  text-align: start;
+  gap: 7px;
 }
 
 #listeningRoom[data-listen-immersive=true] .lr-now-cover {
-  grid-area: cover;
-  width: clamp(38px, 6.5svh, 56px);
-  margin: 0;
-  border-radius: 8px;
-  box-shadow: 0 6px 22px #05060b65;
+  width: min(100%, clamp(130px, 29svh, 270px));
+  margin-block-end: clamp(3px, 1svh, 10px);
+  transform: none;
+  transition: none;
 }
-
-#listeningRoom[data-listen-immersive=true] .lr-now-cover [data-now-cover-placeholder] svg { width: 20px; height: 20px; }
 
 #listeningRoom[data-listen-immersive=true] .lr-now-title {
-  grid-area: title;
-  align-self: end;
-  font-size: clamp(13px, 1.4vw, 17px);
+  font-size: clamp(17px, 2.1vw, 30px);
   line-height: 1.2;
+  letter-spacing: .01em;
 }
 
-#listeningRoom[data-listen-immersive=true] .lr-now-artist {
-  grid-area: artist;
-  align-self: start;
-  font-size: 11px;
-}
-
-#listeningRoom[data-listen-immersive=true] :is(.lr-now-title, .lr-now-artist) {
-  max-width: 100%;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
+#listeningRoom[data-listen-immersive=true] .lr-now-artist { font-size: clamp(12px, 1.4vw, 15px); }
 
 #listeningRoom[data-listen-immersive=true] .lr-now-lines {
-  --lr-immersion-font: clamp(26px, min(4.8vw, 7.3svh), 68px);
-  --lr-immersion-caption-font: clamp(14px, 1.6vw, 20px);
-  --lr-immersion-caption-margin: clamp(5px, 1svh, 10px);
-  --lr-immersion-body-lines: 3;
-  --lr-immersion-caption-lines: 2;
-  --lr-immersion-body-slot: calc(var(--lr-immersion-font) * 1.16 * var(--lr-immersion-body-lines));
-  --lr-immersion-caption-slot: calc(var(--lr-immersion-caption-font) * 1.4 * var(--lr-immersion-caption-lines) + var(--lr-immersion-caption-margin));
-  --lr-immersion-body-spare: max(0px, calc((var(--lr-immersion-body-slot) - var(--lr-immersion-body-height, var(--lr-immersion-body-slot))) / 2));
-  --lr-immersion-caption-spare: max(0px, calc(var(--lr-immersion-caption-slot) - var(--lr-immersion-caption-height, var(--lr-immersion-caption-slot)) - var(--lr-immersion-caption-margin)));
-  grid-template-rows: 32px auto 32px;
-  /* Reserve the same space even when a line has no translation. */
-  padding-block-start: var(--lr-immersion-caption-slot);
-  gap: clamp(5px, 1.25svh, 11px);
+  padding: clamp(15px, 2.9vw, 37px);
+  border: 1px solid var(--lr-immersion-border);
+  border-radius: clamp(13px, 1.6vw, 22px);
+  background: var(--lr-immersion-surface);
+  --lr-lyric-word-sung: var(--lr-immersion-sung);
+  --lr-lyric-word-waiting: var(--lr-immersion-unsung);
+  gap: clamp(8px, 1.8svh, 16px);
 }
 
 #listeningRoom[data-listen-immersive=true] .lr-preview-row {
-  justify-items: center;
-  padding-inline: clamp(3px, 1vw, 14px);
-  text-align: center;
+  justify-items: start;
+  text-align: start;
+  padding: 0;
+  min-height: 0;
 }
 
-#listeningRoom[data-listen-immersive=true] .lr-preview-row[data-preview-row="-1"] {
-  grid-row: 1;
-  align-self: end;
-  translate: 0 min(var(--lr-immersion-body-spare), 75px);
-}
-
+#listeningRoom[data-listen-immersive=true] .lr-preview-row[data-preview-row="-1"] { grid-row: 1; }
 #listeningRoom[data-listen-immersive=true] .lr-preview-row[data-preview-row="0"] {
   grid-row: 2;
-  grid-template-rows: minmax(var(--lr-immersion-body-slot), max-content) minmax(var(--lr-immersion-caption-slot), max-content);
-  align-content: stretch;
-  min-height: 0;
-  padding-block: 0;
+  gap: clamp(5px, 1.5svh, 13px);
 }
-
-#listeningRoom[data-listen-immersive=true] .lr-preview-row[data-preview-row="1"] {
-  grid-row: 3;
-  align-self: start;
-  translate: 0 calc(-1 * min(110px, var(--lr-immersion-body-spare) + var(--lr-immersion-caption-spare)));
-}
+#listeningRoom[data-listen-immersive=true] .lr-preview-row[data-preview-row="1"] { grid-row: 3; }
 
 #listeningRoom[data-listen-immersive=true] .lr-preview-row:not([data-preview-row="0"]) {
-  min-height: 0;
-  padding-block: 3px;
-  color: #ada6bb;
-  font-size: clamp(13px, 1.65vw, 20px);
+  font-size: clamp(13px, 1.55vw, 19px);
 }
 
 #listeningRoom[data-listen-immersive=true] .lr-preview-row:not([data-preview-row="0"]) [data-preview-line] {
@@ -663,26 +645,32 @@
   -webkit-line-clamp: 1;
 }
 
-#listeningRoom[data-listen-immersive=true] .lr-preview-row [data-preview-line="0"] {
-  align-self: center;
-  font-size: var(--lr-immersion-font);
-  line-height: 1.16;
-  text-shadow: 0 4px 25px #05060ec7;
-  text-wrap: balance;
+#listeningRoom[data-mode=listen][data-listen-immersive=true] .lr-preview-row [data-preview-line="0"] {
+  color: var(--lr-immersion-ink);
+  font-size: clamp(24px, min(4.2vw, 6.2svh), 57px);
+  font-weight: 700;
+  line-height: 1.18;
+  text-shadow: none;
+  text-wrap: pretty;
+}
+
+#listeningRoom[data-mode=listen][data-listen-immersive=true] .lr-preview-row [data-preview-line="0"][data-length="long"] {
+  font-size: clamp(20px, min(3.45vw, 5.4svh), 39px);
 }
 
 #listeningRoom[data-listen-immersive=true] .lr-preview-row[data-preview-row="0"]:disabled [data-preview-line="0"] {
-  font-size: clamp(22px, min(3.4vw, 5svh), 43px);
-  text-shadow: none;
+  font-size: clamp(21px, min(3vw, 5svh), 39px);
 }
 
-#listeningRoom[data-listen-immersive=true] .lr-preview-row [data-preview-translation] {
-  grid-row: 2;
-  align-self: start;
-  margin-block-start: calc(var(--lr-immersion-caption-margin) - var(--lr-immersion-body-spare));
-  color: var(--lr-lyric-translation);
-  font-size: var(--lr-immersion-caption-font);
-  text-wrap: balance;
+#listeningRoom[data-mode=listen][data-listen-immersive=true] .lr-preview-row [data-preview-translation] {
+  color: var(--lr-immersion-translation);
+  font-size: clamp(14px, 1.55vw, 19px);
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+#listeningRoom[data-listen-immersive=true][data-listen-lyrics=false] .lr-now-composition {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 #listeningRoom[data-listen-immersive=true][data-listen-lyrics=false] .lr-now-content { display: none; }
@@ -765,21 +753,41 @@
 }
 
 @media (max-width: 700px) {
-  #listeningRoom[data-listen-immersive=true] .lr-now-artwork { gap: 2px 7px; }
-  #listeningRoom[data-listen-immersive=true] .lr-now-lines {
-    --lr-immersion-font: clamp(21px, min(6.6vw, 7.1svh), 39px);
-    --lr-immersion-body-lines: 4;
-    --lr-immersion-caption-lines: 3;
+  #listeningRoom[data-listen-immersive=true] .lr-now-composition {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+  #listeningRoom[data-listen-immersive=true][data-listen-lyrics=true] .lr-now-artwork {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas: "cover title" "cover artist";
+    gap: 2px 11px;
+  }
+  #listeningRoom[data-listen-immersive=true][data-listen-lyrics=true] .lr-now-cover {
+    grid-area: cover;
+    width: clamp(44px, 13vw, 76px);
+    margin: 0;
+  }
+  #listeningRoom[data-listen-immersive=true][data-listen-lyrics=true] .lr-now-title {
+    grid-area: title;
+    align-self: end;
+  }
+  #listeningRoom[data-listen-immersive=true][data-listen-lyrics=true] .lr-now-artist {
+    grid-area: artist;
+    align-self: start;
   }
 }
 
-@media (max-height: 520px) {
-  #listeningRoom[data-mode=listen][data-listen-immersive=true] { --lr-immersion-clearance: 72px; }
-  #listeningRoom[data-listen-immersive=true] .lr-now-lines {
-    --lr-immersion-font: clamp(19px, min(4.8vw, 6.6svh), 35px);
-    grid-template-rows: 24px auto 24px;
-    gap: 4px;
-  }
+@media (max-height: 560px) {
+  #listeningRoom[data-mode=listen][data-listen-immersive=true] { --lr-immersion-clearance: 76px; }
+  #listeningRoom[data-listen-immersive=true] .lr-now-lines { padding-block: 13px; gap: 8px; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  #listeningRoom[data-listen-immersive=true] .lr-now-lines { animation: lr-immersion-in .2s ease-out both; }
+}
+@keyframes lr-immersion-in {
+  from { opacity: .94; }
+  to { opacity: 1; }
 }
 
 @media (pointer: coarse) {
@@ -1151,4 +1159,19 @@ html:has(#listeningRoom:is([data-playback-tone=light], [data-playback-tone=mid])
   align-self: start;
   padding-inline: .28em;
   border-radius: .24em;
+}
+
+#listeningRoom[data-mode=listen][data-listen-immersive=true] .lr-now-lines::before { display: none; }
+#listeningRoom[data-mode=listen][data-listen-immersive=true] .lr-preview-row :is(
+  [data-preview-translation], [data-preview-line="-1"], [data-preview-line="1"]
+) {
+  padding-inline: 0;
+  background: none;
+}
+#listeningRoom[data-mode=listen][data-listen-immersive=true] .lr-preview-row :is([data-preview-line="-1"], [data-preview-line="1"]) {
+  color: var(--lr-immersion-context);
+}
+#listeningRoom[data-mode=listen][data-listen-immersive=true] .lr-preview-row .lr-timed-group {
+  font-weight: inherit;
+  text-shadow: none;
 }

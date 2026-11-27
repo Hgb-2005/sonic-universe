@@ -2,6 +2,13 @@
 
 [打开网页版](https://hgb-2005.github.io/sonic-universe/) · [Windows 版 0.47.2](https://github.com/Hgb-2005/sonic-universe/releases) · [Windows 正式版 0.42.0](https://github.com/Hgb-2005/sonic-universe/releases/tag/v0.42.0)
 
+## 0.47.6 · Windows
+
+- 热门榜单可从已连接的 Navidrome 曲库查找并播放可确认的录音。资料不足时可以手动选择，正在播放页会显示实际音源。
+- Navidrome 同步歌词随播放和进度拖动换句，切歌时更新。
+- 搜索和榜单显示整曲、试听及确认状态。未登录时也可在首页播放内置示例或本地曲库队列。
+- 正在播放页提供全文歌词和桌面歌词开关，沉浸播放为封面、长句和译文留出独立空间。
+
 ## 0.47.5 · Windows 测试候选版
 
 - Navidrome 支持编辑和同步服务器歌单、冲突时选择保留的版本，以及从另一台设备的续播位置继续听。

@@ -4,6 +4,32 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const online = require('../outputs/online-music.js');
 
+test('owned recordings require an exact artist and available recording metadata', () => {
+  const reference = { name:'晴天', artist:'周杰伦', album:'叶惠美', duration:269.747 };
+  const original = { ...reference, duration:269.9 };
+  const cover = { ...original, artist:'其他歌手' };
+  const backing = { ...original, album:'晴天 (伴奏)' };
+  const wrongLength = { ...original, duration:212 };
+  assert.equal(online.findOwnedRecording(reference, [cover, backing, wrongLength, original]), original);
+  assert.equal(online.findOwnedRecording(reference, [cover, backing, wrongLength]), null);
+  assert.equal(online.findOwnedRecording(reference, [original, { ...original }]), null);
+  assert.equal(online.findOwnedRecording({ name:reference.name, artist:reference.artist }, [backing]), null);
+});
+
+test('confirms Navidrome recordings with reference evidence and treats its unknown album as missing',()=>{
+  const reference={name:'晴天',artist:'周杰伦',album:'叶惠美',duration:269.747};
+  const original={name:'晴天',artist:'周杰伦',album:'[Unknown Album]',duration:269};
+  const otherArtist={...original,artist:'验收歌手',album:'叶惠美'};
+  const live={...original,version:'演唱会版'};
+  const cover={...original,album:'翻唱版'};
+  assert.equal(online.findOwnedRecording(reference,[otherArtist,live,cover,original]),original);
+  assert.equal(online.findOwnedRecording(reference,[otherArtist,live,cover]),null);
+  assert.equal(online.findOwnedRecording({name:'晴天',artist:'周杰伦'},[original]),null);
+  assert.equal(online.findOwnedRecording({...reference,version:'录音室版'},[original,live]),null);
+  assert.equal(online.findOwnedRecording({...reference,version:'演唱会版'},[original,live]),live);
+  assert.equal(online.findOwnedRecording({...reference,duration:0},[original]),null);
+});
+
 test('normalizes an online Qishui track without signed playback fields', () => {
   const track = online.normalizeTrack({
     provider: 'qishui',

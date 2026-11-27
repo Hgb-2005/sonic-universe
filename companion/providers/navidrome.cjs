@@ -15,7 +15,9 @@ function createNavidrome(){
     state.formats.set(item.id,text(item.suffix).toLowerCase());
     const duration=Number(item.duration);
     return {provider:'navidrome',mediaId:state.key+'_'+item.id,name:text(item.title),artist:text(item.artist),
-      album:text(item.album),duration:Number.isFinite(duration)&&duration>0?Math.min(duration,86400):0,liked:Boolean(item.starred)};
+      album:/^\[?unknown album\]?$/i.test(text(item.album))?'':text(item.album),
+      ...(text(item.version)?{version:text(item.version)}:{}),
+      duration:Number.isFinite(duration)&&duration>0?Math.min(duration,86400):0,liked:Boolean(item.starred)};
   }
   function credentials(body){
     let base;
@@ -54,11 +56,14 @@ function createNavidrome(){
     let response,result;
     try{
       response=await fetch(url,options);
-      result=(await response.json())['subsonic-response'];
+      if(name!=='getLyricsBySongId'||response.status!==404)result=(await response.json())['subsonic-response'];
     }catch{throw invalid('Navidrome 未响应，请检查服务器地址和网络。',502,'connection');}
     if(result?.status==='ok'&&response.ok)return result;
     if([40,41,50].includes(result?.error?.code)||response.status===401||response.status===403)throw invalid('Navidrome 登录失败，请核对账号和权限。',401,'navidrome-auth');
     if(result?.error?.code===70)throw invalid('服务器上找不到这项内容。',404,'not-found');
+    if(name==='getLyricsBySongId'&&([20,30].includes(result?.error?.code)||response.status===404)){
+      throw invalid('服务器未提供同步歌词接口。',404,'not-found');
+    }
     throw invalid('Navidrome 未能完成此操作。',502);
   }
   function requireAccount(){
@@ -129,6 +134,26 @@ function createNavidrome(){
     await json(state,state.indexQueue?'savePlayQueueByIndex':'savePlayQueue',params,true);
     return {saved:true};
   }
+  async function songLyrics(state,mediaId){
+    const key=songId(state,mediaId);
+    const result=await json(state,'getLyricsBySongId',{id:key}).catch(error=>{
+      if(error.code==='not-found')return null;
+      throw error;
+    });
+    if(account!==state)throw invalid('连接已改变，请重新读取歌词。',409);
+    for(const lyric of array(result?.lyricsList?.structuredLyrics).slice(0,16)){
+      if(lyric?.synced!==true)continue;
+      const offset=Number.isFinite(lyric.offset)?Math.max(-120000,Math.min(120000,lyric.offset)):0;
+      const lines=[];
+      for(const line of array(lyric.line).slice(0,2500)){
+        const start=line?.start,value=typeof line?.value==='string'?text(line.value.replace(/[\u0000-\u001f\u007f]+/g,' ')):'';
+        if(!Number.isFinite(start)||start<0||start>86400000||!value)continue;
+        lines.push({time:Math.max(0,start-offset)/1000,text:value});
+      }
+      if(lines.length)return {lines:lines.sort((a,b)=>a.time-b.time)};
+    }
+    return {lines:[]};
+  }
   async function operation(name,body){
     if(name==='connect'){
       const candidate=credentials(body);
@@ -162,6 +187,7 @@ function createNavidrome(){
     }
     if(name==='resume')return resume(state);
     if(name==='resume-save')return saveResume(state,body);
+    if(name==='lyrics')return songLyrics(state,body.mediaId);
     if(name==='search'){
       const query=text(body.query);
       if(!query)return {items:[]};

@@ -5,6 +5,7 @@ const { once } = require('node:events');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { _electron } = require('playwright');
+const { frameRate } = require('../outputs/listening-core.js');
 
 const repo = path.resolve(__dirname,'..');
 const port = 18983;
@@ -16,10 +17,10 @@ const timedLine = '沿着星光望见林间最亮的一片夜空，把这一段�
 const translation = 'We watch the brightest stretch of night sky between the trees and let the whole line stay in view.';
 const ordinary = '这是一句普通 LRC 歌词';
 const tests = [
-  {name:'普通窗口', width:1360, height:900},
-  {name:'最小桌面窗口', width:760, height:580},
-  {name:'Windows 原生全屏', width:1360, height:900, fullscreen:true, checkIdle:true},
-  {name:'最小桌面窗口与省电', width:760, height:580, energy:true, checkIdle:true},
+  {name:'普通窗口 · 插电', width:1360, height:900, onBattery:false, energy:false},
+  {name:'最小桌面窗口 · 电池', width:760, height:580, onBattery:true, energy:false},
+  {name:'Windows 原生全屏 · 插电省电', width:1360, height:900, onBattery:false, energy:true, fullscreen:true, checkIdle:true},
+  {name:'最小桌面窗口 · 电池省电', width:760, height:580, onBattery:true, energy:true, checkIdle:true, checkOnline:true},
 ];
 
 async function writeFixtures(directory) {
@@ -45,6 +46,16 @@ const state = page => page.evaluate(() => SonicPlayback.snapshot({queue:true}));
 const pageScroll = page => page.evaluate(() => window.scrollY);
 const nativeFullscreen = app => app.evaluate(({BrowserWindow}) => BrowserWindow.getAllWindows()[0].isFullScreen());
 
+async function checkFrameLimit(page,mode,config) {
+  const expected=frameRate({active:true,reduced:false,mode,energySaver:config.energy,onBattery:config.onBattery});
+  await page.waitForFunction(({mode,energy,expected})=>{
+    const settings=SonicListeningRoom.settings();
+    return SonicPlayback.snapshot().playing&&settings.mode===mode&&settings.energySaver===energy&&
+      SonicListeningRoom.stats().fpsLimit===expected;
+  },{mode,energy:config.energy,expected});
+  console.log('PASS '+config.name+' '+mode+' 帧率上限 '+expected+' FPS');
+}
+
 async function quit(app) {
   const exited=once(app.process(),'exit',{signal:AbortSignal.timeout(12000)});
   await app.evaluate(({app})=>{setTimeout(()=>app.quit(),0);});
@@ -59,6 +70,12 @@ async function launch(profile,config) {
     const page=await app.firstWindow();
     page.setDefaultTimeout(9000);
     await page.waitForURL(url=>url.origin===origin);
+    await page.addInitScript(onBattery=>{
+      const battery=Object.assign(new EventTarget(),{charging:!onBattery,level:.6});
+      Object.defineProperty(navigator,'getBattery',{configurable:true,value:async()=>battery});
+    },config.onBattery);
+    await page.emulateMedia({reducedMotion:'no-preference'});
+    await page.reload({waitUntil:'domcontentloaded'});
     await page.waitForFunction(()=>window.SonicPlayback?.snapshot().ready);
     const dimensions=await app.evaluate(({BrowserWindow},{width,height})=>{
       const window=BrowserWindow.getAllWindows()[0];
@@ -67,7 +84,6 @@ async function launch(profile,config) {
     },config);
     assert.ok(dimensions.window.every((size,index)=>Math.abs(size-[config.width,config.height][index])<=3),dimensions.window.join('×'));
     await page.waitForFunction(([width,height])=>Math.abs(innerWidth-width)<=2&&Math.abs(innerHeight-height)<=2,dimensions.content);
-    await page.emulateMedia({reducedMotion:'no-preference'});
     return {app,page,child:app.process()};
   }catch(error){await app.close();throw error;}
 }
@@ -272,11 +288,10 @@ async function verifyJourney(profile,fixtures,config) {
     assert.equal(await search.inputValue(),'Windows Flow');
     assert.equal(await pageScroll(page),searchTop);
     await dock.locator('[data-action="now-playing"]').click();
-    await room.locator('.lr-more-lyrics > summary').click();
     await room.locator('[data-now-lyrics]').click();
     const full=room.locator('[data-full-lyrics]');
     await full.waitFor();
-    await page.waitForFunction(limit=>SonicListeningRoom.stats().fpsLimit===limit,config.energy?30:45);
+    await checkFrameLimit(page,'listen',config);
     const slider=dock.locator('[data-seek]');
     const dragStart=await slider.evaluate(input=>({
       x:6+(input.clientWidth-12)*Number(input.value)/Number(input.max),
@@ -394,7 +409,8 @@ async function verifyJourney(profile,fixtures,config) {
     await resume.click();
     await page.waitForFunction(point=>SonicPlayback.snapshot().track?.id===point.id&&
       SonicPlayback.snapshot().playing&&SonicPlayback.position()>point.position+.1,saved);
-    if(config.energy)await verifyOnlineInPowerMode(page,await fs.readFile(path.join(fixtures,titles[0]+'.wav')));
+    await checkFrameLimit(page,'work',config);
+    if(config.checkOnline)await verifyOnlineInPowerMode(page,await fs.readFile(path.join(fixtures,titles[0]+'.wav')));
   }finally{await app.close();}
   console.log('PASS '+config.name+' search → lyrics → reorder → natural next → quit → paused resume');
 }

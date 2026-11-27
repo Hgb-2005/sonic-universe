@@ -81,8 +81,9 @@ async function matchChartSong(search, input) {
     offset = result.nextOffset;
   }
 
-  // An incomplete result set cannot establish an unambiguous match.
-  return matchResult(matches, includeCandidates, true);
+  // A title and artist alone cannot confirm an incomplete result set. When
+  // both reference fields identify the recording, apply the same rank rules.
+  return matchResult(matches, includeCandidates, !(duration && album && [...matches.values()].some(candidate => candidate.rank === 0)));
 }
 
 module.exports = { matchChartSong };
