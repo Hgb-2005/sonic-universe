@@ -1,0 +1,90 @@
+/* Record and type share a local coordinate system in the live stage and the audition. */
+#listeningRoom .gr-disc, #listeningRoom .gr-last, #listeningRoom .gr-cue, #listeningRoom .gr-turn[hidden] { display: none; }
+#listeningRoom .gr-turn { position: absolute; z-index: 2; color: #f1e7d5; text-wrap: balance; overflow-wrap: anywhere; pointer-events: none; transform-origin: left top; text-shadow: 0 1px 4px #17140edd; }
+#listeningRoom [data-groove] { container-type: inline-size; }
+#listeningRoom [data-groove] > .gr-disc {
+  display: block; position: absolute; pointer-events: none; z-index: 1;
+  width: min(35%,55vh); aspect-ratio: 1; right: 3%; top: 47%;
+  transform: translateY(-50%); filter: drop-shadow(0 1.4cqw 1.8cqw #080b1638);
+}
+#listeningRoom [data-groove]:not([data-groove-duet]) > .gr-voice {
+  position: absolute; display: grid; grid-template-rows: auto auto; grid-template-columns: minmax(0,1fr);
+  left: 6%; right: auto; top: 43%; width: 56%; translate: none; transform: none;
+  text-align: start; pointer-events: none; z-index: 2;
+  --gr-size: clamp(31px,5.1cqw,83px);
+}
+#listeningRoom [data-groove] .gr-voice[hidden] { display: none; }
+#listeningRoom [data-groove]:not([data-groove-duet]) .gr-line {
+  grid-row: 1; margin: 0; align-self: center; color: #fff9ef;
+  font-family: Georgia, "STZhongsong", "Songti SC", SimSun, serif;
+  font-size: var(--gr-size); font-weight: 600; line-height: 1.18; letter-spacing: -.028em;
+  text-wrap: balance; overflow-wrap: anywhere; text-shadow: 0 1px 4px #17140edd,0 3px 16px #1517137d;
+  transform-origin: left top; transform: translateY(var(--gr-rise,0em)) scale(var(--gr-scale,1)); opacity: var(--gr-arrive,1);
+}
+#listeningRoom[data-stage-font=kai] [data-groove] .gr-line { font-family: KaiTi, STKaiti, cursive; }
+#listeningRoom[data-stage-font=song] [data-groove] .gr-line { font-family: SimSun, "Noto Serif CJK SC", serif; }
+#listeningRoom [data-groove]:not([data-groove-duet]) .gr-voice[data-dense] { --gr-size: clamp(22px,3.5cqw,48px); }
+#listeningRoom [data-groove]:not([data-groove-duet]) .gr-voice[data-gr-long] { --gr-size: clamp(17px,2.35cqw,32px); }
+#listeningRoom [data-groove] .gr-phrase { display: inline-block; max-width: 100%; vertical-align: baseline; text-wrap: wrap; }
+#listeningRoom [data-groove] .gr-line span { text-decoration: none; }
+#listeningRoom [data-groove] .gr-line [data-sing=waiting] { opacity: .73; }
+#listeningRoom [data-groove] .gr-line [data-sing=sung] { color: #fff9ed; }
+#listeningRoom [data-groove] .gr-line [data-sing=voicing] {
+  color: #ffdda6; background: linear-gradient(90deg,#ffdaa1 var(--lr-sung,0%),#fff7e5 var(--lr-sung,0%));
+  background-clip: text; -webkit-text-fill-color: transparent; text-shadow: none;
+  filter: drop-shadow(0 1px 2px #191812);
+}
+#listeningRoom [data-groove] .gr-last:not(:empty) {
+  display: block; position: absolute; left: 0; bottom: calc(100% + .95em); width: 96%;
+  font: 500 clamp(15px,1.5cqw,23px)/1.25 Georgia,"STZhongsong",SimSun,serif; letter-spacing: .025em;
+  color: #eee5d3; opacity: .66; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  transform-origin: left bottom; transform: translateY(var(--gr-recall,0em)) scale(var(--gr-last-scale,1));
+  text-shadow: 0 1px 5px #171715;
+}
+#listeningRoom [data-groove]:not([data-groove-duet]) .gr-voice::after {
+  content: ''; position: absolute; left: 0; top: calc(100% + clamp(7px,1.1cqw,18px));
+  width: 4.6em; height: 1.5px; font-size: clamp(9px,1.2cqw,18px);
+  background: linear-gradient(to right,#e9c991 var(--gr-level,0%),#efe7d359 var(--gr-level,0%));
+}
+#listeningRoom [data-groove]:not([data-groove-duet]) .gr-cue:not([hidden]) {
+  display: block; position: absolute; left: 0; top: calc(100% + clamp(14px,2.1cqw,33px)); max-width: 100%;
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  font-family: inherit; font-size: clamp(16px,1.85cqw,28px); line-height: 1.18; letter-spacing: -.028em;
+  color: #fff2d8; text-shadow: 0 1px 4px #141310,0 2px 10px #10131599;
+}
+#listeningRoom [data-groove]:not([data-groove-duet]) .gr-voice {
+  font-family: Georgia,"STZhongsong","Songti SC",SimSun,serif;
+}
+#listeningRoom[data-stage-font=kai] [data-groove] .gr-voice { font-family: KaiTi, STKaiti, cursive; }
+#listeningRoom[data-stage-font=song] [data-groove] .gr-voice { font-family: SimSun, "Noto Serif CJK SC", serif; }
+#listeningRoom [data-groove] .lr-scene-translation {
+  grid-row: 2; margin: .66em 0 0; font-size: clamp(14px,1.45cqw,22px);
+  color: #f2eade; text-shadow: 0 1px 4px #141310; line-height: 1.45;
+}
+#listeningRoom .lr-stage[data-groove-duet] > .gr-disc { right: 34%; top: 24%; width: 17%; opacity: .7; }
+#listeningRoom [data-groove-quiet] > .gr-disc { opacity: .58; }
+#listeningRoom[data-freeze-moment] .lr-stage[data-groove] > .gr-disc { visibility: visible !important; }
+
+#listeningRoom .gr-audition {
+  position: relative; display: block; overflow: hidden; isolation: isolate; aspect-ratio: 2.4;
+  border-radius: 10px; border: 1px solid #b9a48746;
+  background-color: #292c29;
+  background-image: linear-gradient(100deg,#0b151a85,transparent 80%),var(--gr-photo,none);
+  background-size: cover; background-position: center;
+}
+#listeningRoom .gr-audition[data-groove] > .gr-disc { width: 37%; right: 2.5%; top: 50%; }
+#listeningRoom .gr-audition[data-groove] > .gr-voice { --gr-size: 5.5cqw; top: 44%; width: 56%; }
+#listeningRoom .gr-audition[data-groove] .gr-last { font-size: 2.6cqw; }
+#listeningRoom .gr-audition[data-groove] .gr-voice::after { font-size: 2cqw; }
+#listeningRoom .gr-audition[data-groove] .gr-cue { font-size: 3cqw; top: calc(100% + 3cqw); }
+@media (max-width:650px) {
+  #listeningRoom .lr-stage[data-groove]:not([data-groove-duet]) .gr-voice { top: 46%; width: 88%; left: 6%; }
+  #listeningRoom .lr-stage[data-groove]:not([data-groove-duet]) > .gr-disc { width: min(40%,23vh); right: 1%; top: 24%; }
+}
+@media (max-height:520px) and (min-aspect-ratio:1/1) {
+  #listeningRoom .lr-stage[data-groove] > .gr-disc { width: min(27%,47vh); top: 38%; }
+  #listeningRoom .lr-stage[data-groove] > .gr-voice { top: 40%; }
+}
+@media (forced-colors: active) {
+  #listeningRoom [data-groove] .gr-line [data-sing=voicing] { -webkit-text-fill-color: Highlight; }
+}

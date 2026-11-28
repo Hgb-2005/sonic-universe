@@ -12,6 +12,13 @@ test('playback defaults to cover color without changing an established work colo
   assert.equal(core.normalize({ ...saved, playbackColor: 'ocean' }).playbackColor, 'ocean');
 });
 
+test('restores a web backdrop only for explicit HTTP(S) addresses without credentials', () => {
+  assert.equal(core.normalize({stageEmbedUrl:'https://example.org/sky'}).stageEmbedUrl,'https://example.org/sky');
+  for(const invalid of ['file:///C:/track.mp3','javascript:void(0)','https://name:password@example.org','/sky',null]){
+    assert.equal(core.normalize({stageEmbedUrl:invalid}).stageEmbedUrl,'');
+  }
+});
+
 test('only the automatic background lets the effect supply its full backdrop', () => {
   const treatment = (background, id) => backgrounds.lyricBackdrop(backgrounds.get(background), {id});
   assert.equal(treatment('default','tide'), 'theme');
@@ -54,6 +61,23 @@ test('lyric lookup handles lead-in, exact boundaries, seeks and the final line',
   assert.equal(core.lyricAt(lines, 19, 20).end, 20);
   assert.equal(core.lyricAt(lines, 6, 20).index, 0);
   assert.equal(core.lyricAt([], 1, 20).line, null);
+});
+
+test('stage shots keep ordinary lines together and start a new composition at a refrain or rest', () => {
+  const verse=[0,3,6,9,12,15].map(time=>({time,end:time+3}));
+  const score=core.stageShots([...verse,{time:18,end:20,isChorus:true},{time:20,end:22,isChorus:true},{time:26,isChorus:true}]);
+  assert.deepEqual(score.map(s=>s.section),[0,0,0,0,1,1,2,2,3]);
+  assert.deepEqual(score.map(s=>s.row),[0,1,0,1,0,1,0,1,0]);
+  assert.equal(score[7].start,18);
+  const repeats=verse.map((line,i)=>({...line,isChorus:i%2===0}));
+  assert.deepEqual(core.stageShots(repeats).map(s=>s.section),[0,0,0,0,1,1]);
+  assert.equal(core.normalize({stageParticles:false}).stageStyle,'scene');
+  assert.equal(core.normalize({stageParticles:true}).stageStyle,'particles');
+  assert.equal(core.normalize({stageParticles:true,stageStyle:'flow'}).stageStyle,'flow');
+  assert.equal(core.normalize({stageStyle:'groove'}).stageStyle,'groove');
+  assert.equal(core.normalize({stageStyle:'trail'}).stageStyle,'trail');
+  assert.equal(core.normalize({stageStyle:'dialogue'}).stageStyle,'dialogue');
+  assert.equal(core.normalize({stageStyle:'fold'}).stageStyle,'dialogue');
 });
 
 test('explicit lyric gaps fade, clear and cue at the same positions after a seek', () => {
@@ -179,7 +203,7 @@ test('playback detail follows CSS size at 1x and caps high DPI by pixel budget',
 test('photo crops keep one scale and preserve both existing background IDs', () => {
   const backgrounds=require('../outputs/playback-backgrounds.js');
   const image={naturalWidth:1536,naturalHeight:1024};
-  for(const id of ['white-coast','blue-rain']){
+  for(const id of ['white-coast','blue-rain','jiangnan-rain']){
     const entry=backgrounds.get(id);
     assert.equal(backgrounds.normalize(id),id);
     assert.ok(entry.photo);

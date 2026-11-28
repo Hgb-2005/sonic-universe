@@ -9,27 +9,38 @@ test('automatic scenes use a repeatable per-song choice and react to sustained e
   const director = scenes.createDirector();
   const starting = director.update(song);
   assert.equal(scenes.createDirector().update(song),starting);
-  assert.equal(starting,'prism-bloom');
+  assert.equal(starting,'listening-hall');
 
   let scene;
   const energetic = {...song,sound:{presence:.95,bass:.97,high:.83}};
   for(let frame=0;frame<20;frame++)scene=director.update(energetic);
   assert.equal(scene,starting,'brief peaks keep the scene stable');
   for(let frame=0;frame<190;frame++)scene=director.update(energetic);
-  assert.equal(scene,'prism-tunnel');
+  assert.equal(scene,'moon-silk');
 
   for(let frame=0;frame<270;frame++)scene=director.update({...song,active:false});
-  assert.equal(scene,'prism-tunnel','paused playback keeps its automatic choice');
+  assert.equal(scene,'moon-silk','paused playback keeps its automatic choice');
   for(let frame=0;frame<210;frame++)scene=director.update(song);
-  assert.equal(scenes.get(scene).group,'山水');
+  assert.equal(scene,'jiangnan-rain');
 });
 
 test('explicit scenes take priority and preference recovery accepts only catalogue ids', () => {
   const director = scenes.createDirector();
   assert.equal(director.update({track:'pinned',selected:'jiangnan-rain',active:true,elapsed:.1}),'jiangnan-rain');
-  assert.equal(scenes.normalizeSelection('orbit-particles'),'orbit-particles');
+  assert.equal(scenes.normalizeSelection('orbit-particles'),'auto');
+  assert.equal(scenes.normalizeSelection('coast-radio'),'coast-radio');
+  assert.equal(director.update({track:'pinned',selected:'pure-black',active:true,elapsed:.1}),'pure-black');
   assert.equal(scenes.normalizeSelection('constructor'),'auto');
-  assert.equal(new Set(scenes.catalogue.map(scene=>scene.id)).size,12);
+  assert.deepEqual(scenes.catalogue.map(scene=>scene.name),['折光厅','封套余色','海岬电台','月纱','取景窗','深空留白','纯黑','烟雨江南']);
+});
+
+test('pure black covers the entire surface regardless of audio or preview size', () => {
+  for (const [width,height,thumbnail] of [[1920,1080,false],[528,296,true]]) {
+    const fills=[];
+    const context={save(){},restore(){},fillRect(...rect){fills.push([this.fillStyle,...rect]);}};
+    assert.equal(scenes.draw(context,'pure-black',{width,height,thumbnail,energy:1,pulse:1,time:120}),true);
+    assert.deepEqual(fills,[['#000',0,0,width,height]]);
+  }
 });
 
 test('a sustained timbre change waits for the next bar even when loudness stays steady',()=>{
@@ -38,8 +49,8 @@ test('a sustained timbre change waits for the next bar even when loudness stays 
   const start={presence:.57,bass:.45,mid:.08,high:.14};
   const changed={presence:.57,bass:.14,mid:.08,high:.45};
   for(let i=0;i<135;i++)director.update({...frame,sound:start});
-  for(let i=0;i<25;i++)assert.equal(director.update({...frame,sound:{...changed,beat:{locked:true,bar:12,barPhase:.55}}}),'prism-bloom');
-  assert.equal(director.update({...frame,sound:{...changed,beat:{locked:true,bar:13,barPhase:0}}}),'silkscreen');
+  for(let i=0;i<25;i++)assert.equal(director.update({...frame,sound:{...changed,beat:{locked:true,bar:12,barPhase:.55}}}),'listening-hall');
+  assert.equal(director.update({...frame,sound:{...changed,beat:{locked:true,bar:13,barPhase:0}}}),'sleeve-wash');
 });
 
 test('Jiangnan holds the composition on a brief accent and follows sustained changes at a bar boundary', () => {

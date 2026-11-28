@@ -103,6 +103,7 @@
     'distant-static':'deep-violet',
   });
   const photos=Object.freeze({
+    'jiangnan-rain':{key:'jiangnanRain',landscape:[.62,.53],portrait:[.85,.54]},
     'white-coast':{key:'whiteCoast',landscape:[.52,.42],portrait:[.51,.50]},
     'blue-rain':{key:'blueRain',landscape:[.50,.36],portrait:[.55,.50]},
   });
@@ -174,7 +175,7 @@
       const rect=photoRect(entry,image,frame.width,frame.height);
       if(frame.thumbnail||frame.preview)context.drawImage(image,rect.x,rect.y,rect.width,rect.height);
       else context.clearRect(0,0,frame.width,frame.height);
-      frame={...frame,photoRect:rect};
+      frame={...frame,photoRect:rect,photoImage:image};
     }
     paint(context,entry.preset,frame);
     return true;
@@ -298,5 +299,5 @@
       close(){if(dialog.open)dialog.close();},
     };
   }
-  return Object.freeze({groups,catalogue,featured,aliases,defaults,get:id=>entries.get(id),normalize,load,draw,photoPosition,photoRect,lyricBackdrop,lightReadingSurface,createPicker});
+  return Object.freeze({groups,catalogue,featured,aliases,defaults,get:id=>entries.get(id),normalize,load,loadPhoto,draw,photoPosition,photoRect,lyricBackdrop,lightReadingSurface,createPicker});
 });

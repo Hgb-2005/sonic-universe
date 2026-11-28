@@ -101,7 +101,45 @@
     bloom(ctx, originX, originY - size * 26, size * 40, '231,153,74', .07 + pulse * .12);
   }
 
+  function paintLake(ctx,frame) {
+    const {width:w,height:h,time:t,plate}=frame;
+    const crop=frame.photoRect || window.SonicPlaybackBackgrounds.photoRect(
+      window.SonicPlaybackBackgrounds.get('jiangnan-rain'),plate,w,h);
+    if(!frame.overlayOnly)ctx.drawImage(plate,crop.x,crop.y,crop.width,crop.height);
+    const rain=frame.jiangnan?.rain ?? .48,swell=frame.jiangnan?.swell ?? 0;
+    // The bank ends at 71% of the source image. Apply distortion only below it,
+    // even when a narrow window crops the pavilion off centre.
+    const waterTop=Math.max(0,crop.y+crop.height*.716);
+    if(waterTop<h){
+      const bands=Math.max(6,Math.round(19*(frame.quality ?? .6)));
+      const bandHeight=(h-waterTop)/bands;
+      for(let i=0;i<bands;i++){
+        const depth=(i+.5)/bands,top=waterTop+i*bandHeight;
+        const shift=Math.sin(t*.72+i*.68)+.45*Math.sin(t*.46-i*.94);
+        const dx=shift*(.32+swell*.22)*Math.min(w,h)/350*Math.sin(depth*Math.PI);
+        const sy=(top-crop.y)/crop.height*plate.naturalHeight;
+        ctx.drawImage(plate,0,sy,plate.naturalWidth,bandHeight/crop.height*plate.naturalHeight,
+          crop.x+dx,top,crop.width,bandHeight+.25);
+      }
+    }
+    ctx.save();
+    ctx.translate(crop.x+crop.width*(.35+.045*Math.sin(t*.052)),crop.y+crop.height*.585);
+    ctx.scale(1,.12);
+    bloom(ctx,0,0,crop.width*.36,'166,191,191',.055+swell*.025);
+    ctx.restore();
+    const points=field(frame.seed,0xc82478a1,145);
+    ctx.lineWidth=Math.max(.6,Math.min(w,h)*.00085);
+    for(let i=0;i<Math.round((3+rain*5)*(frame.quality ?? .6));i++){
+      const [a,b,c,d]=points[i],age=(t*(.22+c*.11)+d)%1;
+      const radius=(.001+age*.013)*Math.min(w,h);
+      ctx.strokeStyle='rgba(178,210,212,'+(.13*Math.sin(Math.PI*age))+')';
+      ctx.beginPath();ctx.ellipse(w*(.08+.83*a),waterTop+(h-waterTop)*b,radius,radius*.14,0,0,tau);ctx.stroke();
+    }
+    paintRain(ctx,frame,points,rain,.38);
+  }
+
   function jiangnan(ctx, frame) {
+    if(frame.plate){paintLake(ctx,frame);return;}
     const {width:w,height:h,time:t,pulse,quality,seed}=frame;
     const rain=frame.jiangnan?.rain??.54,swell=frame.jiangnan?.swell??0;
     const waterline=.645-.085*swell;
@@ -141,9 +179,14 @@
       ctx.beginPath();ctx.ellipse(x,y,radius,.48+radius*.16,0,0,tau);ctx.stroke();
     }
 
-    ctx.strokeStyle='rgba(188,222,232,'+(.14+rain*.18+pulse*.13)+')';
+    paintRain(ctx,frame,grains,rain,1);
+  }
+
+  function paintRain(ctx,frame,grains,rain,weight) {
+    const {width:w,height:h,time:t,pulse=0,quality=.6}=frame;
+    ctx.strokeStyle='rgba(188,222,232,'+((.14+rain*.18+pulse*.13)*weight)+')';
     const shelters=frame.shelters,normalWidth=ctx.lineWidth,normalAlpha=ctx.globalAlpha;
-    for(let i=0;i<grains.length*quality*(.16+rain*.84);i++){
+    for(let i=0;i<grains.length*quality*(.16+rain*.84)*weight;i++){
       const [a,b,c,d]=grains[i],shift=t*(.25+c*.36);
       const x=((a+shift*.14)%1)*w,y=((b+shift)%1)*h;
       const length=(4+(8+h*.012)*d*d)*(1+pulse*.17);
@@ -370,7 +413,10 @@
     return (ctx, frame) => {
       if (!(frame.width > 0 && frame.height > 0)) return;
       ctx.save();
-      try { painter(ctx, frame); atmosphere(ctx, frame); }
+      try {
+        painter(ctx, frame);
+        if(painter!==jiangnan || !frame.plate)atmosphere(ctx,frame);
+      }
       finally { ctx.restore(); }
     };
   }

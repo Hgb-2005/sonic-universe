@@ -1,0 +1,61 @@
+#listeningRoom .tr-route, #listeningRoom .tr-neighbor { display: none; }
+#listeningRoom [data-trail] { container-type: inline-size; }
+#listeningRoom .lr-stage[data-trail] { overflow: clip; }
+#listeningRoom [data-trail] > .tr-route {
+  display: block; position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1;
+  pointer-events: none; filter: drop-shadow(0 1px 2px #101f26a6);
+}
+#listeningRoom[data-trail-camera] > :is(.lr-background,.lr-background-photo,.lr-background-transition,.lr-embedded-backdrop) {
+  scale: var(--tr-backdrop,1.045); translate: var(--tr-parallax-x,0%) var(--tr-parallax-y,0%);
+}
+#listeningRoom[data-mode=visual] .lr-stage[data-trail] > [data-scene-lyric]:not([hidden]),
+#listeningRoom [data-trail] > .tr-caption:not([hidden]) {
+  display: block; position: absolute; left: var(--tr-x,50%); right: auto;
+  top: calc(var(--tr-y,60%) - clamp(10px,1.55cqw,24px)); bottom: auto;
+  width: 66%; margin: 0; z-index: 2; pointer-events: none;
+  transform-origin: 50% 100%; translate: -50% -100%; transform: rotate(var(--tr-roll,0deg)) scale(var(--tr-scale,1));
+  text-align: center; opacity: calc(var(--tr-alpha,1)*var(--scene-opacity,1));
+}
+#listeningRoom [data-trail] > .tr-neighbor:not([hidden]) { z-index: 1; }
+#listeningRoom .lr-stage[data-trail] > [data-scene-lyric]::before {
+  inset: -15% -7% -16%; background: radial-gradient(ellipse,#13272d52,transparent 71%);
+}
+#listeningRoom [data-trail] { --tr-font: "Microsoft YaHei UI","Microsoft YaHei","PingFang SC",sans-serif; }
+#listeningRoom[data-stage-font=kai] [data-trail] { --tr-font: KaiTi,STKaiti,serif; }
+#listeningRoom[data-stage-font=song] [data-trail] { --tr-font: SimSun,"Songti SC",serif; }
+#listeningRoom [data-trail] :is(.lr-scene-line,.tr-type) {
+  display: block; margin: 0; color: #f0f8f4;
+  font: 650 clamp(27px,4.7cqw,76px)/1.22 var(--tr-font);
+  letter-spacing: .025em; white-space: normal; text-wrap: balance; word-break: normal; overflow-wrap: anywhere;
+  text-shadow: 0 1px 2px #132128cd,0 3px 15px #08171d75;
+}
+#listeningRoom [data-trail] [data-tr-long] :is(.lr-scene-line,.tr-type) { font-size: clamp(19px,3.35cqw,54px); }
+#listeningRoom [data-trail] [data-tr-dense] :is(.lr-scene-line,.tr-type) { font-size: clamp(15px,2.15cqw,33px); }
+#listeningRoom [data-trail] .gr-phrase { display: inline-block; max-width: 100%; text-wrap: wrap; }
+#listeningRoom [data-trail] :is(.lr-scene-translation,.tr-sub):not([hidden]) {
+  display: block; margin: .45em 0 0; color: #e0eae5;
+  font: 450 clamp(13px,1.35cqw,21px)/1.35 var(--tr-font); text-shadow: 0 1px 4px #0c1c22;
+}
+#listeningRoom [data-trail] .lr-scene-line [data-sing] { text-decoration: none; }
+#listeningRoom [data-trail] .lr-scene-line [data-sing=waiting] { color: #c5d7d5; }
+#listeningRoom [data-trail] .lr-scene-line [data-sing=sung] { color: #edf7f2; }
+#listeningRoom [data-trail] .lr-scene-line [data-sing=voicing] {
+  --tr-accent: color-mix(in srgb,#c1ffe1,#ffe1a6 calc(var(--tr-chorus,0)*100%));
+  background: linear-gradient(to right,var(--tr-accent) var(--lr-sung),#ecf4ef var(--lr-sung));
+  background-clip: text; color: transparent; text-shadow: none; filter: drop-shadow(0 1px 2px #182725);
+}
+#listeningRoom[data-freeze-moment] .lr-stage[data-trail] > :is(.tr-route,.tr-neighbor) { visibility: visible !important; }
+#listeningRoom .tr-preview {
+  position: relative; display: block; overflow: hidden; isolation: isolate; aspect-ratio: 3.6;
+  background: linear-gradient(105deg,#112329ac,#132f3e79),var(--tr-photo,linear-gradient(110deg,#273c43,#415552)) center/cover;
+  border: 1px solid #adcabe43; border-radius: 10px;
+}
+#listeningRoom .tr-preview[data-trail] .tr-type { font-size: 5.1cqw; }
+#listeningRoom .tr-preview[data-trail] > .tr-caption { top: calc(var(--tr-y,60%) - 2cqw); }
+@media (max-width:650px) {
+  #listeningRoom[data-mode=visual] .lr-stage[data-trail] > [data-scene-lyric]:not([hidden]),
+  #listeningRoom .lr-stage[data-trail] > .tr-neighbor:not([hidden]) { width: 81%; }
+}
+@media (forced-colors:active) {
+  #listeningRoom [data-trail] .lr-scene-line [data-sing=voicing] { color: Highlight; }
+}

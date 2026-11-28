@@ -6,24 +6,20 @@
   'use strict';
 
   const catalogue = Object.freeze([
-    { id:'prism-bloom', name:'绮光棱镜', group:'赛博', description:'立体粒子在棱镜、花瓣与螺旋之间流动' },
-    { id:'jiangnan-rain', name:'烟雨江南', group:'山水', description:'山岚、雨丝与水面涟漪' },
-    { id:'jade-current', name:'青玉潮汐', group:'山水', description:'青绿水纹随低音舒展' },
-    { id:'amber-dunes', name:'金色沙海', group:'山水', description:'夕照下层叠起伏的沙丘' },
-    { id:'violet-aurora', name:'暮紫极光', group:'氛围', description:'紫色光带随音色流动' },
-    { id:'orbit-particles', name:'星尘轨道', group:'氛围', description:'星尘绕行，重拍推开轨道' },
-    { id:'signal-wave', name:'声纹绸带', group:'氛围', description:'实时频谱编织成多层光带' },
-    { id:'neon-grid', name:'赛博夜航', group:'赛博', description:'霓虹网格与频谱天际线' },
-    { id:'prism-tunnel', name:'棱镜隧道', group:'赛博', description:'层叠棱镜随节拍推进' },
-    { id:'silkscreen', name:'丝网印刷', group:'图形', description:'暖色纸面上的网点与错版色块' },
-    { id:'lantern-windows', name:'纸灯走廊', group:'图形', description:'一列纸灯随高低音依次透亮' },
-    { id:'tide-dial', name:'潮汐仪盘', group:'图形', description:'圆盘刻度与游标跟随频谱展开' },
+    { id:'listening-hall', name:'折光厅', group:'光影', description:'暖光穿过石廊，细尘在斜光中缓慢浮动' },
+    { id:'sleeve-wash', name:'封套余色', group:'光影', description:'唱片封面的色彩映在纸套与黑胶唱盘上' },
+    { id:'coast-radio', name:'海岬电台', group:'风景', description:'傍晚的海岸插画，亮着灯的电台看向远海' },
+    { id:'moon-silk', name:'月纱', group:'光影', description:'月夜芒草随风轻摆，远处山脊沉在薄雾里' },
+    { id:'view-port', name:'取景窗', group:'空间', description:'从夜行列车看窗外雪山，也可嵌入自己的网页' },
+    { id:'quiet-sky', name:'深空留白', group:'空间', description:'银河铺在火山剪影背后，几颗星缓缓明灭' },
+    { id:'pure-black', name:'纯黑', group:'空间', description:'整块舞台使用纯黑底色' },
+    { id:'jiangnan-rain', name:'烟雨江南', group:'风景', description:'山岚、雨丝与水面涟漪' },
   ].map(Object.freeze));
   const byId = new Map(catalogue.map(scene => [scene.id, scene]));
   const families = {
-    calm:['jiangnan-rain','jade-current','amber-dunes'],
-    flow:['prism-bloom','violet-aurora','orbit-particles'],
-    energetic:['prism-bloom','neon-grid','prism-tunnel'],
+    calm:['jiangnan-rain','quiet-sky','coast-radio'],
+    flow:['listening-hall','sleeve-wash','coast-radio'],
+    energetic:['sleeve-wash','listening-hall','moon-silk'],
   };
   const unit = value => Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : 0;
 
@@ -51,7 +47,7 @@
           family = 'flow';
           candidate = null;
           candidateTime = sceneTime = energy = 0;
-          scene = 'prism-bloom';
+          scene = 'listening-hall';
           theme=recent=null;sectionChange=0;pending=null;lastBar=null;lastPosition=undefined;
         }
         if (byId.has(selected)) return selected;
@@ -78,7 +74,9 @@
         candidateTime += dt;
         sectionChange=total>.24&&contrast>.48?sectionChange+dt:0;
         if(!pending&&((next!==family&&sceneTime>=18&&candidateTime>=3.5)||(sceneTime>=12&&sectionChange>=1.5))){
-          const targetScene=next===family?(scene==='silkscreen'?'lantern-windows':scene==='lantern-windows'?'tide-dial':'silkscreen'):choose(next);
+          const pool=families[next];
+          let targetScene=choose(next);
+          if(next===family || targetScene===scene)targetScene=pool[(pool.indexOf(scene)+1)%pool.length];
           pending={family:next,scene:targetScene,age:0};
         }
         const bar=sound?.beat?.locked?sound.beat.bar:null;
@@ -127,7 +125,14 @@
   }
 
   function draw(context, id, frame) {
-    const painter = globalThis.SonicReactiveBloom?.[id] || globalThis.SonicReactiveLandscapes?.[id] || globalThis.SonicReactiveNeon?.[id];
+    if (id === 'pure-black') {
+      context.save();
+      context.fillStyle = '#000';
+      context.fillRect(0, 0, frame.width, frame.height);
+      context.restore();
+      return true;
+    }
+    const painter = globalThis.SonicStageBackdrops?.[id] || globalThis.SonicReactiveBloom?.[id] || globalThis.SonicReactiveLandscapes?.[id] || globalThis.SonicReactiveNeon?.[id];
     if (typeof painter !== 'function') return false;
     context.save();
     try { painter(context, frame); }

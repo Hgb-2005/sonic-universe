@@ -57,6 +57,17 @@ Thumbs.db
 !/outputs/playback-queue-state.js
 !/outputs/reactive-scenes.css
 !/outputs/reactive-scenes.js
+!/outputs/stage-optics.css
+!/outputs/stage-particles.js
+!/outputs/stage-backdrops.js
+!/outputs/stage-glass.js
+!/outputs/stage-groove.js
+!/outputs/stage-groove.css
+!/outputs/stage-trail.js
+!/outputs/stage-trail.css
+!/outputs/stage-dialogue.js
+!/outputs/stage-dialogue.css
+!/outputs/assets/dialogue-receivers.webp
 !/outputs/reactive-scene-landscapes.js
 !/outputs/reactive-scene-neon.js
 !/outputs/reactive-scene-bloom.js

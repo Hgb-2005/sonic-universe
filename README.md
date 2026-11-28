@@ -2,6 +2,12 @@
 
 [打开网页版](https://hgb-2005.github.io/sonic-universe/) · [Windows 正式版 0.47.6](https://github.com/Hgb-2005/sonic-universe/releases/tag/v0.47.6) · [Windows 预发布 0.47.13](https://github.com/Hgb-2005/sonic-universe/releases/tag/v0.47.13) · [Windows 正式版 0.42.0](https://github.com/Hgb-2005/sonic-universe/releases/tag/v0.42.0)
 
+## 0.47.14 · 视觉舞台
+
+- 新增「落针」「循声」和「对话」歌词样式。「对话」支持头像、简短表情和逐字高亮。
+- 歌词样式与舞台背景可独立选择，样式面板提供动态预览。
+- 新增纯黑背景，更新烟雨江南、海岬电台等场景和预览图。
+
 ## 0.47.13 · Windows 预发布版
 
 - 视觉舞台按固定时间点绘制背景，遇到绘制负担时自动降低场景细节。歌词继续跟随音频时间。

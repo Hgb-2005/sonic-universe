@@ -914,7 +914,11 @@ function rainOverlay(context,frame,light) {
   }
 }
 function photoOverlay(context,preset,frame,light) {
-  if(preset.design==='coast')coastOverlay(context,frame,light);
+  if(preset.design==='riverRain'){
+    globalThis.SonicReactiveLandscapes?.['jiangnan-rain']?.(context,{
+      ...frame,plate:frame.photoImage,overlayOnly:true,pulse:0,
+    });
+  }else if(preset.design==='coast')coastOverlay(context,frame,light);
   else rainOverlay(context,frame,light);
   const trim=(frame.brightness-.55)*.25;
   if(Math.abs(trim)>.003)withAlpha(context,Math.abs(trim),()=>rect(context,0,0,frame.width,frame.height,trim>0?'#fff':'#101019'));
