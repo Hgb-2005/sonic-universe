@@ -112,8 +112,8 @@
       nebulaAssetsSettled=true;maybeFinishVisualLoading();return nebulaAssetsState;
     });
   }
-  window.addEventListener('error',event=>{if(!visualFirstFrameReady)window.reportVisualFatal?.('星空引擎启动失败：'+(event.message||'未知错误'))});
-  window.addEventListener('unhandledrejection',event=>{if(!visualFirstFrameReady)window.reportVisualFatal?.('星空引擎启动失败：'+(event.reason?.message||'未知错误'))});
+  window.addEventListener('error',event=>{if(!listeningPresentation&&!visualFirstFrameReady)window.reportVisualFatal?.('星空引擎启动失败：'+(event.message||'未知错误'))});
+  window.addEventListener('unhandledrejection',event=>{if(!listeningPresentation&&!visualFirstFrameReady)window.reportVisualFatal?.('星空引擎启动失败：'+(event.reason?.message||'未知错误'))});
   const audio = $('audio'), playBtn = $('playBtn'), seek = $('seek');
   let playbackRate=1,sleepTimeout=0,sleepDeadline=0,sleepRevision=0;
   const themes = {
@@ -5882,7 +5882,7 @@
     dust=Array.from({length:energySaver?70:mobile?210:390},()=>({angle:rand()*Math.PI*2,distance:.65+rand()*2.2,z:rand(),size:.3+rand()*1.5,phase:rand()*6.28}));app.dataset.backgroundStarCount=String(stars.length);app.dataset.pixelRatio=String(dpr);
     rebuildParticles();rebuildBackground();scheduleOnlineLyricsPosition();
     // Resizing clears a canvas immediately. Paint it before exposing that clear frame.
-    if(canvasResized&&visualFirstFrameReady)try{draw(sceneTime,1/60)}catch(error){console.error(error);stopAnimation();window.activateVisualFallback('画面尺寸更新失败，已换成轻量星光。可重试完整效果。')}
+    if(canvasResized&&visualFirstFrameReady&&(!listeningPresentation||animationRunning))try{draw(sceneTime,1/60)}catch(error){console.error(error);stopAnimation();window.activateVisualFallback('画面尺寸更新失败，已换成轻量星光。可重试完整效果。')}
   }
   function rebuildParticles(){
     effectiveParticleCount=Math.min(particleCount,renderProfile.maxParticles,energySaver?1000:Infinity);exportParticleCache=null;

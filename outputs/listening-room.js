@@ -3761,8 +3761,8 @@
     nativeTimer=setInterval(publishPlayerState,400);
   }
   changePlaybackBackground(preferences.playbackBackground,false);
+  document.documentElement.classList.add('listening-enabled');applyPreferences();api.presentation(true);
   window.SonicListeningRoom=Object.freeze({setMode,settings:()=>({...preferences}),stats:()=>({frameCost:Number(root.dataset.frameCost||0),frames:renderedFrames,uiRefreshes,lyricPaints,fpsLimit:Number(root.dataset.fpsLimit||0),legacyRendering:document.getElementById('app').dataset.rafRunning==='true',wallpaper:false,lyricRenderer:effectRenderer?.stats(),lyricStructure:{total:snapshot.lyrics?.length||0,chorus:snapshot.lyrics?.filter(line=>line.isChorus).length||0,staffHidden:snapshot.lyricsInfo?.staffHidden||0}})});
-  api.presentation(true);document.documentElement.classList.add('listening-enabled');applyPreferences();
   document.getElementById('listeningStartupError').hidden = true;
   window.addEventListener('pagehide',()=>{clearTimeout(timer);cancelAnimationFrame(lyricFrameId);clearTimeout(toastTimer);clearTimeout(stageChromeTimer);clearTimeout(immersionTimer);clearInterval(nativeTimer);});
 })();

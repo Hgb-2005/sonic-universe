@@ -262,12 +262,19 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
 <script>
 (()=>{
   const el=id=>document.getElementById(id);let retryTimer=0,fallbackAudio=null;
+  const listeningActive=()=>Boolean(window.SonicListeningRoom);
   const finish=()=>{const loader=el('visualLoading');clearTimeout(window.__visualLoaderTimer);if(loader){loader.classList.add('ready');loader.hidden=true}};
   window.finishVisualLoading=finish;
-  window.activateVisualFallback=reason=>{finish();el('visualFatal').hidden=false;el('visualFatalText').textContent=reason||'完整效果暂未就绪，已切换轻量画面。音乐仍可播放。';const app=el('app');if(app){app.dataset.visualFallback='active';app.dataset.visualFallbackReason=String(reason||'startup').slice(0,180)}if(el('performanceStatus'))el('performanceStatus').textContent='轻量播放模式 · 无需显卡加速';el('fallbackRetryBtn').disabled=false;clearTimeout(retryTimer)};
+  window.activateVisualFallback=reason=>{
+    if(listeningActive()){window.deactivateVisualFallback();return}
+    finish();el('visualFatal').hidden=false;el('visualFatalText').textContent=reason||'完整效果暂未就绪，已切换轻量画面。音乐仍可播放。';const app=el('app');if(app){app.dataset.visualFallback='active';app.dataset.visualFallbackReason=String(reason||'startup').slice(0,180)}if(el('performanceStatus'))el('performanceStatus').textContent='轻量播放模式 · 无需显卡加速';el('fallbackRetryBtn').disabled=false;clearTimeout(retryTimer)
+  };
   window.deactivateVisualFallback=()=>{finish();el('visualFatal').hidden=true;clearTimeout(retryTimer);el('fallbackRetryBtn').disabled=false;if(el('app'))el('app').dataset.visualFallback='hidden';fallbackAudio?.pause()};
   window.reportVisualFatal=window.activateVisualFallback;
-  window.retryVisualExperience=()=>{const button=el('fallbackRetryBtn');button.disabled=true;el('visualFatalText').textContent='正在重试，最多等待 3 秒…';retryTimer=setTimeout(()=>window.activateVisualFallback('完整效果暂时无法运行。可继续播放示例，或稍后再次重试。'),3000);if(window.__retryVisualEngine){try{window.__retryVisualEngine()}catch(error){console.error(error);window.activateVisualFallback('完整效果重试失败，轻量音乐画面仍可使用。')}}else{const url=new URL(location.href);url.searchParams.set('energySaver','1');location.replace(url.href)}};
+  window.retryVisualExperience=()=>{
+    if(listeningActive()){window.deactivateVisualFallback();return}
+    const button=el('fallbackRetryBtn');button.disabled=true;el('visualFatalText').textContent='正在重试，最多等待 3 秒…';retryTimer=setTimeout(()=>window.activateVisualFallback('完整效果暂时无法运行。可继续播放示例，或稍后再次重试。'),3000);if(window.__retryVisualEngine){try{window.__retryVisualEngine()}catch(error){console.error(error);window.activateVisualFallback('完整效果重试失败，轻量音乐画面仍可使用。')}}else{const url=new URL(location.href);url.searchParams.set('energySaver','1');location.replace(url.href)}
+  };
   el('fallbackRetryBtn').onclick=window.retryVisualExperience;
   el('fallbackPlayBtn').onclick=async()=>{const button=el('fallbackPlayBtn'),status=el('fallbackAudioStatus');if(fallbackAudio&&!fallbackAudio.paused){fallbackAudio.pause();button.textContent='播放示例';status.textContent='示例已暂停';return}try{if(window.__playFallbackDemo){await window.__playFallbackDemo();return}fallbackAudio??=new Audio('./interstellar-drift.mp3');button.disabled=true;status.textContent='正在准备示例…';let timer;await Promise.race([fallbackAudio.play(),new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('示例加载超时，请重试')),5000)})]).finally(()=>clearTimeout(timer));button.textContent='暂停示例';status.textContent='正在播放 · 星际漫游';fallbackAudio.onended=()=>{button.textContent='播放示例';status.textContent='示例播放结束'};}catch(error){fallbackAudio?.pause();status.textContent=(error.message||'无法播放示例')+'，点播放可重试。'}finally{button.disabled=false}};
   window.__visualLoaderTimer=setTimeout(()=>window.activateVisualFallback('完整画面加载较慢，先用轻量星光听音乐。'),2600);
@@ -629,7 +636,7 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
 <script src="./audio-loudness.js?v=7de1fa6d948e"></script>
 <script src="./lyric-structure.js?v=f89bb4e66893"></script>
 <script src="./lyric-ink.js?v=cbb7f6c6c47f"></script>
-<script defer src="./universe-main.js?v=d33a198f4bc2"></script>
+<script defer src="./universe-main.js?v=af4f9f04d22a"></script>
 <script defer src="./playlist-transfer.js?v=f9d65c68d392"></script>
 <script defer src="./navidrome-panel.js?v=584433cf0b6e"></script>
 <script defer src="./music-library.js?v=e959acfabe97"></script>
@@ -652,6 +659,6 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
 <script defer src="./stage-groove.js?v=e18f1cba969e"></script>
 <script defer src="./stage-trail.js?v=0235693cc95d"></script>
 <script defer src="./stage-dialogue.js?v=ab305ccfbee1"></script>
-<script defer src="./listening-room.js?v=dd66cefacc31"></script>
+<script defer src="./listening-room.js?v=1b4aed9c61a6"></script>
 </body>
 </html>
