@@ -16,13 +16,26 @@
 #listeningRoom[data-immersive=true] .lr-brand img { width: 32px; height: 32px; }
 #listeningRoom[data-immersive=true] .lr-tabs { background: #080b17a0; border-color: #e9e3ff26; }
 #listeningRoom[data-immersive=true] .lr-tab[aria-pressed=true] { background: #b8c4f921; }
-#listeningRoom .lr-visual-view { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: min(100%, 545px); margin: 0; }
+#listeningRoom .lr-visual-view { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: min(100%, 660px); margin: 0; }
 #listeningRoom .lr-visual-caption { display: flex; align-items: baseline; gap: 10px; min-width: 0; color: #f3f2fa; text-shadow: 0 1px 6px #060915; }
 #listeningRoom .lr-visual-caption p { order: 1; margin: 0; font-size: 10px; color: #bbbacd; white-space: nowrap; }
 #listeningRoom .lr-visual-caption h1 { margin: 0; overflow: hidden; font-size: 13px; font-weight: 650; white-space: nowrap; text-overflow: ellipsis; }
 #listeningRoom .lr-scene-open { display: inline-flex; align-items: center; gap: 6px; padding: 6px 8px; min-height: 33px; border-radius: 7px; color: #dfddec; background: #080a1460; white-space: nowrap; font-size: 11px; }
 #listeningRoom .lr-scene-open svg { width: 14px; height: 14px; }
 #listeningRoom .lr-scene-open:hover { background: #282d43cf; color: #fff; }
+#listeningRoom .lr-stage-options {
+  position: fixed; inset: auto 12px calc(var(--lr-player-clearance, 98px) + 54px);
+  width: fit-content; max-width: calc(100vw - 24px); margin: 0 auto; padding: 10px 16px;
+  border: 1px solid #dde3ff30; border-radius: 11px;
+  color: #f0edf8; background: #181e2bee; box-shadow: 0 8px 28px #08091245;
+}
+#listeningRoom .lr-stage-options:popover-open {
+  display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px 19px;
+}
+#listeningRoom .lr-stage-options .lr-check,
+#listeningRoom .lr-stage-intensity { display: flex; align-items: center; gap: 8px; margin: 0; white-space: nowrap; }
+#listeningRoom .lr-stage-intensity .lr-range { width: clamp(78px, 14vw, 145px); }
+#listeningRoom .lr-stage-intensity output { min-width: 3em; color: #cfbdf4; font-variant-numeric: tabular-nums; text-align: right; }
 #listeningRoom .lr-beat-clock {
   position: absolute; z-index: 1; inset: 16px 0 auto auto; display: inline-flex; min-height: 32px; align-items: center; gap: 9px;
   padding: 6px 9px; border: 1px solid #edf1ff26; border-radius: 8px; background: #101424cc; color: #e4e9fa;
@@ -57,7 +70,7 @@
 #listeningRoom[data-lyric-style=fly] [data-current-line] .lr-flight-token[data-flight-state=flying] .lr-lyric-word[data-sing=waiting] { color: #e9eeff; }
 #listeningRoom[data-immersive=true] :is(.lr-header, .lr-player-wrap, .lr-visual-view, .lr-lyric-tools) { transition: opacity .44s ease, translate .44s ease; }
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
-  #listeningRoom[data-immersive=true][data-stage-chrome=false]:not(:has(dialog[open], :focus-visible, .lr-header:hover, .lr-player-wrap:hover, .lr-visual-view:hover, .lr-lyric-tools:hover)) :is(.lr-header, .lr-visual-view, .lr-lyric-tools, [data-mode=visual] > .lr-player-wrap) { opacity: 0; pointer-events: none; }
+  #listeningRoom[data-immersive=true][data-stage-chrome=false]:not(:has(dialog[open], .lr-stage-options:popover-open, :focus-visible, .lr-header:hover, .lr-player-wrap:hover, .lr-visual-view:hover, .lr-lyric-tools:hover)) :is(.lr-header, .lr-visual-view, .lr-lyric-tools, [data-mode=visual] > .lr-player-wrap) { opacity: 0; pointer-events: none; }
 }
 #listeningRoom .lr-art-cover { transform: scale(var(--lr-cover-scale, 1)); }
 #listeningRoom .lr-scene-dialog { width: min(880px, calc(100vw - 30px)); background: #141623; }
@@ -138,33 +151,140 @@
 }
 
 /* 视觉舞台里浮在画面上的当前歌词：跟着场景留白走，烟雨江南时落在亭子左侧。 */
-#listeningRoom .lr-scene-lyric {
-  position: absolute; left: 8%; top: 36%; width: min(34%, 420px); z-index: 2;
-  pointer-events: none; opacity: 0; transform: translateY(6px);
-  transition: opacity .45s ease, transform .45s ease;
+#listeningRoom[data-lyric-style=reading] .lr-lyric-timeline {
+  display: grid; grid-template-rows: 28% 48% 24%; justify-items: center;
 }
-#listeningRoom .lr-scene-lyric:not([hidden]) { opacity: 1; transform: none; }
+#listeningRoom[data-lyric-style=reading] .lr-lyric-row[data-slot] {
+  position: static; width: min(92%, 900px); padding: 0; transform: none;
+  font-size: clamp(18px, 2.2vw, 30px); line-height: 1.4; letter-spacing: .01em;
+  word-break: normal; line-break: strict; text-wrap: balance; transition: none;
+}
+#listeningRoom[data-lyric-style=reading] .lr-lyric-row[data-prev-line] { grid-row: 1; align-self: end; margin-bottom: 16px; }
+#listeningRoom[data-lyric-style=reading] .lr-lyric-row[data-next-line] { grid-row: 3; align-self: start; }
+#listeningRoom[data-lyric-style=reading] .lr-lyric-row:is([data-prev-line],[data-next-line]) {
+  opacity: .48; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+}
+#listeningRoom[data-lyric-style=reading] .lr-lyric-row[data-current-line] {
+  grid-row: 2; align-self: start; opacity: 1; color: #f3f3f8; font-size: clamp(22px, 2.8vw, 38px);
+}
+#listeningRoom[data-lyric-style=reading] .lr-lyric-row[data-current-line][data-density=dense] { font-size: clamp(17px, 1.9vw, 26px); }
+
+#listeningRoom .lr-chorus-light { display: none; }
+/* Keep the layout boxes in place while Electron copies the current stage. */
+#listeningRoom[data-freeze-moment] > :not(.lr-background-photo,.lr-background,.lr-background-transition,.lr-chorus-light,.lr-stage),
+#listeningRoom[data-freeze-moment] .lr-stage > :not(.lr-scene-lyric) { visibility: hidden !important; }
+.memory-frame { max-width: min(90vw, 1200px); max-height: 90vh; }
+.memory-frame img { display: block; width: auto; height: auto; max-width: 100%; max-height: 73vh; margin: 12px auto; }
+#listeningRoom[data-mode=visual] .lr-chorus-light {
+  display: block; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: radial-gradient(ellipse at 62% 41%, rgba(252,220,167,.29), rgba(199,232,238,.08) 42%, transparent 73%);
+  opacity: var(--chorus-light,0); transform: scaleX(calc(.66 + .34 * var(--chorus-light,0)));
+}
+#listeningRoom .lr-scene-lyric {
+  position: absolute; left: 8%; top: 36%; width: min(40%, 460px); z-index: 2;
+  pointer-events: none; isolation: isolate;
+  font-size: clamp(22px, 2.3vw, 33px); line-height: 1.35;
+  --scene-wash-rgb: 22 25 43;
+  --scene-wash-strength: .26;
+  --scene-text-shadow: 0 1px 2px rgba(8, 14, 23, .84), 0 2px 7px rgba(18, 27, 38, .58);
+}
+#listeningRoom .lr-scene-lyric::before {
+  content: ''; position: absolute; z-index: -1; inset: -2em -2.8em;
+  background: radial-gradient(ellipse at center,
+    rgb(var(--scene-wash-rgb) / var(--scene-wash-strength)),
+    rgb(var(--scene-wash-rgb) / calc(var(--scene-wash-strength) * var(--scene-wash-shoulder, .6))) 32%,
+    rgb(var(--scene-wash-rgb) / 0) var(--scene-wash-fade, 68%));
+}
+/* 给歌词附近的画面轻微叠色，山雾、灯光和刻度仍能透过来。 */
+#listeningRoom[data-active-scene=jiangnan-rain] .lr-scene-lyric {
+  --scene-wash-rgb: 33 58 62;
+  --scene-wash-strength: .30;
+  --scene-text-shadow: 0 1px 2px rgba(16, 32, 36, .82), 0 2px 7px rgba(24, 45, 50, .62);
+}
+#listeningRoom:is([data-active-scene=jade-current], [data-active-scene=tide-dial]) .lr-scene-lyric {
+  --scene-wash-rgb: 18 46 49;
+  --scene-wash-strength: .28;
+}
+#listeningRoom[data-active-scene=violet-aurora] .lr-scene-lyric {
+  --scene-wash-rgb: 30 23 54;
+  --scene-wash-strength: .44;
+  --scene-wash-shoulder: .75;
+  --scene-wash-fade: 77%;
+}
+#listeningRoom[data-active-scene=prism-tunnel] .lr-scene-lyric {
+  --scene-wash-rgb: 30 23 54;
+  --scene-wash-strength: .36;
+}
+#listeningRoom:is([data-active-scene=neon-grid], [data-active-scene=signal-wave]) .lr-scene-lyric {
+  --scene-wash-rgb: 22 26 55;
+  --scene-wash-strength: .30;
+}
+#listeningRoom[data-active-scene=amber-dunes] .lr-scene-lyric {
+  --scene-wash-rgb: 64 36 42;
+  --scene-wash-strength: .36;
+}
+#listeningRoom[data-active-scene=lantern-windows] .lr-scene-lyric {
+  --scene-wash-rgb: 51 29 49;
+  --scene-wash-strength: .44;
+}
+#listeningRoom .lr-scene-lyric:not([hidden]) {
+  display: grid; grid-template-columns: minmax(0, 1fr);
+  /* 译文从第二轨开始，原文贴着第一轨下沿向上排。轨高使用舞台字号。 */
+  grid-template-rows: 2lh auto;
+  opacity: var(--scene-opacity, 1);
+}
+#listeningRoom .lr-scene-lyric[data-phase=quiet] { visibility: hidden; }
 #listeningRoom:not([data-mode=visual]) .lr-scene-lyric { display: none; }
 #listeningRoom .lr-scene-line {
-  margin: 0; font-size: clamp(20px, 2.3vw, 33px); line-height: 1.46; font-weight: 620; letter-spacing: .02em;
-  color: #f3f7f4; text-shadow: 0 2px 20px rgba(5, 16, 18, .55), 0 0 44px rgba(126, 178, 168, .16);
+  margin: 0; align-self: end;
+  font: inherit; letter-spacing: .012em; text-wrap: balance;
+  color: var(--lyric-ink, #f3f7f4);
+  text-shadow: var(--scene-text-shadow, var(--lyric-ink-shadow));
+  font-weight: var(--lyric-ink-weight, 560);
 }
 #listeningRoom .lr-scene-translation {
-  margin: 10px 0 0; font-size: clamp(12px, 1.05vw, 15px); line-height: 1.6;
-  color: rgba(228, 238, 233, .74); text-shadow: 0 1px 12px rgba(5, 16, 18, .5);
+  margin: .48em 0 0; font-size: clamp(15px, 1.15vw, 17px); line-height: 1.55;
+  color: var(--scene-sub, #f0f5f2); text-shadow: var(--scene-text-shadow, var(--lyric-ink-shadow));
+}
+#listeningRoom :is(.lr-scene-line, .lr-scene-translation) {
+  white-space: normal; word-break: normal; line-break: strict; overflow-wrap: anywhere;
 }
 @media (max-width: 900px) {
-  #listeningRoom .lr-scene-lyric { left: 6%; right: 6%; width: auto; top: 28%; }
-  #listeningRoom .lr-scene-line { font-size: clamp(18px, 5vw, 26px); }
+  #listeningRoom .lr-scene-lyric { left: 6%; top: 30%; width: 53%; font-size: clamp(20px, 3vw, 26px); }
 }
-
-/* 场景歌词用同一套墨色/光晕变量，由 lyric-ink 按场景底色切换。 */
-#listeningRoom .lr-scene-line {
-  color: var(--lyric-ink, #f3f7f4);
-  text-shadow: var(--lyric-ink-shadow, 0 2px 20px rgba(5,16,18,.55));
-  font-weight: var(--lyric-ink-weight, 620);
+#listeningRoom .lr-scene-lyric[data-dense] {
+  width: min(57%, 690px);
 }
-#listeningRoom .lr-scene-translation {
-  color: var(--lyric-ink-translation, rgba(228,238,233,.74));
-  text-shadow: var(--lyric-ink-shadow, 0 1px 12px rgba(5,16,18,.5));
+#listeningRoom .lr-scene-lyric[data-dense] .lr-scene-line {
+  font-size: clamp(17px, 1.65vw, 25px); line-height: 1.35;
 }
+#listeningRoom .lr-scene-lyric[data-ink=light] {
+  --scene-wash-rgb: 255 235 200;
+  --scene-wash-strength: .74;
+  --scene-wash-shoulder: .82;
+  --scene-wash-fade: 88%;
+  --scene-text-shadow: 0 1px 2px rgba(255, 240, 211, .95), 0 0 5px rgba(255, 232, 193, .74);
+  --scene-accent: #793404;
+  --scene-sub: #283331;
+}
+#listeningRoom .lr-scene-lyric[data-singer] { width: min(41%, 490px); }
+#listeningRoom .lr-scene-lyric[data-singer=right] { left: auto; right: 8%; text-align: right; }
+#listeningRoom .lr-scene-lyric[data-singer=center] { left: 50%; translate: -50% 0; text-align: center; }
+#listeningRoom[data-lyric-layout=stage] .lr-lyric-row[data-singer=left] { text-align: left; }
+#listeningRoom[data-lyric-layout=stage] .lr-lyric-row[data-singer=right] { text-align: right; }
+#listeningRoom .lr-scene-lyric[data-ink=dark] { --lyric-ink-waiting-local: #cad8d3; }
+#listeningRoom .lr-scene-line [data-sing=waiting] { color: var(--lyric-ink-waiting-local, var(--lyric-ink-waiting)); }
+#listeningRoom[data-active-scene=jade-current] .lr-scene-line [data-ripple] { position: relative; }
+#listeningRoom[data-active-scene=jade-current] .lr-scene-line [data-ripple]::after {
+  content: ''; position: absolute; left: 50%; bottom: -.17em; width: 1.9em; height: .22em;
+  border: 1px solid #a3f9e2; border-radius: 50%; box-shadow: 0 0 .16em #8be8dd88;
+  opacity: var(--ripple-alpha); transform: translateX(-50%) scale(var(--ripple-scale)); pointer-events: none;
+}
+#listeningRoom .lr-scene-line [data-sing=voicing] {
+  color: var(--scene-accent, #ffe296);
+  text-decoration: underline;
+  text-decoration-thickness: .08em;
+  text-underline-offset: .14em;
+}
+#listeningRoom[data-stage-reading=true] .lr-scene-line [data-sing] { color: inherit; text-decoration: none; }
+#listeningRoom[data-stage-reading=true] .lr-scene-line [data-ripple]::after { display: none; }

@@ -9,7 +9,7 @@
     // 深墨落在亮底上不需要大光晕，白色虚光会把细笔画洗淡，只留一圈紧实的亮边。
     shadow:'0 1px 1px rgba(255,255,255,.28)',weight:560};
   // 这些场景底色偏亮，歌词改用深色墨。
-  const LIGHT_SCENES=new Set(['amber-dunes','silkscreen','tide-dial']);
+  const LIGHT_SCENES=new Set(['silkscreen']);
   function sceneTone(id){return LIGHT_SCENES.has(id)?'light':'dark'}
   function tonedInk(tone){return tone==='light'?{...LIGHT}:{...DARK}}
   // 背景条目自带 tone；没有就按 id 猜，未知一律走深色墨（更保险）。

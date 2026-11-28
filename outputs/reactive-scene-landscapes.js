@@ -142,14 +142,25 @@
     }
 
     ctx.strokeStyle='rgba(188,222,232,'+(.14+rain*.18+pulse*.13)+')';
-    ctx.beginPath();
+    const shelters=frame.shelters,normalWidth=ctx.lineWidth,normalAlpha=ctx.globalAlpha;
     for(let i=0;i<grains.length*quality*(.16+rain*.84);i++){
       const [a,b,c,d]=grains[i],shift=t*(.25+c*.36);
       const x=((a+shift*.14)%1)*w,y=((b+shift)%1)*h;
       const length=(4+(8+h*.012)*d*d)*(1+pulse*.17);
+      let protection=0;
+      if(shelters)for(const shelter of shelters){
+        const dx=Math.max(0,shelter.left-x,x-shelter.right);
+        const dy=Math.max(0,shelter.top-y,y-shelter.bottom);
+        const edge=Math.max(0,1-Math.hypot(dx,dy)/65);
+        protection=Math.max(protection,shelter.strength*edge*edge*(3-2*edge));
+      }
+      ctx.lineWidth=normalWidth*(1-.66*protection);
+      ctx.globalAlpha=normalAlpha*(1-.60*protection);
+      ctx.beginPath();
       ctx.moveTo(x,y);ctx.lineTo(x-length*.24,y+length);
+      ctx.stroke();
     }
-    ctx.stroke();
+    ctx.lineWidth=normalWidth;ctx.globalAlpha=normalAlpha;
   }
 
   function dune(ctx, w, h, base, curve, sway, top, bottom) {

@@ -24,6 +24,7 @@ contextBridge.exposeInMainWorld('sonicDesktop', Object.freeze({
   desktopLyrics: () => ipcRenderer.invoke('sonic:desktop-lyrics'),
   wallpaper: enabled => ipcRenderer.invoke('sonic:wallpaper', enabled===true),
   settings: () => ipcRenderer.invoke('sonic:settings'),
+  stageFrame: () => ipcRenderer.invoke('sonic:stage-frame'),
   fullscreen: enabled => ipcRenderer.invoke('sonic:fullscreen', enabled===true),
   checkRelease: () => ipcRenderer.invoke('sonic:check-release'),
   openUpdate: () => ipcRenderer.invoke('sonic:open-update'),

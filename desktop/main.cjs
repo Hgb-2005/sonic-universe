@@ -233,6 +233,11 @@ async function start() {
   ipcMain.handle('sonic:mini',event=>{if(!valid(event))return false;createMini();return true;});
   ipcMain.handle('sonic:desktop-lyrics',event=>valid(event)?desktopLyrics.toggle():{ok:false,message:'无效的窗口。'});
   ipcMain.handle('sonic:settings',event=>valid(event)?settings():{});
+  ipcMain.handle('sonic:stage-frame',async event=>{
+    if(!valid(event))return null;
+    const frame=await event.sender.capturePage();
+    return frame.isEmpty()?null:frame.toDataURL();
+  });
   ipcMain.handle('sonic:check-release',event=>valid(event)?checkRelease():null);
   ipcMain.handle('sonic:open-update',async event=>{
     if(!valid(event))return false;

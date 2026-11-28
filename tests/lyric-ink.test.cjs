@@ -31,7 +31,8 @@ test('background entries drive the tone, unknown ones fall back to light ink', (
 });
 
 test('bright scenes switch to dark ink while night scenes keep light ink', () => {
-  assert.equal(ink.sceneTone('amber-dunes'), 'light');
+  assert.equal(ink.sceneTone('amber-dunes'), 'dark');
+  assert.equal(ink.sceneTone('tide-dial'), 'dark');
   assert.equal(ink.sceneTone('silkscreen'), 'light');
   assert.equal(ink.sceneTone('jiangnan-rain'), 'dark');
   assert.equal(ink.sceneTone('violet-aurora'), 'dark');

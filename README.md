@@ -1,6 +1,13 @@
 # 声波宇宙 · Sonic Universe
 
-[打开网页版](https://hgb-2005.github.io/sonic-universe/) · [Windows 正式版 0.47.6](https://github.com/Hgb-2005/sonic-universe/releases/tag/v0.47.6) · [Windows 预发布 0.47.12](https://github.com/Hgb-2005/sonic-universe/releases/tag/v0.47.12) · [Windows 正式版 0.42.0](https://github.com/Hgb-2005/sonic-universe/releases/tag/v0.42.0)
+[打开网页版](https://hgb-2005.github.io/sonic-universe/) · [Windows 正式版 0.47.6](https://github.com/Hgb-2005/sonic-universe/releases/tag/v0.47.6) · [Windows 预发布 0.47.13](https://github.com/Hgb-2005/sonic-universe/releases/tag/v0.47.13) · [Windows 正式版 0.42.0](https://github.com/Hgb-2005/sonic-universe/releases/tag/v0.42.0)
+
+## 0.47.13 · Windows 预发布版
+
+- 视觉舞台按固定时间点绘制背景，遇到绘制负担时自动降低场景细节。歌词继续跟随音频时间。
+- 同时对唱可左右并列，两个声部各自按词高亮并显示译文。视觉舞台内可切换静读、调整动效强度和显示或隐藏译文。
+- 优化各场景的歌词底色、间奏退场和窄窗双语排版。长音可带动青玉潮汐的水纹，进入副歌时背景渐亮。
+- 「收藏这一刻」可保存含歌词的舞台画面。旧收藏可在视觉舞台恢复播放位置，完整备份入口移至「通用设置 → 备份与恢复」。
 
 ## 0.47.12 · Windows 预发布版
 
@@ -238,7 +245,7 @@ MV 区还可切换到维基共享资源、YouTube 或 Apple Music 官方索引�
 
 ## 第三十四版 · Windows 听歌空间
 
-工作陪伴将封面、播放控制和实时频谱放在同一播放区，可预览当前播放范围的队列、查看两行歌词和直接切换背景氛围。音乐来源提供汽水音乐、本地音频导入和外部声音联动。工作陪伴和歌词欣赏共用一套播放器，切换时音乐继续播放。汽水 KRC 按原始音节起止时间填亮，普通 LRC 逐行高亮。星空、创作台和视频功能在「星空与创作」里。
+工作陪伴将封面、播放控制和实时频谱放在同一播放区，可预览当前播放范围的队列、查看两行歌词和直接切换背景氛围。音乐来源提供汽水音乐、本地音频导入和外部声音联动。工作陪伴和歌词欣赏共用一套播放器，切换时音乐继续播放。汽水 KRC 按原始音节起止时间填亮，普通 LRC 逐行高亮。在「视觉舞台」中可以选择场景并查看收藏。
 
 锁屏、休眠或最小化时暂停绘制。迷你播放器可查看当前进度和控制项目内播放。
 
@@ -246,7 +253,7 @@ MV 区还可切换到维基共享资源、YouTube 或 Apple Music 官方索引�
 
 使用外部汽水音乐时，在「外部声音联动」点击「连接声音」，再在原播放器里播放。桌面版从系统播放音频实时提取强度，关闭联动或退出程序会停止分析。外部声音没有歌词或歌曲进度，想显示同步歌词时，可在项目内播放汽水可用曲目或导入本地 LRC。
 
-开发启动需要 Windows x64、Node.js 24 和系统自带的 .NET Framework 编译器。在项目根目录执行 `npm ci`、`npm start`。运行 `npm run desktop:build` 在 `release/` 生成安装包。桌面版与浏览器的本地曲库分别保存，可通过「星空与创作」里的完整备份迁移。
+开发启动需要 Windows x64、Node.js 24 和系统自带的 .NET Framework 编译器。在项目根目录执行 `npm ci`、`npm start`。运行 `npm run desktop:build` 在 `release/` 生成安装包。桌面版与浏览器的本地曲库分别保存，可通过「通用设置 → 备份与恢复」里的完整备份迁移。
 
 汽水音乐是可选依赖。要只安装本地播放器所需的依赖，使用 `npm ci --omit=optional` 后照常打包。已安装的桌面版可以先退出，再在 PowerShell 中设置 `$env:SONIC_DISABLE_QISHUI='1'` 并从同一个窗口启动 EXE。本地导入、播放和续播仍然可用。
 

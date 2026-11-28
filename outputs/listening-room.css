@@ -26,7 +26,8 @@ html.listening-enabled .online-lyrics { display: none !important; }
   color: var(--room-ink);
   font: 14px/1.5 "Microsoft YaHei UI", "Microsoft YaHei", system-ui, sans-serif;
 }
-#listeningRoom[hidden], #roomReturn[hidden], #listeningRoom [hidden] { display: none !important; }
+#listeningRoom [hidden] { display: none !important; }
+#listeningStartupError { padding: 24px; color: var(--room-ink); }
 #listeningRoom button, #listeningRoom input, #listeningRoom select { font: inherit; }
 #listeningRoom button { border: 0; cursor: pointer; color: inherit; background: transparent; }
 #listeningRoom button:disabled { opacity: .36; cursor: default; }
@@ -767,7 +768,6 @@ html.listening-enabled .online-lyrics { display: none !important; }
 #listeningRoom .lr-queue-empty{font-size:12px;color:#94a2b8;padding:25px 0}
 #listeningRoom .lr-status{color:#c4cddd;font-size:12px;line-height:1.9;min-height:24px;margin:18px 0 0}
 #listeningRoom .lr-search-input{width:100%;margin:18px 0 0;padding:10px 12px;border:1px solid #ffffff14;border-radius:7px;background:#15121f;color:#e1e6f0;font-size:12px}
-#roomReturn{position:fixed;z-index:10;right:22px;top:18px;padding:11px 17px;border:1px solid #ffffff21;border-radius:30px;background:#251e32e8;color:#e5d8f7;font:12px "Microsoft YaHei",sans-serif;cursor:pointer;box-shadow:0 8px 30px #0003}
 .lr-toasts{position:fixed;z-index:30;left:50%;bottom:calc(var(--lr-player-clearance, 100px) + 10px);max-width:calc(100vw - 32px);transform:translateX(-50%);padding:12px 20px;border:1px solid #ffffff16;border-radius:9px;background:#322741f5;color:#e0e6ef;font-size:12px;line-height:1.8;box-shadow:0 8px 35px #0004}
 .lr-toasts { pointer-events: none; }
 .lr-toasts button { pointer-events: auto; }

@@ -53,12 +53,37 @@
     return row;
   }
   function orderedLines(rows) {
-    for(const row of rows)attachWords(row);
     rows.sort((a,b)=>a.time-b.time||a.order-b.order);
+    const voices=[...new Set(rows.flatMap(row=>row.voices||[]))].filter(name=>name!=='合唱');
+    const sides={'甲':'left','乙':'right','合唱':'center'};
+    for(const row of rows){
+      const prefix=/^\s*(甲|乙|合唱)\s*[:：]\s*/u.exec(row.text);
+      if(prefix){
+        row.singer=sides[prefix[1]];
+        const count=split(prefix[0]).length;
+        row.text=row.text.slice(prefix[0].length);
+        row.points=row.points.map(p=>({...p,index:Math.max(0,p.index-count)}));
+      }else if(row.voices?.length){
+        const [name]=row.voices;
+        if(row.voices.length>1)row.singer='center';
+        else if(Object.hasOwn(sides,name))row.singer=sides[name];
+        else if(voices.length===2)row.singer=name===voices[0]?'left':'right';
+      }
+      delete row.voices;
+      attachWords(row);
+    }
     const unique=[];
-    for(const row of rows) {
-      if(unique.at(-1)?.time===row.time)unique[unique.length-1]=row;
-      else unique.push(row);
+    for(let start=0,end=0;start<rows.length;start=end){
+      end=start+1;
+      while(end<rows.length&&rows[end].time===rows[start].time)end++;
+      const last=rows[end-1];
+      const otherSide=last.singer==='left'?'right':last.singer==='right'?'left':null;
+      if(otherSide){
+        for(let i=end-2;i>=start;i--){
+          if(rows[i].singer===otherSide){unique.push(rows[i]);break;}
+        }
+      }
+      unique.push(last);
     }
     return unique;
   }
@@ -213,7 +238,8 @@
         }else parts.push({text:decodeEntities(token),mark:{time:start}});
       }
       const row=timedText(parts);
-      if(row.text)rows.push({time,end,...row,points:hasMarkers?row.points:[],order:rows.length});
+      const voices=[...new Set(Array.from(source.matchAll(/<v(?:\.[^\s>]+)*\s+([^>]+)>/gi),m=>decodeEntities(m[1]).trim()))];
+      if(row.text)rows.push({time,end,...row,voices,points:hasMarkers?row.points:[],order:rows.length});
       if(rows.length>=2500)break;
     }
     return orderedLines(rows);
@@ -267,7 +293,8 @@
       }
       children(node,range,(child,childRange)=>collect(child,childRange,undefined,false));
       const row=timedText(parts),translation=timedText(translations).text;
-      if(row.text)rows.push({time:range.time,...(Number.isFinite(range.end)?{end:range.end}:{}),...row,...(translation?{translation}:{}),order:rows.length});
+      const voices=node.attributes['ttm:agent']?.trim().split(/\s+/);
+      if(row.text)rows.push({time:range.time,...(Number.isFinite(range.end)?{end:range.end}:{}),...row,voices,...(translation?{translation}:{}),order:rows.length});
     }
     walk(root,interval(root,{time:0,end:Infinity},0));
     return orderedLines(rows);
@@ -280,7 +307,8 @@
     const match=/^(.*)\.(lrc|yrc|krc|qrc|ttml|vtt)$/i.exec(String(path||'').replaceAll('\\','/').toLowerCase());
     if(!match||!match[1])return null;
     const rawStem=match[1];
-    const suffix=/(?:[._ -])(?:translation|translate|translated|trans|tr|tl|zh(?:[-_](?:cn|tw|hans|hant))?|en(?:[-_](?:us|gb))?|ja|jp|ko|kr|chs|cht|翻[译譯]|譯詞|译词|译|譯)$/.exec(rawStem);
+    const suffix=/(?:[._ -])(?:translation|translate|translated|trans|tr|tl|zh(?:[-_](?:cn|tw|hans|hant))?|en(?:[-_](?:us|gb))?|ja|jp|ko|kr|chs|cht|翻[译譯]|譯詞|译词|译|譯)$/.exec(rawStem)
+      || (match[2]==='lrc' && /\.t$/.exec(rawStem));
     const stem=suffix&&suffix.index>rawStem.lastIndexOf('/')+1?rawStem.slice(0,suffix.index):rawStem;
     return {stem,rawStem,format:match[2],translation:stem!==rawStem};
   }
@@ -293,7 +321,21 @@
       while(lower<upper){const mid=(lower+upper)>>1;if(lines[mid].time<translated.time)lower=mid+1;else upper=mid;}
       const before=lines[lower-1],after=lines[lower];
       const useBefore=before&&(!after||translated.time-before.time<=after.time-translated.time);
-      const index=useBefore?lower-1:lower;
+      let index=useBefore?lower-1:lower;
+      if(translated.singer){
+        // 同秒的双声部可以各自带一行译文。
+        index=-1;
+        let nearest=.42;
+        for(let i=lower-1;i>=0&&translated.time-lines[i].time<=nearest;i--){
+          if(lines[i].singer!==translated.singer)continue;
+          index=i;nearest=translated.time-lines[i].time;
+        }
+        for(let i=lower;i<lines.length&&lines[i].time-translated.time<=nearest;i++){
+          if(lines[i].singer!==translated.singer)continue;
+          index=i;nearest=lines[i].time-translated.time;
+        }
+        if(index<0)continue;
+      }
       const distance=Math.abs(lines[index].time-translated.time);
       if(distance>.42||distance>=(matches.get(index)?.distance??Infinity))continue;
       const text=translated.text.trim();
@@ -360,5 +402,18 @@
     }
     return lit;
   }
-  return {parse,parseKrc,parseYrc,parseQrc,parseVtt,parseTtml,classifySidecar,mergeTranslations,wordSpans,timedSpans,progress,glyphFlightProgress,count,split};
+  function phraseStarts(spans) {
+    const words=spans.filter(word=>word.text.trim());
+    if(words.length<4 || (words.at(-1).start-words[0].start)/(words.length-1)>.36)return null;
+    const starts=new Map();
+    let first=0;
+    for(let i=0;i<words.length;i++){
+      const previous=words[i-1],size=i-first;
+      if(size>=2 && words.length-i>=2 && (size>=3 || words.length-i===2 ||
+          words[i].start-previous.end>.18 || /[，。！？、,;:!?]\s*$/u.test(previous.text)))first=i;
+      starts.set(words[i],words[first].start);
+    }
+    return starts;
+  }
+  return {parse,parseKrc,parseYrc,parseQrc,parseVtt,parseTtml,classifySidecar,mergeTranslations,wordSpans,timedSpans,progress,glyphFlightProgress,count,split,phraseStarts};
 });

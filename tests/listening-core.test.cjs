@@ -56,6 +56,44 @@ test('lyric lookup handles lead-in, exact boundaries, seeks and the final line',
   assert.equal(core.lyricAt([], 1, 20).line, null);
 });
 
+test('explicit lyric gaps fade, clear and cue at the same positions after a seek', () => {
+  const line = {time: 1.03, end: 5.85}, next = {time: 13.85};
+  assert.equal(core.lyricGap(line, next, 5.8), null);
+  const fade = core.lyricGap(line, next, 6.1);
+  assert.equal(fade.phase, 'fade');
+  assert.ok(fade.opacity > 0 && fade.opacity < 1);
+  assert.deepEqual(core.lyricGap(line, next, 9), {phase: 'quiet', opacity: 0});
+  const cue = core.lyricGap(line, next, 13.7);
+  assert.equal(cue.phase, 'cue');
+  assert.ok(cue.opacity > 0 && cue.opacity < 1);
+  assert.equal(core.lyricGap(line, next, next.time), null);
+  assert.deepEqual(core.lyricGap(line, next, 9), {phase: 'quiet', opacity: 0});
+  assert.equal(core.lyricGap(line, {time: 6.25}, 6), null);
+  assert.equal(core.lyricGap({time: 1.03}, next, 9), null);
+  assert.equal(core.lyricGap(line, undefined, 9), null);
+});
+
+test('frame deadlines keep their cadence and skip missed frames', () => {
+  assert.equal(core.nextFrameDeadline(0, 100, 50), 120);
+  assert.equal(core.nextFrameDeadline(120, 124, 50), 140);
+  assert.equal(core.nextFrameDeadline(140, 197, 50), 200);
+  assert.equal(core.nextFrameDeadline(200, 199.6, 50), 220);
+});
+
+test('duet voices finish independently and share the next boundary for line-only lyrics', () => {
+  const left={time:3,end:7.2,singer:'left'},right={time:4,end:9.2,singer:'right'};
+  const timelines=core.duetTimelines([left,right,{time:10.5,singer:'center'}]);
+  assert.equal(core.duetLineAt(timelines.left,3.8,18).line,left);
+  assert.equal(core.duetLineAt(timelines.right,3.8,18),null);
+  assert.equal(core.duetLineAt(timelines.left,4.7,18).end,7.2);
+  assert.equal(core.duetLineAt(timelines.right,4.7,18).end,9.2);
+  assert.equal(core.duetLineAt(timelines.left,7.8,18),null);
+  assert.equal(core.duetLineAt(timelines.right,7.8,18).line,right);
+  const lrc=core.duetTimelines([{time:3,singer:'left'},{time:3,singer:'right'},{time:10.5,singer:'center'}]);
+  assert.equal(core.duetLineAt(lrc.left,4,18).end,10.5);
+  assert.equal(core.duetLineAt(lrc.right,4,18).end,10.5);
+});
+
 test('hidden and occluded windows stop rendering, and power state sets the ceiling', () => {
   assert.equal(core.frameRate({ hidden: true }), 0);
   assert.equal(core.frameRate({ occluded: true }), 0);

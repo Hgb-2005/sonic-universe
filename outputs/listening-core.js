@@ -6,18 +6,20 @@
 })(typeof globalThis === 'object' ? globalThis : this, function () {
   'use strict';
   const clamp = (value, min, max) => Math.min(max, Math.max(min, Number.isFinite(value) ? value : min));
-  const defaults = Object.freeze({ mode: 'work', lyricStyle:'effects', lyricEffect:'tide', lyricScroll:'smooth', lyricAutoReturn:false, playbackBackground:'default', background: 'geometry', visualScene:'auto', reactiveBackdrop:false, beatClock:true, beatRatio:1, color: 'lilac', playbackColor:'cover', brightness: 55, response: 35, desktopLyrics: true, energySaver: true });
+  const defaults = Object.freeze({ mode: 'work', lyricStyle:'effects', lyricEffect:'tide', lyricScroll:'smooth', lyricAutoReturn:false, playbackBackground:'default', background: 'geometry', visualScene:'auto', stageReading:false, stageTranslations:true, reactiveBackdrop:false, beatClock:true, beatRatio:1, color: 'lilac', playbackColor:'cover', brightness: 55, response: 35, desktopLyrics: true, energySaver: true });
   function normalize(value) {
     const source = value && typeof value === 'object' ? value : {};
     return {
       mode: ['work', 'listen', 'library', 'search', 'visual'].includes(source.mode) ? source.mode : defaults.mode,
-      lyricStyle: ['stage','list','fly','effects'].includes(source.lyricStyle)?source.lyricStyle:defaults.lyricStyle,
+      lyricStyle: ['stage','list','fly','effects','reading'].includes(source.lyricStyle)?source.lyricStyle:defaults.lyricStyle,
       lyricEffect: typeof source.lyricEffect==='string'&&/^[a-z]{1,16}$/.test(source.lyricEffect)?source.lyricEffect:defaults.lyricEffect,
       lyricScroll: ['smooth','track','rise'].includes(source.lyricScroll)?source.lyricScroll:defaults.lyricScroll,
       lyricAutoReturn: source.lyricAutoReturn===true,
       playbackBackground: typeof source.playbackBackground==='string'&&/^[a-z][a-z0-9-]{0,47}$/.test(source.playbackBackground)?source.playbackBackground:defaults.playbackBackground,
       background: ['geometry', 'mist', 'plain', 'universe'].includes(source.background) ? source.background : defaults.background,
       visualScene: typeof source.visualScene==='string'&&/^[a-z-]{1,24}$/.test(source.visualScene)?source.visualScene:defaults.visualScene,
+      stageReading: source.stageReading===true,
+      stageTranslations: source.stageTranslations!==false,
       reactiveBackdrop: source.reactiveBackdrop===true,
       beatClock: typeof source.beatClock === 'boolean' ? source.beatClock : defaults.beatClock,
       beatRatio: [.5,2].includes(source.beatRatio)?source.beatRatio:1,
@@ -41,6 +43,36 @@
     const end = line ? Math.max(line.time + .05, lines[index + 1]?.time ?? (Number.isFinite(duration) && duration > line.time ? duration : line.time + 6)) : 0;
     return { index, line, end };
   }
+  function lyricGap(line, next, position) {
+    if (!Number.isFinite(line?.end) || !next || next.time - line.end <= 2.5 ||
+        position < line.end || position >= next.time) return null;
+    const elapsed = position - line.end;
+    const remaining = next.time - position;
+    if (elapsed < .45) return {phase: 'fade', opacity: 1 - elapsed / .45};
+    if (remaining <= .35) return {phase: 'cue', opacity: .55 * (1 - remaining / .35)};
+    return {phase: 'quiet', opacity: 0};
+  }
+  function duetTimelines(lines) {
+    const voices={left:[],right:[]};
+    let nextStart=Infinity, nextUnsplit=Infinity;
+    for(let i=lines.length-1;i>=0;i--){
+      const line=lines[i],next=lines[i+1];
+      if(next&&next.time>line.time)nextStart=next.time;
+      if(line.singer==='left'||line.singer==='right'){
+        const end=Math.min(Number.isFinite(line.end)?line.end:nextStart,nextUnsplit);
+        voices[line.singer].push({time:line.time,end,line});
+      }else nextUnsplit=line.time;
+    }
+    voices.left.reverse();
+    voices.right.reverse();
+    return voices;
+  }
+  function duetLineAt(timeline, position, duration) {
+    const {line:entry,end}=lyricAt(timeline,position,duration);
+    if(!entry)return null;
+    const stop=Number.isFinite(entry.end)?entry.end:end;
+    return position<stop?{line:entry.line,end:stop}:null;
+  }
   // 帧率策略：省电优先仍然最省；关掉省电后按供电状态放开（插电 60，电池 30）。
   // 减少动态效果只留 10 帧，够看清歌词变化又不晕。
   function frameRate({ hidden = false, occluded = false, active = true, reduced = false, mode = 'work', energySaver = true, onBattery = false } = {}) {
@@ -48,6 +80,12 @@
     if (reduced) return 10;
     const ceiling = mode === 'work' ? (onBattery ? 24 : 40) : (onBattery ? 30 : 60);
     return energySaver ? Math.min(ceiling, mode === 'work' ? 20 : 30) : ceiling;
+  }
+  function nextFrameDeadline(deadline, now, fps) {
+    const interval = 1000 / fps;
+    if (!deadline) return now + interval;
+    const periods = Math.max(1, Math.floor((now - deadline) / interval) + 1);
+    return deadline + periods * interval;
   }
   function playbackRenderScale(width,height,dpr,{energySaver,photo=false}={}) {
     const limit=energySaver?(photo?1.15:.8):(photo?1.6:2);
@@ -61,5 +99,5 @@
   function approach(value, target, seconds, timeConstant = .6) {
     return value + (target - value) * (1 - Math.exp(-clamp(seconds, 0, 1) / Math.max(.01, timeConstant)));
   }
-  return { defaults, normalize, lyricAt, frameRate, playbackRenderScale, formatTime, approach, clamp };
+  return { defaults, normalize, lyricAt, lyricGap, duetTimelines, duetLineAt, frameRate, nextFrameDeadline, playbackRenderScale, formatTime, approach, clamp };
 });

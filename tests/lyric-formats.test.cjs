@@ -49,9 +49,20 @@ test('Apple TTML absolute clocks, SMPTE-style frame clocks and rejection of XML 
   assert.deepEqual(lyrics.parse('<tt><body><p begin="0s">Bad nesting</tt>'),[]);
 });
 
+test('two explicit voices survive one timestamp and can each carry a translation',()=>{
+  const lines=lyrics.parse('[00:03.00]甲：我走过旧桥\n[00:03.00]乙：我在桥边等你\n[00:08.00]合唱：一起回家');
+  const translated=lyrics.parse('[00:03.00]甲：I crossed the bridge\n[00:03.00]乙：I am waiting by the bridge');
+  assert.deepEqual(lines.map(row=>row.singer),['left','right','center']);
+  assert.deepEqual(lyrics.mergeTranslations(lines,translated).map(row=>row.translation),[
+    'I crossed the bridge','I am waiting by the bridge',undefined
+  ]);
+  assert.deepEqual(lyrics.parse('[00:03.00]旧句\n[00:03.00]新句').map(row=>row.text),['新句']);
+});
+
 test('translation sidecar candidates retain their directory and only nearby timestamps attach',()=>{
   assert.deepEqual(lyrics.classifySidecar('Album\\歌.ZH-cn.LRC'),{stem:'album/歌',rawStem:'album/歌.zh-cn',format:'lrc',translation:true});
   assert.deepEqual(lyrics.classifySidecar('Album/歌.ttml'),{stem:'album/歌',rawStem:'album/歌',format:'ttml',translation:false});
+  assert.deepEqual(lyrics.classifySidecar('Auld Lang Syne.t.lrc'),{stem:'auld lang syne',rawStem:'auld lang syne.t',format:'lrc',translation:true});
   assert.equal(lyrics.classifySidecar('Album/歌.mp3'),null);
   const source=lyrics.parse('[00:01.00]远方\n[00:04.00]星海\n[00:05.00]故事');
   const translation=lyrics.parse('[00:01.06]Far away\n[00:01.20]Too far\n[00:04.30]Starlight\n[00:06.90]unrelated');

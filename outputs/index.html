@@ -9,16 +9,26 @@
 <link rel="icon" type="image/svg+xml" href="./assets/sonic-mark.svg">
 <meta name="sonic-project-pack-revision" content="bed720a09029">
 <meta name="sonic-file-tags-revision" content="481db58eee75">
-<link rel="stylesheet" href="./listening-room.css?v=8e67bc080ce2">
+<link rel="stylesheet" href="./listening-room.css?v=640ffffea445">
 <link rel="stylesheet" href="./music-library.css?v=ec4c3a57e1df">
 <link rel="stylesheet" href="./music-discovery.css?v=95b9d9b6e23e">
 <link rel="stylesheet" href="./equalizer.css?v=7f372d94c3af">
-<link rel="stylesheet" href="./reactive-scenes.css?v=4d0da87042bc">
+<link rel="stylesheet" href="./reactive-scenes.css?v=07ff98ff2ff4">
 <link rel="stylesheet" href="./now-playing.css?v=2674a5876b0b">
 <link rel="stylesheet" href="./lyric-effects.css?v=446df1db3d52">
 <link rel="stylesheet" href="./lyric-rhythm.css?v=ed55eaacb3c7">
 <link rel="stylesheet" href="./appearance-preview.css?v=7db9c682b6e5">
-<script>if(!new URLSearchParams(location.search).has('sharedViewer')&&new URLSearchParams(location.search).get('interface')!=='legacy'){document.documentElement.classList.add('listening-enabled');setTimeout(()=>{if(!window.SonicListeningRoom){document.documentElement.classList.remove('listening-enabled');window.SonicPlayback?.presentation(false);}},6000);}</script>
+<script>
+  if (window.parent !== window && new URLSearchParams(location.search).has('sharedViewer')) {
+    document.documentElement.classList.add('shared-viewer');
+  } else {
+    document.documentElement.classList.add('listening-enabled');
+    setTimeout(() => {
+      const message = document.getElementById('listeningStartupError');
+      if (!window.SonicListeningRoom && message) message.hidden = false;
+    }, 6000);
+  }
+</script>
 <style>.help-btn{text-decoration:none}.footer-links{flex-wrap:wrap}</style>
 <meta name="description" content="工作时轻量陪伴，听歌时沉浸歌词。用简洁几何、柔和光雾和喜欢的音乐，留一点舒服的空间给自己。">
 <meta property="og:type" content="website">
@@ -261,6 +271,7 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
   window.addEventListener('unhandledrejection',event=>{console.error(event.reason);if(!el('app')?.dataset.visualReady)window.activateVisualFallback('画面启动未完成，轻量音乐画面仍可使用。')});
 })();
 </script>
+<p id="listeningStartupError" role="alert" hidden>听歌空间加载失败，请重新打开声波宇宙。</p>
 <div class="app" id="app">
   <canvas id="universe" role="img" aria-label="一片随音乐频率起伏的星空，低音推开星云，中频留下星轨，高音点亮星闪">你的浏览器暂不支持星空画布。</canvas>
   <div class="grain" aria-hidden="true"></div>
@@ -335,7 +346,7 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
     </section>
     <span class="keyboard-hint">SPACE 播放 / 暂停</span>
   </div>
-  <footer class="footer"><span class="footer-brand"><b>EDITION 33</b> SOUND & STARDUST</span><div class="footer-links footer-center"><button class="help-btn" id="projectBtn">创作与备份 ↗</button><span aria-hidden="true">·</span><button class="help-btn" id="helpBtn">使用指南 ↗</button><span aria-hidden="true">·</span><button class="help-btn" id="flightBtn" title="可选的独立节奏小游戏">星际航行小实验 ↗</button></div><span>你的音乐 · 在星空中流动</span></footer>
+  <footer class="footer"><span class="footer-brand"><b>EDITION 33</b> SOUND & STARDUST</span><div class="footer-links footer-center"><button class="help-btn" id="helpBtn">使用指南 ↗</button><span aria-hidden="true">·</span><button class="help-btn" id="flightBtn" title="可选的独立节奏小游戏">星际航行小实验 ↗</button></div><span>你的音乐 · 在星空中流动</span></footer>
   <div class="roam-surface" id="roamSurface" tabindex="0" role="region" aria-label="星空漫游：轻触唤醒按钮，拖动旋转视角，滚轮或双指缩放，加减键调整距离，0 重置，C 定格，右上角选星空，H 或 Escape 返回"></div>
   <div class="roam-ui roam-top"><div class="roam-identity"><div class="roam-kicker">SONIC JOURNEY · VOL.32</div><p id="roamTrack">星际漫游</p><button class="roam-export" id="roamClipBtn">生成星空短片 ↗</button><button class="roam-export roam-atelier" id="roamAtelierBtn">心情 · 歌词 · 收藏 ↗</button><button class="roam-export roam-atelier" id="roamInstrumentBtn">弹出星空 ↗</button></div><div class="roam-top-actions"><button class="roam-look-toggle" id="roamLookBtn" aria-expanded="false" aria-controls="roamLookPanel" aria-label="选择星空氛围"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.3 6.7L21 12l-6.7 2.3L12 21l-2.3-6.7L3 12l6.7-2.3Z"/></svg>选星空</button><button class="quiet-exit" id="quietExit"><svg viewBox="0 0 24 24"><path d="m14 5-7 7 7 7M7 12h13"/></svg>返回空间 · Esc</button></div>
     <section class="roam-look-panel" id="roamLookPanel" hidden aria-labelledby="roamLookTitle">
@@ -590,13 +601,13 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
   <div class="instrument-footer"><div><span class="storage-status" role="status">旋律与设置仅保存在本机</span><small>录制一层前数 4 拍，循环播放时可继续录下一层。最多 6 层；关闭乐器台会停止演奏。</small></div><button class="primary-btn" id="instrumentFilmBtn">把演奏录成短片 ↗</button></div>
 </dialog>
 
-  <script defer src="./lyric-karaoke.js?v=9b79bfeb6547"></script>
+  <script defer src="./lyric-karaoke.js?v=a44aa1b1d24c"></script>
   <script defer src="./music-motion.js?v=9e139141b047"></script>
   <script defer src="./visual-presets.js?v=79d1f9962f19"></script>
   <script defer src="./visual-system.js?v=cd3086ca4807"></script>
   <script defer src="./soda-library.js?v=51f77f62c8a0"></script>
   <script defer src="./online-music.js?v=e9493b6bf299"></script>
-<script defer src="./listening-core.js?v=4fa3e15a72cd"></script>
+<script defer src="./listening-core.js?v=fb98086d8c43"></script>
 <script defer src="./playback-queue-state.js?v=6f6b999bfc28"></script>
 <script defer src="./album-audio.js?v=e77983924abe"></script>
 <script defer src="./now-playing.js?v=fe6d7e1f5f45"></script>
@@ -613,12 +624,12 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
 <script src="./audio-tuning.js?v=f92f0e44aa4f"></script>
 <script src="./audio-loudness.js?v=7de1fa6d948e"></script>
 <script src="./lyric-structure.js?v=f89bb4e66893"></script>
-<script src="./lyric-ink.js?v=01d2a75776bb"></script>
-<script defer src="./universe-main.js?v=6bd4c142f5c7"></script>
+<script src="./lyric-ink.js?v=cbb7f6c6c47f"></script>
+<script defer src="./universe-main.js?v=d33a198f4bc2"></script>
 <script defer src="./playlist-transfer.js?v=f9d65c68d392"></script>
 <script defer src="./navidrome-panel.js?v=584433cf0b6e"></script>
 <script defer src="./music-library.js?v=e959acfabe97"></script>
-<script defer src="./reactive-scene-landscapes.js?v=3de31478b4e9"></script>
+<script defer src="./reactive-scene-landscapes.js?v=75ab1038a9c8"></script>
 <script defer src="./reactive-scene-neon.js?v=42a4617fe172"></script>
 <script defer src="./reactive-scene-bloom.js?v=d9accfa8d886"></script>
 <script defer src="./reactive-scenes.js?v=f516d8659581"></script>
@@ -626,6 +637,6 @@ h1 span,.listening-note span,.atelier-launch,.instrument-launch{color:var(--acce
 <script id="playbackBackgroundPainters" type="application/json" data-href="./playback-background-painters.js?v=e265afa58a67"></script>
 <script defer src="./playback-backgrounds.js?v=4bd22f3bef1d"></script>
 <script defer src="./appearance-preview.js?v=04a41999ecb6"></script>
-<script defer src="./listening-room.js?v=de9d2ed7ba77"></script>
+<script defer src="./listening-room.js?v=7994507bb857"></script>
 </body>
 </html>

@@ -9,7 +9,7 @@
     return;
   }
   const $ = id => document.getElementById(id);
-  let listeningPresentation = !new URLSearchParams(location.search).has('sharedViewer') && new URLSearchParams(location.search).get('interface') !== 'legacy';
+  let listeningPresentation = document.documentElement.classList.contains('listening-enabled');
   const featureScripts = new Map();
   function loadFeatureScript(file, globalName) {
     if (window[globalName]) return Promise.resolve(window[globalName]);
@@ -1115,14 +1115,38 @@
     for(const m of atelier.memories){
       const item=document.createElement('li');item.className='memory-card';if(m.thumb){const img=document.createElement('img');img.src=m.thumb;img.alt='收藏时的星空';item.append(img)}
       const content=document.createElement('div'),title=document.createElement('strong'),note=document.createElement('p'),meta=document.createElement('small'),actions=document.createElement('div');actions.className='memory-actions';title.textContent=m.name+' · '+formatTime(m.position);note.textContent=m.note||'那一刻，星光刚好。';meta.textContent=(m.date||'').slice(0,10)+' · '+(themes[m.look?.theme]?.name||'星空');
-      const back=document.createElement('button'),remove=document.createElement('button');back.className=remove.className='text-btn';back.textContent='回到此刻 ↗';back.disabled=!tracks.some(t=>t.id===m.trackId);if(back.disabled)back.title='这首歌已从音乐库移除';remove.textContent='移除';back.addEventListener('click',()=>recallMemory(m));remove.addEventListener('click',()=>{atelier.memories=atelier.memories.filter(v=>v.id!==m.id);persistAtelier();renderMemories()});actions.append(back,remove);content.append(title,note,meta,actions);item.append(content);list.append(item);
+      const back=document.createElement('button'),remove=document.createElement('button');back.className=remove.className='text-btn';back.textContent=m.stage?'查看定格画面':'回到此刻 ↗';back.disabled=!m.stage&&!tracks.some(t=>t.id===m.trackId);if(back.disabled)back.title='这首歌已从音乐库移除';remove.textContent='移除';back.addEventListener('click',()=>m.stage?openMemoryFrame(m):recallMemory(m));remove.addEventListener('click',()=>{atelier.memories=atelier.memories.filter(v=>v.id!==m.id);persistAtelier();renderMemories()});actions.append(back,remove);content.append(title,note,meta,actions);item.append(content);list.append(item);
     }
   }
   async function recallMemory(m){
     if(clipLocked())return;await selectTrack(m.trackId,false,m.position);if(activeId!==m.trackId||pendingFile)return;
     restoreView(m);sceneTime=finite(m.sceneTime,0,0,100000);seekVisualTarget=null;seekVisualLeft=0;
     if(m.weights)for(const key of Object.keys(sceneWeights))sceneWeights[key]=finite(m.weights[key],key==='ring'?1:0,0,1);
-    memoryHold=true;cueTrack=activeId;cueActive='memory';cuePosition=getLocalPosition();savePreferences();$('atelierDialog').close();setQuiet(true);showToast('已回到 '+formatTime(m.position)+' · 按播放，让这段记忆继续。');
+    memoryHold=true;cueTrack=activeId;cueActive='memory';cuePosition=getLocalPosition();savePreferences();$('atelierDialog').close();
+    window.SonicListeningRoom?.setMode('visual');
+    showToast('已回到 '+formatTime(m.position)+' · 按播放，让这段记忆继续。');
+  }
+  function openMemoryFrame(memory){
+    const dialog=document.createElement('dialog');
+    dialog.className='memory-frame';dialog.setAttribute('aria-label','收藏的舞台画面');
+    const title=document.createElement('strong'),image=document.createElement('img'),close=document.createElement('button');
+    title.textContent=memory.name+' · '+formatTime(memory.position)+' · '+(memory.stage.mode||'视觉舞台');
+    image.src=memory.thumb;image.alt=[memory.stage.lyric,memory.stage.translation].filter(Boolean).join(' / ')||'收藏的舞台画面';
+    close.type='button';close.className='secondary-btn';close.textContent='返回收藏';close.onclick=()=>dialog.close();
+    dialog.append(title,image,close);app.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});dialog.showModal();
+  }
+  async function storeStageMoment(bitmap,stage){
+    await atelierPromise;
+    if(atelier.memories.length>=50)throw Error('已收藏 50 个瞬间，请先移除一些。');
+    const track=tracks.find(item=>item.id===stage.trackId);
+    if(!track)throw Error('歌曲已从曲库移除。');
+    const frame=new Image();frame.src=bitmap;await frame.decode();
+    const date=new Date(),memory={...saveView(),id:newId('memory'),trackId:track.id,name:track.name,
+      position:stage.position,date:date.toISOString(),note:stage.lyric.slice(0,100),thumb:bitmap,stage};
+    atelier.memories.unshift(memory);renderMemories();
+    const saved=await persistAtelier();
+    capturePlaybackMoment(frame,{mode:stage.mode,lyric:stage.lyric,position:stage.position,stage:true});
+    $('postcardStatus').textContent=saved?'已收入收藏，可以随时查看这帧画面。':'画面已留在本页，本机存储失败。';
   }
   function validCue(c){if(!c||!validLook(c.look))return null;return{...c,id:typeof c.id==='string'?c.id:newId('cue'),time:finite(c.time,0,0,86400),text:String(c.text||'').slice(0,60),burst:c.burst!==false,look:validLook(c.look)}}
   function readSegment(){
@@ -1830,9 +1854,16 @@
     else{sw=Math.min(source.width,Math.max(source.width*.64,source.width*capturedMoment.radius*4.8));sh=sw/aspect;if(sh>source.height){sh=source.height;sw=sh*aspect}}
     const sx=clamp(source.width*capturedMoment.focusX-sw/2,0,Math.max(0,source.width-sw)),sy=clamp(source.height*capturedMoment.focusY-sh/2,0,Math.max(0,source.height-sh));
     g.save();g.beginPath();g.rect(art.x,art.y,art.w,art.h);g.clip();g.drawImage(source,sx,sy,sw,sh,art.x,art.y,art.w,art.h);
+    if(capturedMoment.stage){
+      const scale=Math.min(art.w/source.width,art.h/source.height);
+      const width=source.width*scale,height=source.height*scale;
+      g.fillStyle=bg;g.fillRect(art.x,art.y,art.w,art.h);
+      g.drawImage(source,art.x+(art.w-width)/2,art.y+(art.h-height)/2,width,height);
+    }else{
     const shade=g.createLinearGradient(0,art.y+art.h*.6,0,art.y+art.h);shade.addColorStop(0,'#08091100');shade.addColorStop(1,'#08091199');g.fillStyle=shade;g.fillRect(art.x,art.y,art.w,art.h);
     g.fillStyle='#d4c4e8';g.font='16px ui-monospace,Consolas,monospace';g.fillText('✧  '+capturedMoment.phase,art.x+31,art.y+art.h-32);
-    g.textAlign='right';g.fillText(capturedMoment.mode+'  /  '+formatTime(capturedMoment.position),art.x+art.w-31,art.y+art.h-32);g.textAlign='left';g.restore();
+    g.textAlign='right';g.fillText(capturedMoment.mode+'  /  '+formatTime(capturedMoment.position),art.x+art.w-31,art.y+art.h-32);g.textAlign='left';
+    }g.restore();
     g.fillStyle=accent;g.font='16px ui-monospace,Consolas,monospace';g.fillText('A SONG, A SKY, A MOMENT.',69,1001);
     const song=$('postcardSong').value.trim()||capturedMoment.song;
     g.fillStyle=ink;
@@ -1852,13 +1883,13 @@
     surface.setAttribute('aria-label','星空明信片：'+song+'。'+mood+'。署名：'+author);
     document.querySelectorAll('[data-card-style]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.cardStyle===postcardStyle)));
   }
-  function capturePlaybackMoment(surface,{mode:scene,lyric}={}){
+  function capturePlaybackMoment(surface,{mode:scene,lyric,position=getLocalPosition(),stage=false}={}){
     const track=currentTrack();
     if(!track||!surface?.width||!surface.height||clipLocked())return false;
     const frame=document.createElement('canvas');frame.width=surface.width;frame.height=surface.height;
     frame.getContext('2d').drawImage(surface,0,0);
     capturedScene=frame;
-    capturedMoment={date:new Date(),song:track.name,trackId:track.id,position:getLocalPosition(),lyric,
+    capturedMoment={date:new Date(),song:track.name,trackId:track.id,position,lyric,stage,
       mode:scene||'正在播放',phase:scene||'正在播放',focusX:.5,focusY:.5,radius:.28,zoom:1,frame};
     $('postcardSong').value=track.name.slice(0,80);
     $('postcardMood').value=String(lyric||'').slice(0,80);
@@ -4181,7 +4212,7 @@
     if(mode==='online'){
       return clamp((Number.isFinite(audio.currentTime)?audio.currentTime:onlineMediaStart)-onlineMediaStart,0,localDuration());
     }
-    if(mode==='demo')return clamp(Number.isFinite(audio.currentTime)?audio.currentTime:offset,0,duration);
+    if(mode==='demo')return clamp(audio.hasAttribute('src')&&Number.isFinite(audio.currentTime)?audio.currentTime:offset,0,duration);
     return clamp(offset+(playing&&audioContext?(audioContext.currentTime-startedAt)*playbackRate:0),0,duration);
   }
   function stopDemo(){if(mode==='demo')audio.pause()}
@@ -6574,15 +6605,18 @@
   window.addEventListener('pagehide',()=>{cancelNextOnlinePreparation();queueChartMatch?.abort();loadAbort?.abort();saveSession();stopExternal('',true);generation++;loadGeneration++;stopDemo();audio.pause();if(objectUrl)URL.revokeObjectURL(objectUrl);if(audioContext)audioContext.close()});
   window.addEventListener('pageshow',e=>{if(e.persisted)location.reload()});
 
+  function openBackup(){
+    if(clipLocked()||importing){showToast('请先完成音乐导入或录制。');return;}
+    const dialog=$('projectDialog');
+    if(!dialog.open)dialog.showModal();
+  }
   function setupProjectPack(){
     const dialog=document.createElement('dialog');dialog.id='projectDialog';dialog.className='space-dialog';dialog.setAttribute('aria-labelledby','projectTitle');
-    dialog.innerHTML='<div class="dialog-heading"><div><div class="dialog-kicker">MAKE A UNIVERSE OF YOUR OWN</div><h2 id="projectTitle">从一首歌，到你的星空作品</h2></div><button class="icon-btn" id="projectClose" aria-label="关闭创作与备份">×</button></div><p class="project-note">按自己的节奏完成四步。示例音乐也可以创作。</p><ol class="project-steps"><li><button data-project-action="uploadBtn">选一首音乐 ↗</button><small id="projectSong"></small></li><li><button data-project-action="presetBtn">挑选星空与光感 ↗</button><small>从预设出发，调整粒子、色彩与空间。</small></li><li><button data-project-action="atelierBtn">写歌词，收藏片刻 ↗</button><small>把一句话和一个时间点留在音乐里。</small></li><li><button data-project-action="postcardBtn">制作星空明信片 ↗</button><small>预览画面、填写署名，再保存图片。</small></li></ol><hr><h3>完整作品备份</h3><p class="project-note">把本地音乐文件、封面、歌词、歌单、收藏片刻、演奏和草稿一起保存。备份仅保存在你下载的文件里，最多 1 GB；已导出的视频和图片请另行保管。</p><div class="project-actions"><button class="primary-btn" id="backupExport">导出完整备份</button><button class="secondary-btn" id="backupImport">从文件恢复</button></div><input type="file" id="backupFile" accept=".sonicpack" hidden><section id="backupPreview" hidden><p id="backupSummary"></p><p class="project-note">恢复将替换这个浏览器里的曲库和创作。请先导出当前备份，并关闭其他声波宇宙页面。</p><div class="project-actions"><button class="primary-btn" id="backupRestore">恢复并替换本机内容</button><button class="secondary-btn" id="backupCancel">取消恢复</button></div></section><p id="backupStatus" class="project-note" role="status" aria-live="polite"></p>';
+    dialog.innerHTML='<div class="dialog-heading"><h2 id="projectTitle">备份与恢复</h2><button class="icon-btn" id="projectClose" aria-label="关闭备份与恢复">×</button></div><p class="project-note">把本地音乐文件、封面、歌词、歌单、收藏片刻、演奏和草稿一起保存。备份仅保存在你下载的文件里，最多 1 GB；已导出的视频和图片请另行保管。</p><div class="project-actions"><button class="primary-btn" id="backupExport">导出完整备份</button><button class="secondary-btn" id="backupImport">从文件恢复</button></div><input type="file" id="backupFile" accept=".sonicpack" hidden><section id="backupPreview" hidden><p id="backupSummary"></p><p class="project-note">恢复将替换这个浏览器里的曲库和创作。请先导出当前备份，并关闭其他声波宇宙页面。</p><div class="project-actions"><button class="primary-btn" id="backupRestore">恢复并替换本机内容</button><button class="secondary-btn" id="backupCancel">取消恢复</button></div></section><p id="backupStatus" class="project-note" role="status" aria-live="polite"></p>';
     app.append(dialog);let pending=null,locked=false;
     const status=text=>$('backupStatus').textContent=text;
     function lock(value){locked=value;dialog.querySelectorAll('button').forEach(b=>b.disabled=value);}
-    $('projectBtn').onclick=()=>{if(clipLocked()||importing){showToast('请先完成音乐导入或录制。');return}$('projectSong').textContent='当前：'+(currentTrack()?.name||'星际漫游');dialog.showModal()};
     $('projectClose').onclick=()=>dialog.close();dialog.addEventListener('cancel',e=>{if(locked)e.preventDefault()});
-    dialog.querySelectorAll('[data-project-action]').forEach(button=>button.onclick=()=>{dialog.close();$(button.dataset.projectAction).click()});
     $('backupCancel').onclick=()=>{pending=null;$('backupPreview').hidden=true;status('已取消，当前内容保持原样。')};
     $('backupImport').onclick=()=>$('backupFile').click();
     $('backupExport').onclick=async()=>{
@@ -6982,7 +7016,9 @@
       }
       return false;
     },
-    nudgeLyrics,retryOnlineLyrics,capturePlaybackMoment,
+    nudgeLyrics,retryOnlineLyrics,capturePlaybackMoment,storeStageMoment,
+    openMemories(){showAtelierTab('memories');return openAtelier();},
+    openBackup,
     toggle: () => {cancelOnlinePick();return play();}, previous: () => navigateTrack(-1), next: () => navigateTrack(1),
     select: id => {cancelOnlinePick();usePlaybackScope(playbackScope);return playScopedFrom(id);}, seek: position => seekTo(Number(position)),
     openDiscovery: (root,options)=>window.SonicMusicDiscovery.open(root,onlineClient,window.SonicPlayback,options),
